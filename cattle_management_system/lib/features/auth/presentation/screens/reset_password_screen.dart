@@ -1,0 +1,248 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../data/datasources/auth_local_data_source.dart';
+import 'login_screen.dart';
+
+class ResetPasswordScreen extends StatefulWidget {
+  final String mobileNumber;
+  const ResetPasswordScreen({super.key, required this.mobileNumber});
+
+  @override
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+}
+
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Container(
+          margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppTheme.primaryColor),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
+            onPressed: () => Navigator.pop(context),
+            padding: EdgeInsets.zero,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context)!.createPasswordTitle,
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF212121),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  AppLocalizations.of(context)!.createPasswordSubtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: const Color(0xFF757575),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // New Password
+                Text(
+                  AppLocalizations.of(context)!.labelNewPass,
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _newPasswordController,
+                  obscureText: _obscureNew,
+                  validator: (value) => value == null || value.length < 6 ? 'Min 6 chars' : null,
+                  decoration: _buildInputDecoration(
+                    AppLocalizations.of(context)!.hintNewPass,
+                    _obscureNew,
+                    () => setState(() => _obscureNew = !_obscureNew),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Confirm Password
+                Text(
+                  AppLocalizations.of(context)!.confirmNewPassword,
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirm,
+                  validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                  decoration: _buildInputDecoration(
+                    AppLocalizations.of(context)!.hintConfirmPass,
+                    _obscureConfirm,
+                    () => setState(() => _obscureConfirm = !_obscureConfirm),
+                  ),
+                ),
+                const SizedBox(height: 48),
+
+                const Spacer(),
+
+                // Change Password Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        if (_newPasswordController.text != _confirmPasswordController.text) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(AppLocalizations.of(context)!.passwordMismatch)),
+                          );
+                          return;
+                        }
+
+                        // Change Password
+                        final success = await sl<AuthLocalDataSource>().changePassword(
+                          widget.mobileNumber, 
+                          _newPasswordController.text
+                        );
+                        
+                        if (!mounted) return;
+                        if (success) {
+                          _showSuccessDialog();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Failed to update password. User not found?'), backgroundColor: Colors.red),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      textStyle: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    child: Text(AppLocalizations.of(context)!.btnChangePassword),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration(String hint, bool obscure, VoidCallback toggle) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF757575)),
+      suffixIcon: IconButton(
+        icon: Icon(obscure ? Icons.visibility_off : Icons.visibility, color: const Color(0xFF757575)),
+        onPressed: toggle,
+      ),
+      filled: true,
+      fillColor: const Color(0xFFF5F5F5),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
+  void _showSuccessDialog() {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          height: 300,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context)!.youreAllSet,
+                style: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF212121),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                AppLocalizations.of(context)!.passwordUpdated,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: const Color(0xFF757575),
+                  height: 1.5,
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Navigate to Login and remove all routes
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    textStyle: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  child: Text(AppLocalizations.of(context)!.continueButton),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
