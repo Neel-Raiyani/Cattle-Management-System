@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  STAFF
+  VETERINARIAN
+  VIEWER
+}
+
+model User {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  mobileNumber    String   @unique
+  password        String
+  name            String
+  city            String?
+  gaushalaName    String?
+  totalCattle     Int?      @default(0)
+  role            Role      @default(OWNER)
+  isActive        Boolean   @default(true)
+  
+  // Settings
+  languagePreference String   @default("EN") // EN, GU, HI
+  unitPreference     String   @default("Ltr") // Ltr, Kg
+  
+  // Password Recovery / OTP
+  otp             String?
+  otpExpires      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("users")
+}
