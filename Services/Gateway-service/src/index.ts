@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 dotenv.config();
@@ -15,13 +17,13 @@ app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 
+// Swagger Documentation
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Proxy Routes
 app.use('/api/auth', createProxyMiddleware({
     target: process.env.AUTH_SERVICE_URL || 'http://localhost:5001',
-    changeOrigin: true,
-    pathRewrite: {
-        '^/api/auth': '', // Remove /api/auth prefix when forwarding
-    },
+    changeOrigin: true
 }));
 
 // Placeholder for future services
