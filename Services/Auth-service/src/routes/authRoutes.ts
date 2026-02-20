@@ -1,7 +1,8 @@
 import express from 'express';
 import { register, login, getProfile, sendOtp, verifyOtp, updateSettings, changePassword } from '@controllers/authController.js';
 import { createGaushala, getMyGaushalas } from '@controllers/gaushalaController.js';
-import { registerValidation, loginValidation, sendOtpValidation, verifyOtpValidation, updateSettingsValidation, changePasswordValidation, createGaushalaValidation } from '@validators/authValidators.js';
+import { addStaff, getStaffList, updateStaff, removeStaff } from '@controllers/staffController.js';
+import { registerValidation, loginValidation, sendOtpValidation, verifyOtpValidation, updateSettingsValidation, changePasswordValidation, createGaushalaValidation, addStaffValidation, updateStaffValidation } from '@validators/authValidators.js';
 import { auth } from '@middlewares/auth.js';
 import { gaushalaAuth } from '@middlewares/gaushalaAuth.js';
 import { otpLimit } from '@middlewares/rateLimiter.js';
@@ -23,5 +24,11 @@ router.post('/change-password', auth, changePasswordValidation, changePassword);
 
 // Settings (Now per-gaushala scoped)
 router.put('/settings', auth, gaushalaAuth(['OWNER', 'MANAGER']), updateSettingsValidation, updateSettings);
+
+// Staff Management
+router.post('/staff', auth, gaushalaAuth(['OWNER', 'MANAGER']), addStaffValidation, addStaff);
+router.get('/staff', auth, gaushalaAuth(['OWNER', 'MANAGER']), getStaffList);
+router.patch('/staff/:userId', auth, gaushalaAuth(['OWNER', 'MANAGER']), updateStaffValidation, updateStaff);
+router.delete('/staff/:userId', auth, gaushalaAuth(['OWNER', 'MANAGER']), removeStaff);
 
 export default router;

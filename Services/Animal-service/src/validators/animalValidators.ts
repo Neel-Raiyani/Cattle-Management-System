@@ -50,6 +50,14 @@ export const registerAnimalValidation = [
     body('purchaseDate')
         .optional()
         .isISO8601().withMessage('Purchase date must be a valid ISO 8601 date'),
+    body('isUdderClosedFL').optional().isBoolean().withMessage('isUdderClosedFL must be a boolean'),
+    body('isUdderClosedFR').optional().isBoolean().withMessage('isUdderClosedFR must be a boolean'),
+    body('isUdderClosedBL').optional().isBoolean().withMessage('isUdderClosedBL must be a boolean'),
+    body('isUdderClosedBR').optional().isBoolean().withMessage('isUdderClosedBR must be a boolean'),
+    body('motherName').optional().isString().withMessage('Mother name must be a string'),
+    body('fatherName').optional().isString().withMessage('Father name must be a string'),
+    body('motherId').optional().isMongoId().withMessage('Mother ID must be a valid Mongo ID'),
+    body('fatherId').optional().isMongoId().withMessage('Father ID must be a valid Mongo ID'),
     validate
 ];
 
@@ -69,6 +77,14 @@ export const updateAnimalValidation = [
     body('adultDate').optional().isISO8601().withMessage('Adult date must be a valid ISO 8601 date'),
     body('motherMilk').optional().isFloat({ min: 0 }).withMessage('Mother milk must be a positive number'),
     body('grandmotherMilk').optional().isFloat({ min: 0 }).withMessage('Grandmother milk must be a positive number'),
+    body('isUdderClosedFL').optional().isBoolean().withMessage('isUdderClosedFL must be a boolean'),
+    body('isUdderClosedFR').optional().isBoolean().withMessage('isUdderClosedFR must be a boolean'),
+    body('isUdderClosedBL').optional().isBoolean().withMessage('isUdderClosedBL must be a boolean'),
+    body('isUdderClosedBR').optional().isBoolean().withMessage('isUdderClosedBR must be a boolean'),
+    body('motherName').optional().isString().withMessage('Mother name must be a string'),
+    body('fatherName').optional().isString().withMessage('Father name must be a string'),
+    body('motherId').optional().isMongoId().withMessage('Mother ID must be a valid Mongo ID'),
+    body('fatherId').optional().isMongoId().withMessage('Father ID must be a valid Mongo ID'),
     validate
 ];
 

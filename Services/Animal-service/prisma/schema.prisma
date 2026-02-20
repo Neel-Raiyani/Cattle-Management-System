@@ -120,14 +120,24 @@ model Animal {
   isHeifer        Boolean   @default(false)
   isRetired       Boolean   @default(false)
 
-  // Bull Specific
+  // Bull Specific / Pedigree
   bullView        String?
   motherMilk      Float?
   grandmotherMilk Float?
+  motherName      String?
+  fatherName      String?
+  motherId        String?   @db.ObjectId
+  fatherId        String?   @db.ObjectId
 
-  // Health
+  // Health & Physical Traits
   isHandicapped   Boolean   @default(false)
   handicapReason  String?
+  
+  // Udder Status (Closed = non-functional)
+  isUdderClosedFL Boolean   @default(false)
+  isUdderClosedFR Boolean   @default(false)
+  isUdderClosedBL Boolean   @default(false)
+  isUdderClosedBR Boolean   @default(false)
 
   // Acquisition
   acquisitionType AcquisitionType

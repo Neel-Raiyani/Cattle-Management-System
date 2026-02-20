@@ -15,7 +15,9 @@ export const registerAnimal = async (req: any, res: Response, next: NextFunction
             isPregnant, lactationNumber, isLactating, isDryOff, isHeifer, isRetired,
             bullView, motherMilk, grandmotherMilk, isHandicapped, handicapReason,
             acquisitionType, purchaseDate, purchasedFrom, purchasePrice, ownerName, ownerMobile,
-            photoUrl
+            photoUrl,
+            isUdderClosedFL, isUdderClosedFR, isUdderClosedBL, isUdderClosedBR,
+            motherName, fatherName, motherId, fatherId
         } = req.body;
 
         // Duplicate tag check within same gaushala
@@ -59,6 +61,14 @@ export const registerAnimal = async (req: any, res: Response, next: NextFunction
                 ownerName: ownerName || null,
                 ownerMobile: ownerMobile || null,
                 photoUrl: photoUrl || null,
+                isUdderClosedFL: isUdderClosedFL ?? false,
+                isUdderClosedFR: isUdderClosedFR ?? false,
+                isUdderClosedBL: isUdderClosedBL ?? false,
+                isUdderClosedBR: isUdderClosedBR ?? false,
+                motherName: motherName || null,
+                fatherName: fatherName || null,
+                motherId: motherId || null,
+                fatherId: fatherId || null,
                 status: 'ACTIVE'
             }
         });
@@ -197,7 +207,9 @@ export const updateAnimal = async (req: any, res: Response, next: NextFunction) 
             isPregnant, lactationNumber, isLactating, isDryOff, isHeifer, isRetired,
             bullView, motherMilk, grandmotherMilk,
             isHandicapped, handicapReason,
-            photoUrl
+            photoUrl,
+            isUdderClosedFL, isUdderClosedFR, isUdderClosedBL, isUdderClosedBR,
+            motherName, fatherName, motherId, fatherId
         } = req.body;
 
         // Duplicate tag check — only if tagNumber is changing
@@ -230,6 +242,14 @@ export const updateAnimal = async (req: any, res: Response, next: NextFunction) 
         if (isHandicapped !== undefined) updateData.isHandicapped = isHandicapped;
         if (handicapReason !== undefined) updateData.handicapReason = handicapReason;
         if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
+        if (isUdderClosedFL !== undefined) updateData.isUdderClosedFL = isUdderClosedFL;
+        if (isUdderClosedFR !== undefined) updateData.isUdderClosedFR = isUdderClosedFR;
+        if (isUdderClosedBL !== undefined) updateData.isUdderClosedBL = isUdderClosedBL;
+        if (isUdderClosedBR !== undefined) updateData.isUdderClosedBR = isUdderClosedBR;
+        if (motherName !== undefined) updateData.motherName = motherName;
+        if (fatherName !== undefined) updateData.fatherName = fatherName;
+        if (motherId !== undefined) updateData.motherId = motherId;
+        if (fatherId !== undefined) updateData.fatherId = fatherId;
 
         if (Object.keys(updateData).length === 0) {
             throw new AppError('No valid fields provided for update', 400, 'NO_UPDATE_FIELDS');

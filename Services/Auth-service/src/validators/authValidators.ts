@@ -77,3 +77,27 @@ export const createGaushalaValidation = [
     body('totalCattle').optional().isInt({ min: 0 }).withMessage('Total cattle must be a positive number'),
     validate
 ];
+
+export const addStaffValidation = [
+    body('mobileNumber')
+        .isMobilePhone('en-IN').withMessage('Valid Indian mobile number is required'),
+    body('name')
+        .notEmpty().withMessage('Name is required'),
+    body('role')
+        .isIn(['MANAGER', 'STAFF', 'VETERINARIAN', 'VIEWER'])
+        .withMessage('Invalid role. Use MANAGER, STAFF, VETERINARIAN, or VIEWER. OWNER registration requires a password via the register endpoint.'),
+    body('city')
+        .optional()
+        .isString().withMessage('City must be a string'),
+    validate
+];
+
+export const updateStaffValidation = [
+    body('name').optional().notEmpty().withMessage('Name cannot be empty'),
+    body('city').optional().isString().withMessage('City must be a string'),
+    body('role')
+        .optional()
+        .isIn(['MANAGER', 'STAFF', 'VETERINARIAN', 'VIEWER'])
+        .withMessage('Invalid role'),
+    validate
+];
