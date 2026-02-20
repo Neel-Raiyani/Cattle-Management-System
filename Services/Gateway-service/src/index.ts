@@ -26,11 +26,11 @@ app.use('/api/auth', createProxyMiddleware({
     changeOrigin: true
 }));
 
-// Placeholder for future services
-// app.use('/api/cattle', createProxyMiddleware({
-//   target: process.env.CATTLE_SERVICE_URL || 'http://localhost:5002',
-//   changeOrigin: true,
-// }));
+// Animal Service Proxy
+app.use('/api/animal', createProxyMiddleware({
+    target: process.env.ANIMAL_SERVICE_URL || 'http://localhost:5002',
+    changeOrigin: true
+}));
 
 app.get('/health', (req, res) => {
     res.json({ status: 'Gateway is healthy' });

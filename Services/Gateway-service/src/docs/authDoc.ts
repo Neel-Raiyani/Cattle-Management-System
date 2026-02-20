@@ -23,10 +23,35 @@
  *           type: string
  *         city:
  *           type: string
- *         gaushalaName:
+ *         gaushalas:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/UserGaushala'
+ *
+ *     Gaushala:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         city:
  *           type: string
  *         totalCattle:
  *           type: integer
+ *
+ *     UserGaushala:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         role:
+ *           type: string
+ *           enum: [OWNER, MANAGER, STAFF, VETERINARIAN, VIEWER]
+ *         city:
+ *           type: string
  */
 
 /**
@@ -106,6 +131,56 @@
  *         description: Profile retrieved successfully
  *       401:
  *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /api/auth/gaushala:
+ *   post:
+ *     summary: Create an additional Gaushala for existing user
+ *     tags: [Auth Service]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Krishna Gaushala
+ *               city:
+ *                 type: string
+ *                 example: Ahmedabad
+ *               totalCattle:
+ *                 type: integer
+ *                 example: 20
+ *     responses:
+ *       201:
+ *         description: Gaushala created successfully
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /api/auth/gaushala/my:
+ *   get:
+ *     summary: Get all Gaushalas user belongs to
+ *     tags: [Auth Service]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of gaushalas retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/GaushalaMembership'
  */
 
 /**
@@ -190,10 +265,17 @@
  * @swagger
  * /api/auth/settings:
  *   put:
- *     summary: Update user settings (Language/Units)
+ *     summary: Update gaushala settings (Language/Units)
  *     tags: [Auth Service]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the Gaushala to update settings for
  *     requestBody:
  *       required: true
  *       content:
