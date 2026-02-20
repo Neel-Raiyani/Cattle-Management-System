@@ -1,0 +1,214 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  STAFF
+  VETERINARIAN
+  VIEWER
+}
+
+enum Species {
+  COW
+  BUFFALO
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AnimalStatus {
+  ACTIVE
+  SOLD
+  DEAD
+  DONATED
+}
+
+enum AcquisitionType {
+  BIRTH
+  PURCHASE
+  DONATION
+}
+
+enum CowBreed {
+  Gir
+  Sahiwal
+  Red_Sindhi
+  Tharparkar
+  Kankrej
+  Rathi
+  Punganur
+  Badri
+  Hallikar
+  Kangayam
+  Hariana
+  Mewati
+  Nagori
+  Nimadi
+  Malvi
+  Kherigarh
+  Amritmahal
+  Umblachery
+  Pulikulam
+  Bargur
+  Ongole
+  Red_Kandhari
+  Gaolao
+  Gangatiri
+  Siri
+  Motu
+  Vechur
+  Jersey
+  Holstein_Friesian
+  Brown_Swiss
+}
+
+enum BuffaloBreed {
+  Murrah
+  Jaffarabadi
+  Bhadawari
+  Mehsana
+  Nili_Ravi
+  Surti
+  Nagpuri
+  Pandharpuri
+  Toda
+  Banni
+  Chilika
+  Marathwadi
+  Kalahandi
+}
+
+model Animal {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Basic Info
+  name            String?
+  tagNumber       String?
+  animalNumber    String?
+  species         Species
+  gender          Gender
+  gaushalaId      String   @db.ObjectId // Link to Gaushala entity in Auth-service
+
+  // Breed (Only one will be used based on species)
+  cowBreed        CowBreed?
+  buffaloBreed    BuffaloBreed?
+
+  // Group
+  cowGroup        String?
+
+  // Dates
+  birthDate       DateTime?
+  adultDate       DateTime?
+
+  // Female Lifecycle
+  isPregnant      Boolean   @default(false)
+  lactationNumber Int?
+  isLactating     Boolean   @default(false)
+  isDryOff        Boolean   @default(false)
+  isHeifer        Boolean   @default(false)
+  isRetired       Boolean   @default(false)
+
+  // Bull Specific
+  bullView        String?
+  motherMilk      Float?
+  grandmotherMilk Float?
+
+  // Health
+  isHandicapped   Boolean   @default(false)
+  handicapReason  String?
+
+  // Acquisition
+  acquisitionType AcquisitionType
+  purchaseDate    DateTime?
+  purchasedFrom   String?
+  purchasePrice   Float?
+  ownerName       String?
+  ownerMobile     String?
+
+  // Disposal Status
+  status          AnimalStatus @default(ACTIVE)
+
+  // Photo
+  photoUrl        String?
+
+  // Relations
+  sellRecord      SellRecord?
+  deathRecord     DeathRecord?
+  donationRecord  DonationRecord?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tagNumber, gaushalaId])
+  @@map("animals")
+}
+
+model SellRecord {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  animalId      String   @unique @db.ObjectId
+  animal        Animal   @relation(fields: [animalId], references: [id])
+
+  buyer     String
+  mobileNumber  String
+  city          String?
+  amount        Float
+  referenceBy   String?
+  photoUrl      String?
+
+  soldAt        DateTime @default(now())
+
+  @@map("sell_records")
+}
+
+model DeathRecord {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  animalId      String   @unique @db.ObjectId
+  animal        Animal   @relation(fields: [animalId], references: [id])
+
+  dateOfDeath   DateTime
+  reason        String
+  lastPhotoUrl  String?
+
+  createdAt     DateTime @default(now())
+
+  @@map("death_records")
+}
+
+model DonationRecord {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  animalId      String   @unique @db.ObjectId
+  animal        Animal   @relation(fields: [animalId], references: [id])
+
+  gaushalaName  String
+  mobileNumber  String
+  referenceBy   String?
+  photoUrl      String?
+
+  donatedAt     DateTime @default(now())
+
+  @@map("donation_records")
+}
+
+model UserGaushala {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  gaushalaId      String   @db.ObjectId
+  role            Role     @default(OWNER)
+  isActive        Boolean  @default(true)
+  joinedAt        DateTime @default(now())
+
+  @@unique([userId, gaushalaId])
+  @@map("user_gaushalas")
+}
