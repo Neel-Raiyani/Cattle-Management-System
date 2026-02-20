@@ -26,9 +26,6 @@ export const registerValidation = [
         .notEmpty().withMessage('Gaushala name is required'),
     body('totalCattle')
         .isInt({ min: 0 }).withMessage('Total cattle must be a positive number'),
-    body('role')
-        .optional()
-        .isIn(['OWNER', 'MANAGER', 'STAFF', 'VETERINARIAN', 'VIEWER']).withMessage('Invalid role'),
     validate
 ];
 
@@ -71,5 +68,12 @@ export const changePasswordValidation = [
         .notEmpty().withMessage('Old password is required'),
     body('newPassword')
         .isLength({ min: 6 }).withMessage('New password must be at least 6 characters long'),
+    validate
+];
+
+export const createGaushalaValidation = [
+    body('name').notEmpty().withMessage('Gaushala name is required'),
+    body('city').notEmpty().withMessage('City is required'),
+    body('totalCattle').optional().isInt({ min: 0 }).withMessage('Total cattle must be a positive number'),
     validate
 ];

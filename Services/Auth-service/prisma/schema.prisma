@@ -24,9 +24,6 @@ model User {
   password        String
   name            String
   city            String?
-  gaushalaName    String?
-  totalCattle     Int?      @default(0)
-  role            Role      @default(OWNER)
   isActive        Boolean   @default(true)
   
   // Settings
@@ -37,8 +34,43 @@ model User {
   otp             String?
   otpExpires      DateTime?
 
+  // Relations
+  memberships     UserGaushala[]
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@map("users")
+}
+
+model Gaushala {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  city            String?
+  state           String?
+  totalCattle     Int?      @default(0)
+  
+  // Relations
+  members         UserGaushala[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("gaushalas")
+}
+
+model UserGaushala {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id])
+  
+  gaushalaId      String   @db.ObjectId
+  gaushala        Gaushala @relation(fields: [gaushalaId], references: [id])
+  
+  role            Role     @default(OWNER)
+  isActive        Boolean  @default(true)
+  joinedAt        DateTime @default(now())
+
+  @@unique([userId, gaushalaId])
+  @@map("user_gaushalas")
 }

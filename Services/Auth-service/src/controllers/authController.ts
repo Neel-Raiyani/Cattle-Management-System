@@ -2,14 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import { hashPassword, comparePassword } from '@utils/password.js';
 import { generateToken } from '@utils/jwt.js';
 import { sendSMS } from '@utils/sms.js';
-import { PrismaClient } from '@prisma/client';
 import logger from '@utils/logger.js';
-
-const prisma = new PrismaClient();
+import prisma from '@config/db.js';
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { mobileNumber, password, name, city, gaushalaName, totalCattle, role } = req.body;
+        const { mobileNumber, password, name, city, gaushalaName, totalCattle } = req.body;
 
         const existingUser = await prisma.user.findUnique({ where: { mobileNumber } });
         if (existingUser) {
@@ -17,20 +15,43 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         }
 
         const hashedPassword = await hashPassword(password);
-        const user = await prisma.user.create({
-            data: {
-                mobileNumber,
-                password: hashedPassword,
-                name,
-                city,
-                gaushalaName,
-                totalCattle: parseInt(totalCattle) || 0,
-                role: role || 'OWNER'
-            }
+
+        // Transactional creation: User + Gaushala + Membership (OWNER)
+        const result = await prisma.$transaction(async (tx) => {
+            const user = await tx.user.create({
+                data: {
+                    mobileNumber,
+                    password: hashedPassword,
+                    name,
+                    city
+                }
+            });
+
+            const gaushala = await tx.gaushala.create({
+                data: {
+                    name: gaushalaName,
+                    city,
+                    totalCattle: parseInt(totalCattle) || 0
+                }
+            });
+
+            await tx.userGaushala.create({
+                data: {
+                    userId: user.id,
+                    gaushalaId: gaushala.id,
+                    role: 'OWNER'
+                }
+            });
+
+            return { user, gaushala };
         });
 
-        logger.info(`User registered successfully: ${mobileNumber}`);
-        res.status(201).json({ message: 'User registered successfully', userId: user.id });
+        logger.info(`User and Gaushala registered successfully: ${mobileNumber}`);
+        res.status(201).json({
+            message: 'User and first Gaushala registered successfully',
+            userId: result.user.id,
+            gaushalaId: result.gaushala.id
+        });
     } catch (error) {
         next(error);
     }
@@ -40,7 +61,15 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     try {
         const { mobileNumber, password } = req.body;
 
-        const user = await prisma.user.findUnique({ where: { mobileNumber } });
+        const user = await prisma.user.findUnique({
+            where: { mobileNumber },
+            include: {
+                memberships: {
+                    include: { gaushala: true }
+                }
+            }
+        });
+
         if (!user || !user.isActive) {
             return res.status(401).json({ message: 'Invalid credentials or account inactive' });
         }
@@ -52,13 +81,23 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
         const token = generateToken({
             userId: user.id,
-            role: user.role,
             mobileNumber: user.mobileNumber,
             name: user.name
         });
 
         logger.info(`User logged in: ${mobileNumber}`);
-        res.status(200).json({ message: 'Login successful', token });
+
+        // Return token and the list of gaushalas the user belongs to
+        res.status(200).json({
+            message: 'Login successful',
+            token,
+            gaushalas: user.memberships.map(m => ({
+                id: m.gaushala.id,
+                name: m.gaushala.name,
+                role: m.role,
+                city: m.gaushala.city
+            }))
+        });
     } catch (error) {
         next(error);
     }
@@ -74,13 +113,15 @@ export const getProfile = async (req: any, res: Response, next: NextFunction) =>
                 name: true,
                 mobileNumber: true,
                 city: true,
-                gaushalaName: true,
-                totalCattle: true,
-                role: true,
                 languagePreference: true,
                 unitPreference: true,
                 isActive: true,
-                createdAt: true
+                createdAt: true,
+                memberships: {
+                    include: {
+                        gaushala: true
+                    }
+                }
             }
         });
 
@@ -88,7 +129,21 @@ export const getProfile = async (req: any, res: Response, next: NextFunction) =>
             return res.status(404).json({ message: 'User not found' });
         }
 
-        res.status(200).json(user);
+        // Format for response
+        const formattedUser = {
+            ...user,
+            gaushalas: user.memberships.map(m => ({
+                id: m.gaushala.id,
+                name: m.gaushala.name,
+                role: m.role,
+                city: m.gaushala.city,
+                totalCattle: m.gaushala.totalCattle,
+                isActive: m.isActive
+            })),
+            memberships: undefined // Remove raw memberships
+        };
+
+        res.status(200).json(formattedUser);
     } catch (error) {
         next(error);
     }
