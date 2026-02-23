@@ -23,6 +23,9 @@
  *           type: string
  *         city:
  *           type: string
+ *         language:
+ *           type: string
+ *           enum: [ENGLISH, GUJARATI, HINDI]
  *         gaushalas:
  *           type: array
  *           items:
@@ -283,14 +286,10 @@
  *           schema:
  *             type: object
  *             properties:
- *               languagePreference:
+ *               language:
  *                 type: string
- *                 example: GU
- *                 enum: [EN, GU, HI]
- *               unitPreference:
- *                 type: string
- *                 example: Kg
- *                 enum: [Ltr, Kg]
+ *                 example: GUJARATI
+ *                 enum: [ENGLISH, GUJARATI, HINDI]
  *     responses:
  *       200:
  *         description: Settings updated successfully

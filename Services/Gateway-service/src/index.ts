@@ -38,6 +38,12 @@ app.use('/api/health', createProxyMiddleware({
     changeOrigin: true
 }));
 
+// Production Service Proxy
+app.use('/api/production', createProxyMiddleware({
+    target: process.env.PRODUCTION_SERVICE_URL || 'http://localhost:5004',
+    changeOrigin: true
+}));
+
 
 app.listen(port, () => {
     console.log(`[gateway-service]: Gateway is running at http://localhost:${port}`);
