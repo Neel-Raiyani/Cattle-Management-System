@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  STAFF
+  VETERINARIAN
+  VIEWER
+}
+
+enum Species {
+  COW
+  BUFFALO
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AnimalStatus {
+  ACTIVE
+  SOLD
+  DEAD
+  DONATED
+}
+
+enum AcquisitionType {
+  BIRTH
+  PURCHASE
+  DONATION
+}
+
+// ───────────────────────── Global Master Lists ─────────────────────────
+
+model DiseaseMaster {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique             // Global uniqueness
+  createdAt   DateTime @default(now())
+
+  @@map("disease_masters")
+}
+
+model VaccineMaster {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique             // Global uniqueness
+  createdAt   DateTime @default(now())
+
+  @@map("vaccine_masters")
+}
+
+// ───────────────────────── Health Records ─────────────────────────
+
+model MedicalRecord {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String   @db.ObjectId
+  gaushalaId      String   @db.ObjectId
+  visitType       String                  // e.g. "ILLNESS" | "CHECKUP"
+  visitDate       DateTime
+  visitNumber     String?
+  vetId           String?  @db.ObjectId   // Reference to User.id (Veterinarian)
+  diseaseId       String?  @db.ObjectId   // Reference to DiseaseMaster.id
+  medicalStatus   String                  // e.g. "SICK" | "HEALTHY"
+  symptoms        String?
+  treatment       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("medical_records")
+}
+
+model VaccinationRecord {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  animalId    String   @db.ObjectId
+  gaushalaId  String   @db.ObjectId
+  doseDate    DateTime
+  doseType    String                  // e.g. "FIRST" | "BOOSTER" | "REPEAT"
+  vaccineId   String   @db.ObjectId   // Reference to VaccineMaster.id
+  remark      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("vaccination_records")
+}
+
+model DewormingRecord {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  animalId      String    @db.ObjectId
+  gaushalaId    String    @db.ObjectId
+  doseDate      DateTime
+  doseType      String                  // e.g. "INJECTION" | "TABLET"
+  companyName   String?
+  quantity      String?
+  vetId         String?   @db.ObjectId   // Reference to User.id
+  nextDoseDate  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("deworming_records")
+}
+
+// ───────────────────────── External References (Partial Models) ─────────────────────────
+
+
+model Animal {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  tagNumber       String?
+  gaushalaId      String   @db.ObjectId
+  
+  // Note: We only need these for relations if we were using a SQL DB.
+  // In MongoDB, we'll just store the ID and fetch when needed.
+  // But having the model definition helps with Prisma Client types.
+  
+  @@map("animals")
+}

@@ -32,9 +32,12 @@ app.use('/api/animal', createProxyMiddleware({
     changeOrigin: true
 }));
 
-app.get('/health', (req, res) => {
-    res.json({ status: 'Gateway is healthy' });
-});
+// Health Service Proxy
+app.use('/api/health', createProxyMiddleware({
+    target: process.env.HEALTH_SERVICE_URL || 'http://localhost:5003',
+    changeOrigin: true
+}));
+
 
 app.listen(port, () => {
     console.log(`[gateway-service]: Gateway is running at http://localhost:${port}`);
