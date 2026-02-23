@@ -10,8 +10,8 @@ export const registerAnimal = async (req: any, res: Response, next: NextFunction
         const gaushalaId = req.headers['gaushala-id'] as string;
 
         const {
-            name, tagNumber, animalNumber, species, gender,
-            cowBreed, buffaloBreed, cowGroup, birthDate, adultDate,
+            name, tagNumber, animalNumber, gender,
+            cowBreed, cowGroup, birthDate, adultDate,
             isPregnant, lactationNumber, isLactating, isDryOff, isHeifer, isRetired,
             bullView, motherMilk, grandmotherMilk, isHandicapped, handicapReason,
             acquisitionType, purchaseDate, purchasedFrom, purchasePrice, ownerName, ownerMobile,
@@ -35,11 +35,9 @@ export const registerAnimal = async (req: any, res: Response, next: NextFunction
                 name,
                 tagNumber,
                 animalNumber,
-                species,
                 gender,
                 gaushalaId,
                 cowBreed: cowBreed || null,
-                buffaloBreed: buffaloBreed || null,
                 cowGroup: cowGroup || null,
                 birthDate: birthDate ? new Date(birthDate) : null,
                 adultDate: adultDate ? new Date(adultDate) : null,
@@ -88,14 +86,15 @@ export const registerAnimal = async (req: any, res: Response, next: NextFunction
 export const getAnimals = async (req: any, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { species, status, gender, search, page = '1', limit = '20' } = req.query;
+        const { status, gender, cowGroup, isLactating, search, page = '1', limit = '20' } = req.query;
 
         const pageNum = Math.max(1, parseInt(page as string) || 1);
         const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
         const skip = (pageNum - 1) * limitNum;
 
         const where: any = { gaushalaId };
-        if (species) where.species = species;
+        if (cowGroup) where.cowGroup = cowGroup;
+        if (isLactating === 'true') where.isLactating = true;
         if (status) where.status = status;
         if (gender) where.gender = gender;
         if (search) {

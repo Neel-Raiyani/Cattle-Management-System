@@ -18,10 +18,7 @@ enum Role {
   VIEWER
 }
 
-enum Species {
-  COW
-  BUFFALO
-}
+
 
 enum Gender {
   MALE
@@ -74,20 +71,14 @@ enum CowBreed {
   Brown_Swiss
 }
 
-enum BuffaloBreed {
-  Murrah
-  Jaffarabadi
-  Bhadawari
-  Mehsana
-  Nili_Ravi
-  Surti
-  Nagpuri
-  Pandharpuri
-  Toda
-  Banni
-  Chilika
-  Marathwadi
-  Kalahandi
+model CowGroup {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  gaushalaId      String   @db.ObjectId
+  name            String
+  createdAt       DateTime @default(now())
+
+  @@unique([gaushalaId, name])
+  @@map("cow_groups")
 }
 
 model Animal {
@@ -97,13 +88,11 @@ model Animal {
   name            String?
   tagNumber       String?
   animalNumber    String?
-  species         Species
   gender          Gender
   gaushalaId      String   @db.ObjectId // Link to Gaushala entity in Auth-service
 
-  // Breed (Only one will be used based on species)
+  // Breed
   cowBreed        CowBreed?
-  buffaloBreed    BuffaloBreed?
 
   // Group
   cowGroup        String?

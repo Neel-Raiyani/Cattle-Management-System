@@ -74,6 +74,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
             return res.status(401).json({ message: 'Invalid credentials or account inactive' });
         }
 
+        if (!user.password) {
+            return res.status(401).json({ message: 'Account has no login credentials' });
+        }
+
         const isMatch = await comparePassword(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -235,6 +239,10 @@ export const changePassword = async (req: any, res: Response, next: NextFunction
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (!user.password) {
+            return res.status(400).json({ message: 'No current password set for this account' });
         }
 
         const isMatch = await comparePassword(oldPassword, user.password);

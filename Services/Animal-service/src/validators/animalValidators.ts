@@ -23,8 +23,6 @@ export const validate = (req: Request, res: Response, next: NextFunction) => {
 
 // ───────────────────────── Animal Registration ─────────────────────────
 export const registerAnimalValidation = [
-    body('species')
-        .isIn(['COW', 'BUFFALO']).withMessage('Species must be COW or BUFFALO'),
     body('gender')
         .isIn(['MALE', 'FEMALE']).withMessage('Gender must be MALE or FEMALE'),
     body('tagNumber')
@@ -35,9 +33,6 @@ export const registerAnimalValidation = [
     body('cowBreed')
         .optional()
         .isString().withMessage('Cow breed must be a string'),
-    body('buffaloBreed')
-        .optional()
-        .isString().withMessage('Buffalo breed must be a string'),
     body('birthDate')
         .optional()
         .isISO8601().withMessage('Birth date must be a valid ISO 8601 date'),
