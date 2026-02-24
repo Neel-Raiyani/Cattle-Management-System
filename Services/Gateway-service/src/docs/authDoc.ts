@@ -52,7 +52,7 @@
  *           type: string
  *         role:
  *           type: string
- *           enum: [OWNER, MANAGER, STAFF, VETERINARIAN, VIEWER]
+ *           enum: [MANAGER, STAFF, VETERINARIAN]
  *         city:
  *           type: string
  */

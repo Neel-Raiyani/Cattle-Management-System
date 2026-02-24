@@ -10,6 +10,15 @@ export const addStaff = async (req: any, res: Response, next: NextFunction) => {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { name, mobileNumber, role, city } = req.body;
 
+        // Explicitly block OWNER role assignment
+        if (role === 'OWNER') {
+            return res.status(403).json({
+                success: false,
+                errorCode: 'OWNER_ASSIGNMENT_RESTRICTED',
+                message: 'The OWNER role can only be assigned during registration or gaushala creation.'
+            });
+        }
+
         // Check if mobile already exists as a user
         let user = await prisma.user.findUnique({
             where: { mobileNumber }
@@ -124,6 +133,15 @@ export const updateStaff = async (req: any, res: Response, next: NextFunction) =
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { userId } = req.params;
         const { name, city, role } = req.body;
+
+        // Explicitly block OWNER role assignment
+        if (role === 'OWNER') {
+            return res.status(403).json({
+                success: false,
+                errorCode: 'OWNER_ASSIGNMENT_RESTRICTED',
+                message: 'The OWNER role cannot be manually assigned.'
+            });
+        }
 
         // Check membership exists
         const membership = await prisma.userGaushala.findUnique({

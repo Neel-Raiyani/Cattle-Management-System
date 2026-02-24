@@ -12,7 +12,6 @@ enum Role {
   MANAGER
   STAFF
   VETERINARIAN
-  VIEWER
 }
 
 model UserGaushala {

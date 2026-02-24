@@ -54,12 +54,9 @@ export const verifyOtpValidation = [
 ];
 
 export const updateSettingsValidation = [
-    body('languagePreference')
+    body('language')
         .optional()
-        .isIn(['EN', 'GU', 'HI']).withMessage('Invalid language preference'),
-    body('unitPreference')
-        .optional()
-        .isIn(['Ltr', 'Kg']).withMessage('Invalid unit preference'),
+        .isIn(['ENGLISH', 'GUJARATI', 'HINDI']).withMessage('Invalid language selection'),
     validate
 ];
 
@@ -84,8 +81,8 @@ export const addStaffValidation = [
     body('name')
         .notEmpty().withMessage('Name is required'),
     body('role')
-        .isIn(['MANAGER', 'STAFF', 'VETERINARIAN', 'VIEWER'])
-        .withMessage('Invalid role. Use MANAGER, STAFF, VETERINARIAN, or VIEWER. OWNER registration requires a password via the register endpoint.'),
+        .isIn(['MANAGER', 'STAFF', 'VETERINARIAN'])
+        .withMessage('Invalid role. Use MANAGER, STAFF, or VETERINARIAN. OWNER registration is handled via the separate register endpoint.'),
     body('city')
         .optional()
         .isString().withMessage('City must be a string'),
@@ -97,7 +94,7 @@ export const updateStaffValidation = [
     body('city').optional().isString().withMessage('City must be a string'),
     body('role')
         .optional()
-        .isIn(['MANAGER', 'STAFF', 'VETERINARIAN', 'VIEWER'])
+        .isIn(['MANAGER', 'STAFF', 'VETERINARIAN'])
         .withMessage('Invalid role'),
     validate
 ];

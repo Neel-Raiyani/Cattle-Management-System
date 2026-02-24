@@ -15,7 +15,6 @@ enum Role {
   MANAGER
   STAFF
   VETERINARIAN
-  VIEWER
 }
 
 enum Species {

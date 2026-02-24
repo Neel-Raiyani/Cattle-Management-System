@@ -117,8 +117,7 @@ export const getProfile = async (req: any, res: Response, next: NextFunction) =>
                 name: true,
                 mobileNumber: true,
                 city: true,
-                languagePreference: true,
-                unitPreference: true,
+                language: true,
                 isActive: true,
                 createdAt: true,
                 memberships: {
@@ -136,7 +135,7 @@ export const getProfile = async (req: any, res: Response, next: NextFunction) =>
         // Format for response
         const formattedUser = {
             ...user,
-            gaushalas: user.memberships.map(m => ({
+            gaushalas: (user as any).memberships.map((m: any) => ({
                 id: m.gaushala.id,
                 name: m.gaushala.name,
                 role: m.role,
@@ -213,15 +212,14 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
 export const updateSettings = async (req: any, res: Response, next: NextFunction) => {
     try {
         const userId = req.user.userId;
-        const { languagePreference, unitPreference } = req.body;
+        const { language } = req.body;
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
-                ...(languagePreference && { languagePreference }),
-                ...(unitPreference && { unitPreference })
+                ...(language && { language })
             },
-            select: { languagePreference: true, unitPreference: true }
+            select: { language: true }
         });
 
         logger.info(`Settings updated for user ${userId}`);

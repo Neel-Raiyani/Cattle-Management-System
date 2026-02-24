@@ -15,7 +15,12 @@ enum Role {
   MANAGER
   STAFF
   VETERINARIAN
-  VIEWER
+}
+
+enum Language {
+  ENGLISH
+  GUJARATI
+  HINDI
 }
 
 model User {
@@ -27,8 +32,7 @@ model User {
   isActive        Boolean   @default(true)
   
   // Settings
-  languagePreference String   @default("EN") // EN, GU, HI
-  unitPreference     String   @default("Ltr") // Ltr, Kg
+  language        Language  @default(ENGLISH)
   
   // Password Recovery / OTP
   otp             String?
