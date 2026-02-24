@@ -10,8 +10,8 @@ const options: swaggerJsdoc.Options = {
         },
         servers: [
             {
-                url: 'http://localhost:5000',
-                description: 'API Gateway (Development)',
+                url: process.env.GATEWAY_URL || 'http://localhost:5000',
+                description: 'API Gateway',
             },
         ],
         components: {
