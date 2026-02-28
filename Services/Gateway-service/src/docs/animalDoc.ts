@@ -21,10 +21,6 @@
  *         animalNumber:
  *           type: string
  *           example: 'C001'
- *         species:
- *           type: string
- *           enum: [COW, BUFFALO]
- *           example: COW
  *         gender:
  *           type: string
  *           enum: [MALE, FEMALE]
@@ -32,18 +28,21 @@
  *         cowBreed:
  *           type: string
  *           example: Gir
- *         buffaloBreed:
- *           type: string
- *           example: Murrah
  *         cowGroup:
  *           type: string
  *           example: 'Milk-Yielders'
  *         birthDate:
  *           type: string
  *           format: date-time
+ *           description: Mandatory birth date
  *         adultDate:
  *           type: string
  *           format: date-time
+ *           description: Automatically calculated (birthDate + 12 months)
+ *         age:
+ *           type: string
+ *           example: '2 years, 14 days'
+ *           description: Calculated age string
  *         isPregnant:
  *           type: boolean
  *         isLactating:
@@ -54,8 +53,9 @@
  *           type: boolean
  *         isRetired:
  *           type: boolean
- *         lactationNumber:
+ *         parity:
  *           type: integer
+ *           description: Number of deliveries (Replacing lactationNumber)
  *         bullView:
  *           type: string
  *         motherMilk:
@@ -92,7 +92,7 @@
  *         viewUrl:
  *           type: string
  *           format: url
- *           description: Temporary secure link to view the animal photo (Generated on-the-fly)
+ *           description: Temporary secure link to view the animal photo
  *
  *     SellRecord:
  *       type: object
@@ -153,7 +153,7 @@
  * @swagger
  * /api/animal/add:
  *   post:
- *     summary: Register a new animal
+ *     summary: Register a new animal (Cow or Bull)
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -169,6 +169,7 @@
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/Animal'
+ *             required: [gender, birthDate, acquisitionType]
  *     responses:
  *       201:
  *         description: Animal registered successfully
@@ -183,15 +184,93 @@
  *                   $ref: '#/components/schemas/Animal'
  *       400:
  *         description: Validation error
- *       401:
- *         description: Unauthorized
  */
 
 /**
  * @swagger
- * /api/animal:
+ * /api/animal/cows:
  *   get:
- *     summary: Get all animals in the current gaushala
+ *     summary: Get specialized listing of cows with filters
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *           enum: [all, lactating, heifer, pregnant, dryoff, retired, calves]
+ *         description: Filter cows by production status
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by name or tag number
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Paginated cow list retrieved
+ */
+
+/**
+ * @swagger
+ * /api/animal/bulls:
+ *   get:
+ *     summary: Get specialized listing of bulls with filters
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *           enum: [all, retired, calf]
+ *         description: Filter bulls by status
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by name or tag number
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Paginated bull list retrieved
+ */
+
+/**
+ * @swagger
+ * /api/animal/groups:
+ *   get:
+ *     summary: Get list of cow groups (Names only)
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -203,13 +282,19 @@
  *           type: string
  *     responses:
  *       200:
- *         description: List of animals retrieved successfully
+ *         description: List of group names retrieved
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Animal'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 groups:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                     example: 'Milk-Yielders'
  */
 
 

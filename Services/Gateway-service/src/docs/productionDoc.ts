@@ -461,7 +461,7 @@
  * /api/production/reports/parity:
  *   get:
  *     summary: Parity Report
- *     description: Yield trends indexed by lactation stats.
+ *     description: Yield trends indexed by parity stats.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []

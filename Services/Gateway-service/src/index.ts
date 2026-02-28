@@ -44,6 +44,12 @@ app.use('/api/production', createProxyMiddleware({
     changeOrigin: true
 }));
 
+// Breeding Service Proxy
+app.use('/api/breeding', createProxyMiddleware({
+    target: process.env.BREEDING_SERVICE_URL || 'http://localhost:5005',
+    changeOrigin: true
+}));
+
 
 app.listen(port, () => {
     console.log(`[gateway-service]: Gateway is running at http://localhost:${port}`);
