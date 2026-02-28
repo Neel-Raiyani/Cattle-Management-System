@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  STAFF
+  VETERINARIAN
+}
+
+enum JourneyStatus { 
+  INITIATED
+  PREGNANT
+  DRY_OFF
+  COMPLETED
+  FAILED
+}
+
+enum DryOffReason { 
+  ILLNESS
+  LOW_YIELD
+  MEDICATED
+  OTHER 
+}
+
+enum PregnancyType { 
+  NATURAL
+  AI 
+}
+
+enum CalfStatus { 
+  ALIVE
+  DEAD
+  ABORTED 
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model UserGaushala {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  gaushalaId      String   @db.ObjectId
+  role            Role     @default(OWNER)
+  isActive        Boolean  @default(true)
+  joinedAt        DateTime @default(now())
+
+  @@unique([userId, gaushalaId])
+  @@map("user_gaushalas")
+}
+
+model Animal {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String?
+  tagNumber       String?
+  gender          Gender
+  gaushalaId      String   @db.ObjectId
+  parity          Int?      @default(0)
+  isLactating     Boolean   @default(false)
+  isHeifer        Boolean   @default(false)
+  isPregnant      Boolean   @default(false)
+  isDryOff        Boolean   @default(false)
+  isRetired       Boolean   @default(false)
+  birthDate       DateTime?
+  adultDate       DateTime?
+  motherId        String?   @db.ObjectId
+  fatherId        String?   @db.ObjectId
+  status          String    @default("ACTIVE") // ACTIVE, SOLD, DEAD, etc.
+  photoUrl        String?
+
+  @@map("animals")
+}
+
+model ParityRecord {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String         @db.ObjectId
+  gaushalaId      String         @db.ObjectId
+  parityNo        Int
+  cowPhoto        String?
+  pregnancyType   PregnancyType
+  bullId          String?        @db.ObjectId
+  bullName        String?
+  deliveryDate    DateTime
+  pregnancyDate   DateTime
+  dryOffDate      DateTime?
+  note            String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("parity_records")
+}
+
+model HeatRecord {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String         @db.ObjectId
+  gaushalaId      String         @db.ObjectId
+  date            DateTime
+  parity          Int
+  breedingType    PregnancyType
+  note            String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("heat_records")
+}
+
+model DryOffRecord {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String       @db.ObjectId
+  gaushalaId      String       @db.ObjectId
+  date            DateTime
+  reason          DryOffReason
+  remarks         String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("dry_off_records")
+}
+
+model ConceptionJourney {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String         @db.ObjectId
+  gaushalaId      String         @db.ObjectId
+  status          JourneyStatus  @default(INITIATED)
+  parity          Int
+  
+  // 1. INITIATION DATA
+  conceiveDate    DateTime
+  pregnancyType   PregnancyType
+  bullId          String?        @db.ObjectId
+  bullName        String?        
+  bullTag         String?
+  serialNumber    String?        
+  companyName     String?        
+  
+  // 2. CONFIRMATION (PD)
+  pdDate          DateTime?
+  pdResult        Boolean?       
+  
+  // 3. DRY OFF (pregnancy-related)
+  dryOffDate      DateTime?
+  
+  // 4. DELIVERY 
+  deliveryDate    DateTime?
+  calfStatus      CalfStatus?
+  calfGender      Gender?
+  calfAppearance  String?
+  calfWeight      Float?
+  deliveryPhoto   String?        
+  calfPhoto       String?        
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("conception_journeys")
+}
