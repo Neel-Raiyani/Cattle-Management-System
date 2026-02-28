@@ -102,7 +102,7 @@ model Animal {
 
   // Female Lifecycle
   isPregnant      Boolean   @default(false)
-  lactationNumber Int?
+  parity          Int?      @default(0)
   isLactating     Boolean   @default(false)
   isDryOff        Boolean   @default(false)
   isHeifer        Boolean   @default(false)

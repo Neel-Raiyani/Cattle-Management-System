@@ -11,14 +11,34 @@ export const registerAnimal = async (req: any, res: Response, next: NextFunction
 
         const {
             name, tagNumber, animalNumber, gender,
-            cowBreed, cowGroup, birthDate, adultDate,
-            isPregnant, lactationNumber, isLactating, isDryOff, isHeifer, isRetired,
+            cowBreed, cowGroup, birthDate,
+            isPregnant, parity,
             bullView, motherMilk, grandmotherMilk, isHandicapped, handicapReason,
             acquisitionType, purchaseDate, purchasedFrom, purchasePrice, ownerName, ownerMobile,
             photoUrl,
             isUdderClosedFL, isUdderClosedFR, isUdderClosedBL, isUdderClosedBR,
             motherName, fatherName, motherId, fatherId
         } = req.body;
+
+        const bDate = new Date(birthDate);
+        const adultDate = new Date(bDate);
+        adultDate.setMonth(adultDate.getMonth() + 12);
+
+        const now = new Date();
+        const parityValue = parity ?? 0;
+
+        let autoLactating = false;
+        let autoHeifer = false;
+
+        if (gender === 'FEMALE') {
+            if (parityValue > 0) {
+                autoLactating = true;
+                autoHeifer = false;
+            } else if (now >= adultDate) {
+                autoHeifer = true;
+                autoLactating = false;
+            }
+        }
 
         // Duplicate tag check within same gaushala
         if (tagNumber) {
@@ -39,14 +59,14 @@ export const registerAnimal = async (req: any, res: Response, next: NextFunction
                 gaushalaId,
                 cowBreed: cowBreed || null,
                 cowGroup: cowGroup || null,
-                birthDate: birthDate ? new Date(birthDate) : null,
-                adultDate: adultDate ? new Date(adultDate) : null,
+                birthDate: bDate,
+                adultDate,
                 isPregnant: isPregnant ?? false,
-                lactationNumber: lactationNumber ?? null,
-                isLactating: isLactating ?? false,
-                isDryOff: isDryOff ?? false,
-                isHeifer: isHeifer ?? false,
-                isRetired: isRetired ?? false,
+                parity: parityValue,
+                isLactating: autoLactating,
+                isDryOff: false,
+                isHeifer: autoHeifer,
+                isRetired: false,
                 bullView: bullView || null,
                 motherMilk: motherMilk ?? null,
                 grandmotherMilk: grandmotherMilk ?? null,
@@ -82,21 +102,42 @@ export const registerAnimal = async (req: any, res: Response, next: NextFunction
     }
 };
 
-// ───────────────────────── Get Animals (Paginated) ─────────────────────────
-export const getAnimals = async (req: any, res: Response, next: NextFunction) => {
+// Helper for age calculation: "X years, Y days"
+const calculateAge = (birthDate: Date): string => {
+    const now = new Date();
+    const birth = new Date(birthDate);
+    const diffTime = Math.abs(now.getTime() - birth.getTime());
+    const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const years = Math.floor(totalDays / 365);
+    const days = totalDays % 365;
+    return `${years} years, ${days} days`;
+};
+
+// ───────────────────────── Get Cows (Paginated with Filters) ─────────────────────────
+export const getCows = async (req: any, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { status, gender, cowGroup, isLactating, search, page = '1', limit = '20' } = req.query;
+        const { filter = 'all', search, page = '1', limit = '20' } = req.query;
 
         const pageNum = Math.max(1, parseInt(page as string) || 1);
         const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
         const skip = (pageNum - 1) * limitNum;
 
-        const where: any = { gaushalaId };
-        if (cowGroup) where.cowGroup = cowGroup;
-        if (isLactating === 'true') where.isLactating = true;
-        if (status) where.status = status;
-        if (gender) where.gender = gender;
+        const now = new Date();
+        const twelveMonthsAgo = new Date(now);
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+        const where: any = { gaushalaId, gender: 'FEMALE' };
+
+        switch (filter) {
+            case 'lactating': where.isLactating = true; break;
+            case 'heifer': where.isHeifer = true; break;
+            case 'pregnant': where.isPregnant = true; break;
+            case 'dryoff': where.isDryOff = true; break;
+            case 'retired': where.isRetired = true; break;
+            case 'calves': where.birthDate = { gt: twelveMonthsAgo }; break;
+        }
+
         if (search) {
             where.OR = [
                 { name: { contains: search as string, mode: 'insensitive' } },
@@ -109,31 +150,121 @@ export const getAnimals = async (req: any, res: Response, next: NextFunction) =>
                 where,
                 skip,
                 take: limitNum,
+                select: {
+                    id: true,
+                    name: true,
+                    tagNumber: true,
+                    parity: true,
+                    isHeifer: true,
+                    isLactating: true,
+                    birthDate: true,
+                    adultDate: true,
+                    isRetired: true,
+                    photoUrl: true
+                },
                 orderBy: { createdAt: 'desc' }
             }),
             prisma.animal.count({ where })
         ]);
 
-        // Enrich with security-signed view URLs
         const bucket = process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos';
-        const animals = await Promise.all(animalsList.map(async (animal) => {
+        const cows = await Promise.all(animalsList.map(async (animal) => {
+            const enriched: any = {
+                ...animal,
+                age: animal.birthDate ? calculateAge(animal.birthDate) : 'N/A'
+            };
             if (animal.photoUrl) {
                 try {
-                    return {
-                        ...animal,
-                        viewUrl: await getPresignedViewUrl(bucket, animal.photoUrl)
-                    };
+                    enriched.viewUrl = await getPresignedViewUrl(bucket, animal.photoUrl);
                 } catch (err) {
-                    logger.error(`Error generating view URL for animal ${animal.id}:`, err);
-                    return animal;
+                    logger.error(`Error generating view URL for cow ${animal.id}:`, err);
                 }
             }
-            return animal;
+            return enriched;
         }));
 
         res.status(200).json({
             success: true,
-            animals,
+            cows,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: Math.ceil(total / limitNum)
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── Get Bulls (Paginated with Filters) ─────────────────────────
+export const getBulls = async (req: any, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.headers['gaushala-id'] as string;
+        const { filter = 'all', search, page = '1', limit = '20' } = req.query;
+
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
+
+        const now = new Date();
+        const twelveMonthsAgo = new Date(now);
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+        const where: any = { gaushalaId, gender: 'MALE' };
+
+        switch (filter) {
+            case 'retired': where.isRetired = true; break;
+            case 'calf': where.birthDate = { gt: twelveMonthsAgo }; break;
+        }
+
+        if (search) {
+            where.OR = [
+                { name: { contains: search as string, mode: 'insensitive' } },
+                { tagNumber: { contains: search as string, mode: 'insensitive' } }
+            ];
+        }
+
+        const [animalsList, total] = await Promise.all([
+            prisma.animal.findMany({
+                where,
+                skip,
+                take: limitNum,
+                select: {
+                    id: true,
+                    name: true,
+                    tagNumber: true,
+                    parity: true,
+                    birthDate: true,
+                    adultDate: true,
+                    isRetired: true,
+                    photoUrl: true
+                },
+                orderBy: { createdAt: 'desc' }
+            }),
+            prisma.animal.count({ where })
+        ]);
+
+        const bucket = process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos';
+        const bulls = await Promise.all(animalsList.map(async (animal) => {
+            const enriched: any = {
+                ...animal,
+                age: animal.birthDate ? calculateAge(animal.birthDate) : 'N/A'
+            };
+            if (animal.photoUrl) {
+                try {
+                    enriched.viewUrl = await getPresignedViewUrl(bucket, animal.photoUrl);
+                } catch (err) {
+                    logger.error(`Error generating view URL for bull ${animal.id}:`, err);
+                }
+            }
+            return enriched;
+        }));
+
+        res.status(200).json({
+            success: true,
+            bulls,
             pagination: {
                 page: pageNum,
                 limit: limitNum,
@@ -202,8 +333,8 @@ export const updateAnimal = async (req: any, res: Response, next: NextFunction) 
 
         const {
             name, tagNumber, animalNumber,
-            cowGroup, birthDate, adultDate,
-            isPregnant, lactationNumber, isLactating, isDryOff, isHeifer, isRetired,
+            cowGroup, birthDate,
+            isPregnant, parity, isLactating, isDryOff, isHeifer, isRetired,
             bullView, motherMilk, grandmotherMilk,
             isHandicapped, handicapReason,
             photoUrl,
@@ -227,13 +358,43 @@ export const updateAnimal = async (req: any, res: Response, next: NextFunction) 
         if (tagNumber !== undefined) updateData.tagNumber = tagNumber;
         if (animalNumber !== undefined) updateData.animalNumber = animalNumber;
         if (cowGroup !== undefined) updateData.cowGroup = cowGroup;
-        if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
-        if (adultDate !== undefined) updateData.adultDate = adultDate ? new Date(adultDate) : null;
+
+        // Automatic Logic for Dates and Statuses
+        const finalBirthDate = birthDate !== undefined ? new Date(birthDate) : existingAnimal.birthDate;
+        if (birthDate !== undefined) {
+            updateData.birthDate = finalBirthDate;
+            const newAdultDate = new Date(finalBirthDate!);
+            newAdultDate.setMonth(newAdultDate.getMonth() + 12);
+            updateData.adultDate = newAdultDate;
+        }
+
+        const finalParity = parity !== undefined ? parity : existingAnimal.parity;
+        if (parity !== undefined) updateData.parity = parity;
+
+        // Recalculate isLactating and isHeifer if parity or birthDate changed
+        if (existingAnimal.gender === 'FEMALE' && (parity !== undefined || birthDate !== undefined)) {
+            const currentAdultDate = updateData.adultDate || existingAnimal.adultDate;
+            const now = new Date();
+            const parityValue = finalParity ?? 0;
+
+            if (parityValue > 0) {
+                updateData.isLactating = true;
+                updateData.isHeifer = false;
+            } else if (currentAdultDate && now >= new Date(currentAdultDate)) {
+                updateData.isHeifer = true;
+                updateData.isLactating = false;
+            } else {
+                updateData.isHeifer = false;
+                updateData.isLactating = false;
+            }
+        } else {
+            // Respect manual overrides if provided and logic wasn't triggered
+            if (isLactating !== undefined) updateData.isLactating = isLactating;
+            if (isHeifer !== undefined) updateData.isHeifer = isHeifer;
+        }
+
         if (isPregnant !== undefined) updateData.isPregnant = isPregnant;
-        if (lactationNumber !== undefined) updateData.lactationNumber = lactationNumber;
-        if (isLactating !== undefined) updateData.isLactating = isLactating;
         if (isDryOff !== undefined) updateData.isDryOff = isDryOff;
-        if (isHeifer !== undefined) updateData.isHeifer = isHeifer;
         if (isRetired !== undefined) updateData.isRetired = isRetired;
         if (bullView !== undefined) updateData.bullView = bullView;
         if (motherMilk !== undefined) updateData.motherMilk = motherMilk;

@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerAnimal, getAnimals, getAnimalById, updateAnimal, generateUploadUrl } from '@controllers/animalController.js';
+import { registerAnimal, getCows, getBulls, getAnimalById, updateAnimal, generateUploadUrl } from '@controllers/animalController.js';
 import { recordSell, recordDeath, recordDonation, updateDisposalRecord } from '@controllers/disposalController.js';
 import { getGroups, createGroup, updateGroup, deleteGroup } from '@controllers/groupController.js';
 import { registerAnimalValidation, updateAnimalValidation, sellRecordValidation, deathRecordValidation, donationRecordValidation } from '@validators/animalValidators.js';
@@ -23,7 +23,8 @@ router.patch('/disposal/:type/:id', auth, gaushalaAuth(['OWNER', 'MANAGER']), up
 
 // ───────────────────────── Animals ─────────────────────────
 router.post('/add', auth, gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), registerAnimalValidation, registerAnimal);
-router.get('/', auth, gaushalaAuth(), getAnimals);
+router.get('/cows', auth, gaushalaAuth(), getCows);
+router.get('/bulls', auth, gaushalaAuth(), getBulls);
 router.patch('/update/:id', auth, gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), updateAnimalValidation, updateAnimal);
 router.get('/:id', auth, gaushalaAuth(), getAnimalById);
 

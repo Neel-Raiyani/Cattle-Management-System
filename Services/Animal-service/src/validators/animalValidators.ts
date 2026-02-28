@@ -34,11 +34,7 @@ export const registerAnimalValidation = [
         .optional()
         .isString().withMessage('Cow breed must be a string'),
     body('birthDate')
-        .optional()
         .isISO8601().withMessage('Birth date must be a valid ISO 8601 date'),
-    body('adultDate')
-        .optional()
-        .isISO8601().withMessage('Adult date must be a valid ISO 8601 date'),
     body('purchasePrice')
         .optional()
         .isFloat({ min: 0 }).withMessage('Purchase price must be a positive number'),
@@ -66,10 +62,9 @@ export const updateAnimalValidation = [
     body('isHeifer').optional().isBoolean().withMessage('isHeifer must be a boolean'),
     body('isRetired').optional().isBoolean().withMessage('isRetired must be a boolean'),
     body('isHandicapped').optional().isBoolean().withMessage('isHandicapped must be a boolean'),
-    body('lactationNumber').optional().isInt({ min: 0 }).withMessage('Lactation number must be a non-negative integer'),
+    body('parity').optional().isInt({ min: 0 }).withMessage('Parity must be a non-negative integer'),
     body('cowGroup').optional().isString().withMessage('Cow group must be a string'),
     body('birthDate').optional().isISO8601().withMessage('Birth date must be a valid ISO 8601 date'),
-    body('adultDate').optional().isISO8601().withMessage('Adult date must be a valid ISO 8601 date'),
     body('motherMilk').optional().isFloat({ min: 0 }).withMessage('Mother milk must be a positive number'),
     body('grandmotherMilk').optional().isFloat({ min: 0 }).withMessage('Grandmother milk must be a positive number'),
     body('isUdderClosedFL').optional().isBoolean().withMessage('isUdderClosedFL must be a boolean'),
