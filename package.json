@@ -2,7 +2,7 @@
   "name": "cattle-backend",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n \"Animal-service,Breeding-service,Health-service,Production-service,Gateway-service\" -c \"blue,green,yellow,magenta\" \"npm run dev --prefix services/Animal-service\" \"npm run dev --prefix services/Breeding-service\" \"npm run dev --prefix services/Health-service\" \"npm run dev --prefix services/Production-service\" \"npm run dev --prefix services/Gateway-service\""
+    "dev": "concurrently -n \"Animal-service,Breeding-service,Health-service,Production-service,Gateway-service\" -c \"blue,green,yellow,magenta\" \"npm run dev --prefix Services/Animal-service\" \"npm run dev --prefix Services/Breeding-service\" \"npm run dev --prefix Services/Health-service\" \"npm run dev --prefix Services/Production-service\" \"npm run dev --prefix Services/Gateway-service\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
