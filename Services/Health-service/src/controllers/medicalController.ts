@@ -1,17 +1,18 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import { AppError } from '@utils/AppError.js';
 
 /**
  * Record a new medical visit (Illness/Checkup).
  */
-export const recordMedicalVisit = async (req: any, res: Response, next: NextFunction) => {
+export const recordMedicalVisit = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const {
             animalId, visitType, visitDate, visitNumber,
             vetId, diseaseId, medicalStatus, symptoms, treatment
-        } = req.body;
+        } = req.body as any;
 
         // Verify animal exists in this gaushala
         const animal = await prisma.animal.findFirst({
@@ -50,7 +51,7 @@ export const recordMedicalVisit = async (req: any, res: Response, next: NextFunc
 /**
  * Update an existing medical record.
  */
-export const updateMedicalRecord = async (req: any, res: Response, next: NextFunction) => {
+export const updateMedicalRecord = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { id } = req.params;
@@ -89,17 +90,13 @@ export const updateMedicalRecord = async (req: any, res: Response, next: NextFun
 /**
  * Get all medical records for a specific animal.
  */
-export const getMedicalHistoryByAnimal = async (req: any, res: Response, next: NextFunction) => {
+export const getMedicalHistoryByAnimal = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { animalId } = req.params;
 
         const history = await prisma.medicalRecord.findMany({
             where: { animalId, gaushalaId },
-            include: {
-                // If we want to return disease names, we can join here
-                // Note: Diseases are global, so we can always join them.
-            },
             orderBy: { visitDate: 'desc' }
         });
 

@@ -42,7 +42,7 @@ export const initHeiferCron = () => {
             // Batch update isHeifer to true
             const updateCount = await prisma.animal.updateMany({
                 where: {
-                    id: { in: animalsToUpdate.map(a => a.id) }
+                    id: { in: animalsToUpdate.map((a: any) => a.id) }
                 },
                 data: {
                     isHeifer: true
@@ -52,7 +52,7 @@ export const initHeiferCron = () => {
             logger.info(`Successfully updated ${updateCount.count} animals to Heifer status.`);
 
             // Log individual updates for audit
-            animalsToUpdate.forEach(a => {
+            animalsToUpdate.forEach((a: any) => {
                 logger.info(`Animal updated to Heifer: ${a.name} (Tag: ${a.tagNumber || 'N/A'}, ID: ${a.id})`);
             });
 

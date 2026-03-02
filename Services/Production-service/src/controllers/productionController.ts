@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import { AppError } from '@utils/AppError.js';
 import logger from '@utils/logger.js';
 
@@ -29,7 +30,7 @@ export const recordYields = async (req: any, res: Response, next: NextFunction) 
         }));
 
         // Use transaction to ensure records and inventory are updated together
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // 1. Check Inventory
             const inventory = await tx.feedInventory.findUnique({
                 where: { gaushalaId }
@@ -126,7 +127,7 @@ export const updateYield = async (req: any, res: Response, next: NextFunction) =
         const newQuantity = quantity !== undefined ? Number(quantity) : (existing.quantity ?? 0);
         const newFeedQuantity = feedQuantity !== undefined ? Number(feedQuantity) : (existing.feedQuantity ?? 0);
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // 1. Calculate feed difference
             const oldFeed = existing.feedQuantity ?? 0;
             const diff = newFeedQuantity - oldFeed;
@@ -193,7 +194,7 @@ export const deleteYield = async (req: any, res: Response, next: NextFunction) =
             throw new AppError('Milk record not found', 404, 'RECORD_NOT_FOUND');
         }
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // 1. Delete Record
             await tx.milkRecord.delete({ where: { id } });
 

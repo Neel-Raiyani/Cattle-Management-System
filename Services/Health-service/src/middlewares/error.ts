@@ -19,7 +19,7 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
     }
 
     // ── 2. Prisma: Record not found (P2025) ──
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+    if (err instanceof (Prisma as any).PrismaClientKnownRequestError && err.code === 'P2025') {
         logger.error(`[RECORD_NOT_FOUND] ${err.message} - ${req.method} ${req.originalUrl}`);
         return res.status(404).json({
             success: false,
@@ -29,7 +29,7 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
     }
 
     // ── 3. Prisma: Unique constraint violation (P2002) ──
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+    if (err instanceof (Prisma as any).PrismaClientKnownRequestError && err.code === 'P2002') {
         const target = (err.meta?.target as string[])?.join(', ') || 'field';
         logger.error(`[DUPLICATE_ENTRY] ${target} - ${req.method} ${req.originalUrl}`);
         return res.status(409).json({
@@ -40,7 +40,7 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
     }
 
     // ── 4. Prisma: Invalid ObjectId format (P2023) ──
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2023') {
+    if (err instanceof (Prisma as any).PrismaClientKnownRequestError && err.code === 'P2023') {
         logger.error(`[INVALID_ID] ${err.message} - ${req.method} ${req.originalUrl}`);
         return res.status(400).json({
             success: false,
@@ -50,7 +50,7 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
     }
 
     // ── 5. Prisma: Validation Error ──
-    if (err instanceof Prisma.PrismaClientValidationError) {
+    if (err instanceof (Prisma as any).PrismaClientValidationError) {
         logger.error(`[VALIDATION_ERROR] ${err.message} - ${req.method} ${req.originalUrl}`);
         return res.status(400).json({
             success: false,

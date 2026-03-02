@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
 
@@ -12,7 +13,7 @@ export const recordSell = async (req: any, res: Response, next: NextFunction) =>
             amount, referenceBy, photoUrl, soldAt
         } = req.body;
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const animal = await tx.animal.findFirst({
                 where: { id: animalId, gaushalaId }
             });
@@ -66,7 +67,7 @@ export const recordDeath = async (req: any, res: Response, next: NextFunction) =
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { animalId, dateOfDeath, reason, lastPhotoUrl } = req.body;
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const animal = await tx.animal.findFirst({
                 where: { id: animalId, gaushalaId }
             });
@@ -119,7 +120,7 @@ export const recordDonation = async (req: any, res: Response, next: NextFunction
             referenceBy, photoUrl, donatedAt
         } = req.body;
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const animal = await tx.animal.findFirst({
                 where: { id: animalId, gaushalaId }
             });

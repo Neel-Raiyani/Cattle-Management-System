@@ -157,7 +157,7 @@ export const getCows = async (req: any, res: Response, next: NextFunction) => {
         ]);
 
         const bucket = process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos';
-        const cows = await Promise.all(animalsList.map(async (animal) => {
+        const cows = await Promise.all(animalsList.map(async (animal: any) => {
             const enriched: any = {
                 ...animal
             };
@@ -235,7 +235,7 @@ export const getBulls = async (req: any, res: Response, next: NextFunction) => {
         ]);
 
         const bucket = process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos';
-        const bulls = await Promise.all(animalsList.map(async (animal) => {
+        const bulls = await Promise.all(animalsList.map(async (animal: any) => {
             const enriched: any = {
                 ...animal
             };

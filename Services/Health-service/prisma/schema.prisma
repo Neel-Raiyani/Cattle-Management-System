@@ -110,6 +110,17 @@ model DewormingRecord {
 
 // ───────────────────────── External References (Partial Models) ─────────────────────────
 
+model UserGaushala {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  gaushalaId      String   @db.ObjectId
+  role            Role     @default(OWNER)
+  isActive        Boolean  @default(true)
+  joinedAt        DateTime @default(now())
+
+  @@unique([userId, gaushalaId])
+  @@map("user_gaushalas")
+}
 
 model Animal {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId

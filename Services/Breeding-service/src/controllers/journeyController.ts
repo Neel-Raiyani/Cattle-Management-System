@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
 import { getPresignedViewUrl } from '@utils/s3.js';
