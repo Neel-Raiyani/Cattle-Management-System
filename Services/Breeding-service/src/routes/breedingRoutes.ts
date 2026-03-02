@@ -2,14 +2,15 @@ import express from 'express';
 import { auth } from '@middlewares/auth.js';
 import { gaushalaAuth } from '@middlewares/gaushalaAuth.js';
 
-import { recordHeat, getHeatRecords, updateHeatRecord, deleteHeatRecord, getEligibleForHeat, getBullsForDropdown } from '@controllers/heatController.js';
+import { recordHeat, getHeatRecords, updateHeatRecord, deleteHeatRecord, getEligibleForHeat } from '@controllers/heatController.js';
 import { addDryOff, getDryOffRecords, updateDryOff, deleteDryOff, getEligibleForDryOffDropdown } from '@controllers/dryOffController.js';
 import { addParityRecord, getParityRecords, updateParityRecord } from '@controllers/parityController.js';
 import { getChildren } from '@controllers/lineageController.js';
 import {
     initiateJourney, updateJourneyInitiation, confirmPregnancy,
     markDryOff, recordDelivery, getJourneyDetails,
-    listJourneys, deleteJourney, getEligibleForDryOff
+    listJourneys, deleteJourney, getEligibleForDryOff,
+    getEligibleCowsForJourney, getBullsForDropdown
 } from '@controllers/journeyController.js';
 import {
     recordHeatValidation, updateHeatValidation,
@@ -60,6 +61,7 @@ router.get('/lineage/:id', auth, gaushalaAuth(), getChildren);
 // ───────────────────────── Conception Journeys ─────────────────────────
 router.post('/journey/initiate', auth, gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), initiateJourneyValidation, initiateJourney);
 router.get('/journey/list', auth, gaushalaAuth(), listJourneys);
+router.get('/journey/eligible-cows', auth, gaushalaAuth(), getEligibleCowsForJourney);
 router.get('/journey/eligible-dry-off', auth, gaushalaAuth(), getEligibleForDryOff);
 router.get('/journey/:id', auth, gaushalaAuth(), getJourneyDetails);
 router.put('/journey/:id', auth, gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), updateJourneyValidation, updateJourneyInitiation);

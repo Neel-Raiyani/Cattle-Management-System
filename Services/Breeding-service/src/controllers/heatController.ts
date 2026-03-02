@@ -145,32 +145,3 @@ export const getEligibleForHeat = async (req: any, res: Response, next: NextFunc
         next(error);
     }
 };
-// ───────────────────────── Get Bulls for Breeding Dropdown ─────────────────────────
-export const getBullsForDropdown = async (req: any, res: Response, next: NextFunction) => {
-    try {
-        const gaushalaId = req.gaushala.id as string;
-
-        const now = new Date();
-        const twelveMonthsAgo = new Date(now);
-        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-
-        // Bulls that are MALE, NOT retired, and NOT calves (>= 12 months)
-        const bulls = await prisma.animal.findMany({
-            where: {
-                gaushalaId,
-                gender: 'MALE',
-                isRetired: false,
-                birthDate: { lte: twelveMonthsAgo }
-            },
-            select: {
-                id: true,
-                tagNumber: true,
-                name: true
-            }
-        });
-
-        res.json({ success: true, data: bulls });
-    } catch (error) {
-        next(error);
-    }
-};

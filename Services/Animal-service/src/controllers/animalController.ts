@@ -102,17 +102,6 @@ export const registerAnimal = async (req: any, res: Response, next: NextFunction
     }
 };
 
-// Helper for age calculation: "X years, Y days"
-const calculateAge = (birthDate: Date): string => {
-    const now = new Date();
-    const birth = new Date(birthDate);
-    const diffTime = Math.abs(now.getTime() - birth.getTime());
-    const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const years = Math.floor(totalDays / 365);
-    const days = totalDays % 365;
-    return `${years} years, ${days} days`;
-};
-
 // ───────────────────────── Get Cows (Paginated with Filters) ─────────────────────────
 export const getCows = async (req: any, res: Response, next: NextFunction) => {
     try {
@@ -170,8 +159,7 @@ export const getCows = async (req: any, res: Response, next: NextFunction) => {
         const bucket = process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos';
         const cows = await Promise.all(animalsList.map(async (animal) => {
             const enriched: any = {
-                ...animal,
-                age: animal.birthDate ? calculateAge(animal.birthDate) : 'N/A'
+                ...animal
             };
             if (animal.photoUrl) {
                 try {
@@ -249,8 +237,7 @@ export const getBulls = async (req: any, res: Response, next: NextFunction) => {
         const bucket = process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos';
         const bulls = await Promise.all(animalsList.map(async (animal) => {
             const enriched: any = {
-                ...animal,
-                age: animal.birthDate ? calculateAge(animal.birthDate) : 'N/A'
+                ...animal
             };
             if (animal.photoUrl) {
                 try {

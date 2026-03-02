@@ -48,6 +48,52 @@ enum Gender {
   FEMALE
 }
 
+enum AnimalStatus {
+  ACTIVE
+  SOLD
+  DEAD
+  DONATED
+}
+
+enum AcquisitionType {
+  BIRTH
+  PURCHASE
+  DONATION
+}
+
+enum CowBreed {
+  Gir
+  Sahiwal
+  Red_Sindhi
+  Tharparkar
+  Kankrej
+  Rathi
+  Punganur
+  Badri
+  Hallikar
+  Kangayam
+  Hariana
+  Mewati
+  Nagori
+  Nimadi
+  Malvi
+  Kherigarh
+  Amritmahal
+  Umblachery
+  Pulikulam
+  Bargur
+  Ongole
+  Red_Kandhari
+  Gaolao
+  Gangatiri
+  Siri
+  Motu
+  Vechur
+  Jersey
+  Holstein_Friesian
+  Brown_Swiss
+}
+
 model UserGaushala {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   userId          String   @db.ObjectId
@@ -64,21 +110,53 @@ model Animal {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   name            String?
   tagNumber       String?
+  animalNumber    String?
   gender          Gender
   gaushalaId      String   @db.ObjectId
-  parity          Int?      @default(0)
-  isLactating     Boolean   @default(false)
-  isHeifer        Boolean   @default(false)
-  isPregnant      Boolean   @default(false)
-  isDryOff        Boolean   @default(false)
-  isRetired       Boolean   @default(false)
+  
+  cowBreed        CowBreed?
+  cowGroup        String?
+
   birthDate       DateTime?
   adultDate       DateTime?
+
+  isPregnant      Boolean   @default(false)
+  parity          Int?      @default(0)
+  isLactating     Boolean   @default(false)
+  isDryOff        Boolean   @default(false)
+  isHeifer        Boolean   @default(false)
+  isRetired       Boolean   @default(false)
+
+  bullView        String?
+  motherMilk      Float?
+  grandmotherMilk Float?
+  motherName      String?
+  fatherName      String?
   motherId        String?   @db.ObjectId
   fatherId        String?   @db.ObjectId
-  status          String    @default("ACTIVE") // ACTIVE, SOLD, DEAD, etc.
+
+  isHandicapped   Boolean   @default(false)
+  handicapReason  String?
+  
+  isUdderClosedFL Boolean   @default(false)
+  isUdderClosedFR Boolean   @default(false)
+  isUdderClosedBL Boolean   @default(false)
+  isUdderClosedBR Boolean   @default(false)
+
+  acquisitionType AcquisitionType
+  purchaseDate    DateTime?
+  purchasedFrom   String?
+  purchasePrice   Float?
+  ownerName       String?
+  ownerMobile     String?
+
+  status          AnimalStatus @default(ACTIVE)
   photoUrl        String?
 
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tagNumber, gaushalaId])
   @@map("animals")
 }
 

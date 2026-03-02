@@ -157,33 +157,46 @@ export const recordDelivery = async (req: any, res: Response, next: NextFunction
         const { id } = req.params;
         const {
             deliveryDate, calfStatus, calfGender,
+            calfName, calfTagNumber, calfBreed, calfGroup,
             calfAppearance, calfWeight,
             deliveryPhoto, calfPhoto
         } = req.body;
 
         // Mandatory fields enforced at controller level
-        if (!deliveryDate || !calfStatus || !calfGender) {
+        if (!deliveryDate || !calfStatus) {
             throw new AppError(
-                'deliveryDate, calfStatus, and calfGender are mandatory for delivery',
+                'deliveryDate and calfStatus are mandatory for delivery',
                 400,
                 'MISSING_MANDATORY_FIELDS'
             );
         }
 
-        const existingJourney = await prisma.conceptionJourney.findUnique({
-            where: { id, gaushalaId },
-            select: { animalId: true }
+        const journey = await prisma.conceptionJourney.findUnique({
+            where: { id, gaushalaId }
         });
 
-        if (!existingJourney) {
+        if (!journey) {
             throw new AppError('Conception journey not found', 404, 'JOURNEY_NOT_FOUND');
         }
 
-        const [updatedJourney] = await prisma.$transaction([
-            prisma.conceptionJourney.update({
+        const mother = await prisma.animal.findUnique({
+            where: { id: journey.animalId }
+        });
+
+        if (!mother) {
+            throw new AppError('Mother animal not found', 404, 'MOTHER_NOT_FOUND');
+        }
+
+        const bDate = new Date(deliveryDate);
+        const adultDate = new Date(bDate);
+        adultDate.setMonth(adultDate.getMonth() + 12);
+
+        await prisma.$transaction(async (tx: any) => {
+            // 1. Update Journey
+            await tx.conceptionJourney.update({
                 where: { id, gaushalaId },
                 data: {
-                    deliveryDate: new Date(deliveryDate),
+                    deliveryDate: bDate,
                     calfStatus,
                     calfGender,
                     calfAppearance: calfAppearance || null,
@@ -192,15 +205,61 @@ export const recordDelivery = async (req: any, res: Response, next: NextFunction
                     calfPhoto: calfPhoto || null,
                     status: 'COMPLETED'
                 }
-            }),
-            prisma.animal.update({
-                where: { id: existingJourney.animalId },
-                data: { parity: { increment: 1 } }
-            })
-        ]);
+            });
 
-        logger.info(`Journey ${id} COMPLETED — delivery recorded. Animal parity increased.`);
-        res.json({ success: true, message: 'Delivery recorded, journey completed, and animal parity increased', data: updatedJourney });
+            // 2. Increment Mother's Parity & Set Lactating
+            await tx.animal.update({
+                where: { id: journey.animalId },
+                data: {
+                    parity: { increment: 1 },
+                    isLactating: true,
+                    isPregnant: false,
+                    isDryOff: false
+                }
+            });
+
+            // 3. Register Calf (if ALIVE)
+            if (calfStatus === 'ALIVE') {
+                // Duplicate tag check for calf
+                if (calfTagNumber) {
+                    const existingTag = await tx.animal.findUnique({
+                        where: { tagNumber_gaushalaId: { tagNumber: calfTagNumber, gaushalaId } }
+                    });
+                    if (existingTag) {
+                        throw new AppError('Calf tag number already exists in this Gaushala', 409, 'DUPLICATE_TAG');
+                    }
+                }
+
+                await tx.animal.create({
+                    data: {
+                        name: calfName,
+                        tagNumber: calfTagNumber,
+                        gender: calfGender,
+                        gaushalaId,
+                        cowBreed: calfBreed || mother.cowBreed || null,
+                        cowGroup: calfGroup || mother.cowGroup || null,
+                        birthDate: bDate,
+                        adultDate,
+                        acquisitionType: 'BIRTH',
+                        status: 'ACTIVE',
+                        motherId: mother.id,
+                        motherName: mother.name || null,
+                        fatherName: journey.bullName || null,
+                        fatherId: journey.bullId || null,
+                        photoUrl: calfPhoto || null,
+                        parity: 0,
+                        isHeifer: false,
+                        isLactating: false,
+                        isRetired: false,
+                        isPregnant: false,
+                        isDryOff: false
+                    }
+                });
+            }
+        });
+
+        logger.info(`Journey ${id} COMPLETED — delivery recorded atomically. Mother parity updated, calf registered if alive.`);
+        res.json({ success: true, message: 'Delivery recorded, journey completed, mother parity updated, and calf registered if alive' });
     } catch (error) {
         next(error);
     }
@@ -301,9 +360,7 @@ export const listJourneys = async (req: any, res: Response, next: NextFunction) 
                 conceiveDate: j.conceiveDate,
                 pdDate: j.pdDate || null,
                 dryOffDate: j.dryOffDate || null,
-                totalDays,
-                deliveryViewUrl,
-                calfViewUrl
+                totalDays
             };
         }));
 
@@ -341,6 +398,91 @@ export const getEligibleForDryOff = async (req: any, res: Response, next: NextFu
         });
 
         res.json({ success: true, data: journeys });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── Get Eligible Cows for Conception Journey ─────────────────────────
+export const getEligibleCowsForJourney = async (req: any, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.gaushala.id as string;
+
+        // 1. Fetch all female, active, non-retired cows that are either Heifers or Lactating
+        const cows = await prisma.animal.findMany({
+            where: {
+                gaushalaId,
+                gender: 'FEMALE',
+                status: 'ACTIVE',
+                isRetired: false,
+                OR: [
+                    { isHeifer: true },
+                    { isLactating: true }
+                ]
+            },
+            select: {
+                id: true,
+                tagNumber: true,
+                name: true,
+                isHeifer: true,
+                isLactating: true
+            }
+        });
+
+        // 2. Fetch animals with active journeys (not COMPLETED or FAILED)
+        const activeJourneys = await prisma.conceptionJourney.findMany({
+            where: {
+                gaushalaId,
+                status: { notIn: ['COMPLETED', 'FAILED'] }
+            },
+            select: { animalId: true }
+        });
+        const journeyAnimalIds = new Set(activeJourneys.map(j => j.animalId));
+
+        // 3. Fetch animals with active dry-off records
+        const dryOffs = await prisma.dryOffRecord.findMany({
+            where: { gaushalaId },
+            select: { animalId: true }
+        });
+        const dryOffAnimalIds = new Set(dryOffs.map(d => d.animalId));
+
+        // 4. Filter cows
+        const eligibleCows = cows.filter(c =>
+            !journeyAnimalIds.has(c.id) &&
+            !dryOffAnimalIds.has(c.id)
+        );
+
+        res.json({ success: true, data: eligibleCows });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── Get Bulls for Breeding Dropdown ─────────────────────────
+export const getBullsForDropdown = async (req: any, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.gaushala.id as string;
+
+        const now = new Date();
+        const twelveMonthsAgo = new Date(now);
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+        // Bulls that are MALE, NOT retired, and NOT calves (>= 12 months)
+        const bulls = await prisma.animal.findMany({
+            where: {
+                gaushalaId,
+                gender: 'MALE',
+                isRetired: false,
+                birthDate: { lte: twelveMonthsAgo }
+            },
+            select: {
+                id: true,
+                tagNumber: true,
+                name: true
+            }
+        });
+
+        res.json({ success: true, data: bulls });
     } catch (error) {
         next(error);
     }

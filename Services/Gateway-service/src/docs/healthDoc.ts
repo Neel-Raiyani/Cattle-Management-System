@@ -2,12 +2,13 @@
  * @swagger
  * tags:
  *   - name: Health Service
- *     description: Animal health management, medical records, vaccinations, and deworming (Health-service via Gateway)
+ *     description: Animal health lifecycle management, including disease tracking, vaccinations, medical history, and deworming.
  *
  * components:
  *   schemas:
  *     DiseaseMaster:
  *       type: object
+ *       description: Reference record for a known bovine disease.
  *       properties:
  *         id:
  *           type: string
@@ -15,9 +16,11 @@
  *         name:
  *           type: string
  *           example: 'Foot and Mouth Disease'
+ *           description: Common name of the illness.
  *
  *     VaccineMaster:
  *       type: object
+ *       description: Reference record for available vaccines.
  *       properties:
  *         id:
  *           type: string
@@ -25,85 +28,102 @@
  *         name:
  *           type: string
  *           example: 'FMD Vaccine'
+ *           description: Commercial or scientific name of the vaccine.
  *
  *     MedicalRecord:
  *       type: object
+ *       description: Detailed entry for a veterinary visit or health check.
  *       required: [animalId, visitType, visitDate, medicalStatus]
  *       properties:
  *         id:
  *           type: string
- *           example: '65d1234567890abcdef12347'
  *         animalId:
  *           type: string
  *           format: mongo-id
+ *           description: Host animal ID.
  *         visitType:
  *           type: string
  *           enum: [ILLNESS, CHECKUP]
+ *           description: Reason for the veterinary interaction.
  *         visitDate:
  *           type: string
  *           format: date-time
+ *           description: Precise date of the visit.
  *         visitNumber:
  *           type: string
+ *           description: Internal visit sequence or token.
  *         vetId:
  *           type: string
  *           format: mongo-id
+ *           description: ID of the attending veterinarian (Managed in Auth/Gaushala).
  *         diseaseId:
  *           type: string
  *           format: mongo-id
+ *           description: diagnosed disease (if visitType is ILLNESS).
  *         medicalStatus:
  *           type: string
  *           enum: [SICK, HEALTHY]
+ *           description: Resulting health status after the visit.
  *         symptoms:
  *           type: string
+ *           description: Observed signs of illness.
  *         treatment:
  *           type: string
+ *           description: Prescribed medications or actions.
  *
  *     VaccinationRecord:
  *       type: object
+ *       description: Documentation for a single vaccine dose administration.
  *       required: [animalId, doseDate, doseType, vaccineId]
  *       properties:
  *         id:
  *           type: string
  *         animalId:
  *           type: string
- *           format: mongo-id
  *         doseDate:
  *           type: string
  *           format: date-time
+ *           description: Date of administration.
  *         doseType:
  *           type: string
  *           enum: [FIRST, BOOSTER, REPEAT]
+ *           description: Placement in the vaccination cycle.
  *         vaccineId:
  *           type: string
  *           format: mongo-id
+ *           description: Reference to VaccineMaster.
  *         remark:
  *           type: string
  *
  *     DewormingRecord:
  *       type: object
+ *       description: Tracking for internal parasite treatments.
  *       required: [animalId, doseDate, doseType]
  *       properties:
  *         id:
  *           type: string
  *         animalId:
  *           type: string
- *           format: mongo-id
  *         doseDate:
  *           type: string
  *           format: date-time
  *         doseType:
  *           type: string
  *           enum: [INJECTION, TABLET]
+ *           description: Mode of administration.
  *         companyName:
  *           type: string
+ *           description: Manufacturer of the dewormer.
  *         quantity:
  *           type: string
+ *           example: '500mg'
  *         vetId:
  *           type: string
  *           format: mongo-id
  *         nextDoseDate:
  *           type: string
  *           format: date-time
+ *           description: Scheduled date for followup.
  */
 
 // ───────────────────────── Master Lists ─────────────────────────
@@ -112,13 +132,15 @@
  * @swagger
  * /api/health/master/diseases:
  *   get:
- *     summary: Get all disease master records
+ *     summary: List all cataloged diseases
+ *     description: Retrieves the global master list of diseases for selection in records.
  *     tags: [Health Service]
  *     responses:
  *       200:
- *         description: List of diseases
+ *         description: Disease array.
  *   post:
- *     summary: Add a new disease to master list
+ *     summary: Add to disease catalog
+ *     description: Creates a new disease master record for use across the platform.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -132,22 +154,25 @@
  *             properties:
  *               name:
  *                 type: string
+ *                 example: Lumpy Skin Disease
  *     responses:
  *       201:
- *         description: Disease added
+ *         description: Master entry created.
  */
 
 /**
  * @swagger
  * /api/health/master/vaccines:
  *   get:
- *     summary: Get all vaccine master records
+ *     summary: List all vaccines
+ *     description: Retrieves the global master list of available vaccinations.
  *     tags: [Health Service]
  *     responses:
  *       200:
- *         description: List of vaccines
+ *         description: Vaccine array.
  *   post:
- *     summary: Add a new vaccine to master list
+ *     summary: Add to vaccine catalog
+ *     description: Creates a new vaccine master entry.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -161,9 +186,10 @@
  *             properties:
  *               name:
  *                 type: string
+ *                 example: Brucellosis Vaccine
  *     responses:
  *       201:
- *         description: Vaccine added
+ *         description: Master entry created.
  */
 
 // ───────────────────────── Medical Records ─────────────────────────
@@ -172,7 +198,8 @@
  * @swagger
  * /api/health/medical:
  *   post:
- *     summary: Record a medical visit
+ *     summary: Record medical encounter
+ *     description: Documents a physical checkup or illness treatment. Updates the animal's internal health flags.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -186,9 +213,10 @@
  *             $ref: '#/components/schemas/MedicalRecord'
  *     responses:
  *       201:
- *         description: Record created
+ *         description: Encounter archived.
  *   get:
- *     summary: Get medical history by animal
+ *     summary: Animal health history
+ *     description: Retrieves all medical/encounter records for a specific animal.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -197,18 +225,18 @@
  *       - in: query
  *         name: animalId
  *         required: true
- *         schema:
- *           type: string
+ *         description: Target animal ID.
  *     responses:
  *       200:
- *         description: List of medical records
+ *         description: Multi-entry history.
  */
 
 /**
  * @swagger
  * /api/health/medical/{id}:
  *   patch:
- *     summary: Update a medical record
+ *     summary: Update medical record
+ *     description: Modifies symptoms, treatment, or vet details for an existing record.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -216,8 +244,6 @@
  *       - name: id
  *         in: path
  *         required: true
- *         schema:
- *           type: string
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
@@ -227,7 +253,7 @@
  *             $ref: '#/components/schemas/MedicalRecord'
  *     responses:
  *       200:
- *         description: Record updated
+ *         description: Changes saved.
  */
 
 // ───────────────────────── Vaccination ─────────────────────────
@@ -236,7 +262,8 @@
  * @swagger
  * /api/health/vaccination:
  *   post:
- *     summary: Record a vaccination
+ *     summary: Log a vaccination dose
+ *     description: Registers a specific dose against an animal and the global vaccine catalog.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -250,9 +277,10 @@
  *             $ref: '#/components/schemas/VaccinationRecord'
  *     responses:
  *       201:
- *         description: Record created
+ *         description: Dose documented.
  *   get:
- *     summary: Get vaccination history by animal
+ *     summary: Vaccination timeline
+ *     description: Retrieves all doses and booster shots recorded for an animal.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -261,18 +289,17 @@
  *       - in: query
  *         name: animalId
  *         required: true
- *         schema:
- *           type: string
  *     responses:
  *       200:
- *         description: List of vaccination records
+ *         description: Timeline array.
  */
 
 /**
  * @swagger
  * /api/health/vaccination/{id}:
  *   patch:
- *     summary: Update a vaccination record
+ *     summary: Adjust vaccination record
+ *     description: Updates dose type or remarks for an existing vaccination entry.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -280,8 +307,6 @@
  *       - name: id
  *         in: path
  *         required: true
- *         schema:
- *           type: string
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
@@ -291,7 +316,7 @@
  *             $ref: '#/components/schemas/VaccinationRecord'
  *     responses:
  *       200:
- *         description: Record updated
+ *         description: Updated.
  */
 
 // ───────────────────────── Deworming ─────────────────────────
@@ -300,7 +325,8 @@
  * @swagger
  * /api/health/deworming:
  *   post:
- *     summary: Record a single deworming dose
+ *     summary: Individual deworming
+ *     description: Records a single deworming treatment for one animal.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -314,9 +340,10 @@
  *             $ref: '#/components/schemas/DewormingRecord'
  *     responses:
  *       201:
- *         description: Record created
+ *         description: Dose recorded.
  *   get:
- *     summary: Get deworming history by animal
+ *     summary: Deworming history
+ *     description: Lists past deworming doses for an animal, including upcoming scheduled doses.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -325,18 +352,17 @@
  *       - in: query
  *         name: animalId
  *         required: true
- *         schema:
- *           type: string
  *     responses:
  *       200:
- *         description: List of deworming records
+ *         description: History retrieved.
  */
 
 /**
  * @swagger
  * /api/health/deworming/bulk:
  *   post:
- *     summary: Record deworming for multiple animals
+ *     summary: Batch deworming
+ *     description: Efficiently records a shared deworming event for a group of animals.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -354,6 +380,7 @@
  *                 type: array
  *                 items:
  *                   type: string
+ *                 description: Subset of animal IDs treated.
  *               doseDate:
  *                 type: string
  *                 format: date-time
@@ -371,14 +398,15 @@
  *                 format: date-time
  *     responses:
  *       201:
- *         description: Bulk records created
+ *         description: All individual records created atomically.
  */
 
 /**
  * @swagger
  * /api/health/deworming/list:
  *   get:
- *     summary: List deworming records for a gaushala (recent first)
+ *     summary: Gaushala-wide deworming feed
+ *     description: Returns the latest deworming events across all animals in the gaushala.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -386,14 +414,15 @@
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
- *         description: List of recent deworming events
+ *         description: Paginated deworming log.
  */
 
 /**
  * @swagger
  * /api/health/deworming/{id}:
  *   patch:
- *     summary: Update a deworming record
+ *     summary: Update deworming dose
+ *     description: Modifies quantity, company, or next dose date for a record.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -401,8 +430,6 @@
  *       - name: id
  *         in: path
  *         required: true
- *         schema:
- *           type: string
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
@@ -412,7 +439,7 @@
  *             $ref: '#/components/schemas/DewormingRecord'
  *     responses:
  *       200:
- *         description: Record updated
+ *         description: Updated.
  */
 
 // ───────────────────────── Timeline ─────────────────────────
@@ -421,7 +448,8 @@
  * @swagger
  * /api/health/timeline/{animalId}:
  *   get:
- *     summary: Get universal health feed for an animal
+ *     summary: Integrated Health Passport
+ *     description: "Returns a chronological merged feed of ALL health interactions: Medical visits, Vaccinations, and Deworming doses."
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -429,12 +457,10 @@
  *       - name: animalId
  *         in: path
  *         required: true
- *         schema:
- *           type: string
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
- *         description: Merged timeline of medical, vaccination, and deworming records
+ *         description: Full chronological health timeline.
  */
 
 /**
@@ -447,5 +473,5 @@
  *       required: true
  *       schema:
  *         type: string
- *         description: ID of the gaushala to scope the request
+ *         description: Multi-tenant scope identifier for the gaushala.
  */

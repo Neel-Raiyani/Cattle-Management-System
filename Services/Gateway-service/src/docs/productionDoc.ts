@@ -2,12 +2,13 @@
  * @swagger
  * tags:
  *   - name: Production Service
- *     description: Milk production, feed inventory, and distribution management (Production-service via Gateway)
+ *     description: Management of milk yields, distribution categories, and feed inventory tracking.
  *
  * components:
  *   schemas:
  *     MilkDistributionCategory:
  *       type: object
+ *       description: Destination category for milk distribution (e.g. Sales, Home, Staff).
  *       properties:
  *         id:
  *           type: string
@@ -18,16 +19,18 @@
  *
  *     FeedInventory:
  *       type: object
+ *       description: Live stock level for animal feed.
  *       properties:
  *         gaushalaId:
  *           type: string
  *         totalQuantity:
  *           type: number
- *           description: Current feed stock in Kg
+ *           description: Current remaining stock (Kg).
  *           example: 500.5
  *
  *     MilkRecord:
  *       type: object
+ *       description: Individual milking event for a cow and session.
  *       required: [animalId, date, session, quantity]
  *       properties:
  *         id:
@@ -38,18 +41,20 @@
  *         date:
  *           type: string
  *           format: date
+ *           description: Date of milking.
  *         session:
  *           type: string
  *           enum: [MORNING, EVENING]
  *         quantity:
  *           type: number
- *           description: Milk in Liters
+ *           description: Milk produced (Liters).
  *         feedQuantity:
  *           type: number
- *           description: Feed consumed in Kg
+ *           description: Feed consumed during this milking (Kg).
  *
  *     DistributionRecord:
  *       type: object
+ *       description: Documentation of milk allocation from the gaushala pool.
  *       required: [date, session, categoryId, quantity]
  *       properties:
  *         id:
@@ -63,9 +68,10 @@
  *         categoryId:
  *           type: string
  *           format: mongo-id
+ *           description: ID of target category (e.g., Sales).
  *         quantity:
  *           type: number
- *           description: Milk in Liters
+ *           description: Total milk allocated (Liters).
  */
 
 // ───────────────────────── Categories ─────────────────────────
@@ -74,7 +80,8 @@
  * @swagger
  * /api/production/categories:
  *   get:
- *     summary: Get all milk distribution categories
+ *     summary: List distribution destinations
+ *     description: Retrieves all categories defined for milk allocation in the gaushala.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -82,9 +89,10 @@
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
- *         description: List of categories
+ *         description: Category collection.
  *   post:
- *     summary: Create a new distribution category
+ *     summary: Define new allocation category
+ *     description: Creates a new logical destination for milk distribution.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -100,16 +108,17 @@
  *             properties:
  *               name:
  *                 type: string
+ *                 example: Local Market Sales
  *     responses:
  *       201:
- *         description: Category created
+ *         description: Category created.
  */
 
 /**
  * @swagger
  * /api/production/categories/{id}:
  *   patch:
- *     summary: Update a category
+ *     summary: Rename category
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -117,8 +126,6 @@
  *       - name: id
  *         in: path
  *         required: true
- *         schema:
- *           type: string
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
@@ -131,9 +138,10 @@
  *                 type: string
  *     responses:
  *       200:
- *         description: Category updated
+ *         description: Updated.
  *   delete:
- *     summary: Delete a category
+ *     summary: Remove category
+ *     description: "Warning: Only categories without historical data should be deleted."
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -141,12 +149,10 @@
  *       - name: id
  *         in: path
  *         required: true
- *         schema:
- *           type: string
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
- *         description: Category deleted
+ *         description: Category removed.
  */
 
 // ───────────────────────── Inventory ─────────────────────────
@@ -155,7 +161,8 @@
  * @swagger
  * /api/production/inventory:
  *   get:
- *     summary: Get current feed inventory status
+ *     summary: Current Feed Situation
+ *     description: Returns the total current quantity of feed available in the gaushala warehouse.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -163,14 +170,15 @@
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
- *         description: Current stock level in Kg
+ *         description: Inventory snapshot in Kg.
  */
 
 /**
  * @swagger
  * /api/production/inventory/update:
  *   post:
- *     summary: Update feed inventory (add/correct stock)
+ *     summary: Refill Feed Stock
+ *     description: Adds or corrects the current feed inventory level.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -186,12 +194,13 @@
  *             properties:
  *               quantity:
  *                 type: number
- *                 description: Quantity to add (positive) or subtract (negative) in Kg
+ *                 description: Amount in Kg (Decimal supported).
  *               description:
  *                 type: string
+ *                 example: New procurement from ABC Mills.
  *     responses:
  *       200:
- *         description: Inventory updated
+ *         description: Stock level updated.
  */
 
 // ───────────────────────── Yields / Production ─────────────────────────
@@ -200,8 +209,8 @@
  * @swagger
  * /api/production/yields:
  *   post:
- *     summary: Record milk yields in bulk
- *     description: Records yields and automatically deducts feed from inventory.
+ *     summary: Batch Milk & Feed Entry
+ *     description: Efficiency-focused endpoint to record yields for multiple animals at once. Automatically deducts the entered feedQuantity from FeedInventory.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -231,15 +240,16 @@
  *                       type: string
  *                     quantity:
  *                       type: number
- *                       description: Milk in Liters
+ *                       description: Milk in Liters.
  *                     feedQuantity:
  *                       type: number
- *                       description: Feed in Kg
+ *                       description: Feed in Kg consumed by this cow during milking.
  *     responses:
  *       201:
- *         description: Yields recorded
+ *         description: Session yields recorded.
  *   get:
- *     summary: Get yield records for a date and session
+ *     summary: List session yields
+ *     description: Retrieves all individual milk entries for a specific gaushala on a given date and session.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -259,14 +269,14 @@
  *           enum: [MORNING, EVENING]
  *     responses:
  *       200:
- *         description: List of yields
+ *         description: Production list.
  */
 
 /**
  * @swagger
  * /api/production/yields/{id}:
  *   patch:
- *     summary: Update a yield record
+ *     summary: Correct yield entry
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -274,8 +284,6 @@
  *       - name: id
  *         in: path
  *         required: true
- *         schema:
- *           type: string
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
@@ -290,9 +298,10 @@
  *                 type: number
  *     responses:
  *       200:
- *         description: Record updated
+ *         description: Re-saved and inventory adjusted.
  *   delete:
- *     summary: Delete a yield record
+ *     summary: Remove yield record
+ *     description: Deletes record and reverses the inventory deduction.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -300,12 +309,10 @@
  *       - name: id
  *         in: path
  *         required: true
- *         schema:
- *           type: string
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
- *         description: Record deleted
+ *         description: Deleted.
  */
 
 // ───────────────────────── Distribution ─────────────────────────
@@ -314,7 +321,8 @@
  * @swagger
  * /api/production/distribution:
  *   post:
- *     summary: Record milk distribution
+ *     summary: Allocate produced milk
+ *     description: Records the usage or sale of accumulated milk into specific categories.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -328,9 +336,9 @@
  *             $ref: '#/components/schemas/DistributionRecord'
  *     responses:
  *       201:
- *         description: Distribution recorded
+ *         description: Distribution archived.
  *   get:
- *     summary: Get distribution records
+ *     summary: Filter distribution records
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -338,17 +346,11 @@
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: date
- *         schema:
- *           type: string
- *           format: date
  *       - in: query
  *         name: session
- *         schema:
- *           type: string
- *           enum: [MORNING, EVENING]
  *     responses:
  *       200:
- *         description: List of distribution records
+ *         description: Allocation list.
  */
 
 // ───────────────────────── Reports ─────────────────────────
@@ -357,8 +359,8 @@
  * @swagger
  * /api/production/reports/daily:
  *   get:
- *     summary: Daily Milk Report
- *     description: Detailed feed vs milk for all recorded animals for a specific date.
+ *     summary: Session performance summary
+ *     description: Returns gaushala-wide totals for production vs consumption for a specific day.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -367,20 +369,17 @@
  *       - in: query
  *         name: date
  *         required: true
- *         schema:
- *           type: string
- *           format: date
  *     responses:
  *       200:
- *         description: Daily report data
+ *         description: Daily totals.
  */
 
 /**
  * @swagger
  * /api/production/reports/monthly:
  *   get:
- *     summary: Monthly Milk Report
- *     description: Aggregated gaushala-wide totals per day for a month.
+ *     summary: Monthly dashboard data
+ *     description: Aggregates gaushala production totals daily for an entire month (Calendar view data).
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -389,26 +388,20 @@
  *       - in: query
  *         name: year
  *         required: true
- *         schema:
- *           type: integer
  *       - in: query
  *         name: month
  *         required: true
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 12
  *     responses:
  *       200:
- *         description: Monthly aggregation
+ *         description: Monthly aggregation data.
  */
 
 /**
  * @swagger
  * /api/production/reports/cow/{animalId}:
  *   get:
- *     summary: Cow Monthly Report
- *     description: Detailed 30-day view for a specific animal.
+ *     summary: Cow performance history
+ *     description: Provides a detailed 30-day performance view for a single cow within the specified month.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -416,8 +409,6 @@
  *       - name: animalId
  *         in: path
  *         required: true
- *         schema:
- *           type: string
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: year
@@ -427,15 +418,15 @@
  *         required: true
  *     responses:
  *       200:
- *         description: Animal performance history
+ *         description: Individual performance data.
  */
 
 /**
  * @swagger
  * /api/production/reports/distribution:
  *   get:
- *     summary: Distribution Summary
- *     description: Breakdown of milk allocation by category for a period.
+ *     summary: Distribution breakdown
+ *     description: Aggregates distribution records by category over a date range.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -443,25 +434,19 @@
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: startDate
- *         schema:
- *           type: string
- *           format: date
  *       - in: query
  *         name: endDate
- *         schema:
- *           type: string
- *           format: date
  *     responses:
  *       200:
- *         description: Allocation summary
+ *         description: Summary report.
  */
 
 /**
  * @swagger
  * /api/production/reports/parity:
  *   get:
- *     summary: Parity Report
- *     description: Yield trends indexed by parity stats.
+ *     summary: Parity Correlation Report
+ *     description: Analyzes milk yield trends against animal parity numbers (e.g. comparing 1st vs 3rd lactation yields).
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -469,5 +454,5 @@
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
- *         description: Parity performance data
+ *         description: Parity performance metrics.
  */

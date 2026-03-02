@@ -13,27 +13,42 @@ export const addParityRecord = async (req: any, res: Response, next: NextFunctio
             dryOffDate, note
         } = req.body;
 
-        const record = await prisma.parityRecord.create({
-            data: {
-                animalId,
-                gaushalaId,
-                parityNo,
-                cowPhoto: cowPhoto || null,
-                pregnancyType,
-                bullId: bullId || null,
-                bullName: bullName || null,
-                deliveryDate: new Date(deliveryDate),
-                pregnancyDate: new Date(pregnancyDate),
-                dryOffDate: dryOffDate ? new Date(dryOffDate) : null,
-                note: note || null
-            }
+        const result = await prisma.$transaction(async (tx) => {
+            const record = await tx.parityRecord.create({
+                data: {
+                    animalId,
+                    gaushalaId,
+                    parityNo,
+                    cowPhoto: cowPhoto || null,
+                    pregnancyType,
+                    bullId: bullId || null,
+                    bullName: bullName || null,
+                    deliveryDate: new Date(deliveryDate),
+                    pregnancyDate: new Date(pregnancyDate),
+                    dryOffDate: dryOffDate ? new Date(dryOffDate) : null,
+                    note: note || null
+                }
+            });
+
+            // Update animal status
+            await tx.animal.update({
+                where: { id: animalId },
+                data: {
+                    parity: parityNo,
+                    isLactating: true,
+                    isDryOff: false,
+                    isPregnant: false
+                }
+            });
+
+            return record;
         });
 
-        logger.info(`Parity record added for animal ${animalId}, parity ${parityNo}`);
+        logger.info(`Parity record added for animal ${animalId}, parity ${parityNo}. Animal status updated.`);
         res.status(201).json({
             success: true,
-            message: 'Parity record added successfully',
-            data: record
+            message: 'Parity record added successfully and animal status updated',
+            data: result
         });
     } catch (error) {
         next(error);
