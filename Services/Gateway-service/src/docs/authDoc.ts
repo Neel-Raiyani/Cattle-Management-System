@@ -12,6 +12,43 @@
  *       bearerFormat: JWT
  *
  *   schemas:
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         errorCode:
+ *           type: string
+ *           example: 'UNAUTHORIZED'
+ *         message:
+ *           type: string
+ *           example: 'Invalid authentication token'
+ *
+ *     ValidationErrorResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         errorCode:
+ *           type: string
+ *           example: 'VALIDATION_FAILED'
+ *         message:
+ *           type: string
+ *           example: 'Request validation failed'
+ *         errors:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               field:
+ *                 type: string
+ *                 example: 'mobileNumber'
+ *               message:
+ *                 type: string
+ *                 example: 'Valid Indian mobile number is required'
+ *
  *     User:
  *       type: object
  *       description: Details of the authenticated user.
@@ -72,6 +109,26 @@
  *         city:
  *           type: string
  *           description: Gaushala City.
+ *
+ *     Staff:
+ *       type: object
+ *       description: Details for adding/updating gaushala staff.
+ *       required: [mobileNumber, name, city, role]
+ *       properties:
+ *         mobileNumber:
+ *           type: string
+ *           pattern: '^[6-9]\d{9}$'
+ *           example: '9876543210'
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           example: 'Rahul Sharma'
+ *         city:
+ *           type: string
+ *           minLength: 1
+ *         role:
+ *           type: string
+ *           enum: [MANAGER, STAFF, VETERINARIAN]
  */
 
 /**
@@ -91,25 +148,31 @@
  *             properties:
  *               mobileNumber:
  *                 type: string
+ *                 pattern: '^[6-9]\d{9}$'
  *                 example: '9876543210'
- *                 description: Unique 10-digit mobile number.
+ *                 description: Valid 10-digit Indian mobile number.
  *               password:
  *                 type: string
  *                 format: password
+ *                 minLength: 6
  *                 example: Password@123
- *                 description: Secure password for login.
+ *                 description: Secure password (Min 6 characters).
  *               name:
  *                 type: string
+ *                 minLength: 1
  *                 example: Neel Raiyani
  *               city:
  *                 type: string
+ *                 minLength: 1
  *                 example: Rajkot
  *               gaushalaName:
  *                 type: string
+ *                 minLength: 1
  *                 example: Gopal Gaushala
  *                 description: Name of the first gaushala to be created.
  *               totalCattle:
  *                 type: integer
+ *                 minimum: 0
  *                 example: 50
  *                 description: Estimated initial cattle count.
  *     responses:
@@ -117,6 +180,14 @@
  *         description: User and Gaushala registered successfully.
  *       400:
  *         description: Validation error or mobile number already registered.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/ValidationErrorResponse'
+ *                 - $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
  */
 
 /**
@@ -136,6 +207,7 @@
  *             properties:
  *               mobileNumber:
  *                 type: string
+ *                 pattern: '^[6-9]\d{9}$'
  *                 example: '9876543210'
  *               password:
  *                 type: string
@@ -144,8 +216,18 @@
  *     responses:
  *       200:
  *         description: Login successful. Returns JWT.
+ *       400:
+ *         description: Validation error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       401:
  *         description: Invalid mobile number or password.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 
 /**
@@ -166,6 +248,10 @@
  *               $ref: '#/components/schemas/User'
  *       401:
  *         description: Missing or invalid token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 
 /**
@@ -187,16 +273,25 @@
  *             properties:
  *               name:
  *                 type: string
+ *                 minLength: 1
  *                 example: Krishna Gaushala
  *               city:
  *                 type: string
+ *                 minLength: 1
  *                 example: Ahmedabad
  *               totalCattle:
  *                 type: integer
+ *                 minimum: 0
  *                 example: 20
  *     responses:
  *       201:
  *         description: Additional gaushala created.
+ *       400:
+ *         description: Validation error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       401:
  *         description: Unauthorized.
  */
@@ -219,6 +314,8 @@
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/UserGaushala'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 
 /**
@@ -238,12 +335,19 @@
  *             properties:
  *               mobileNumber:
  *                 type: string
+ *                 pattern: '^[6-9]\d{9}$'
  *                 example: '9876543210'
  *     responses:
  *       200:
  *         description: OTP successfully dispatched.
+ *       400:
+ *         description: Validation error.
  *       404:
  *         description: Mobile number not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 
 /**
@@ -263,19 +367,29 @@
  *             properties:
  *               mobileNumber:
  *                 type: string
+ *                 pattern: '^[6-9]\d{9}$'
  *                 example: '9876543210'
  *               otp:
  *                 type: string
+ *                 minLength: 4
+ *                 maxLength: 6
  *                 example: '1234'
  *               newPassword:
  *                 type: string
  *                 format: password
+ *                 minLength: 6
  *                 example: NewSecurePassword@123
  *     responses:
  *       200:
  *         description: Password reset complete.
  *       400:
- *         description: Invalid or expired OTP.
+ *         description: Invalid or expired OTP / Validation error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/ValidationErrorResponse'
+ *                 - $ref: '#/components/schemas/ErrorResponse'
  */
 
 /**
@@ -302,12 +416,21 @@
  *               newPassword:
  *                 type: string
  *                 format: password
+ *                 minLength: 6
  *                 example: ChangedPassword@789
  *     responses:
  *       200:
  *         description: Password updated.
  *       400:
- *         description: Old password verification failed.
+ *         description: Old password verification failed / Validation error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/ValidationErrorResponse'
+ *                 - $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 
 /**
@@ -340,6 +463,125 @@
  *     responses:
  *       200:
  *         description: Settings saved.
+ *       400:
+ *         description: Validation error.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       403:
  *         description: Permission denied for this gaushala.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+// ───────────────────────── Staff Management ─────────────────────────
+
+/**
+ * @swagger
+ * /api/auth/staff:
+ *   post:
+ *     summary: Add new staff member
+ *     description: Creates a link between an existing user and a gaushala with a specific role.
+ *     tags: [Auth Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Staff'
+ *     responses:
+ *       201:
+ *         description: Staff added.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
+ *   get:
+ *     summary: List gaushala staff
+ *     description: Retrieves all users who hold a role in the specified gaushala.
+ *     tags: [Auth Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Staff list.
+ */
+
+/**
+ * @swagger
+ * /api/auth/staff/{userId}:
+ *   patch:
+ *     summary: Update staff role
+ *     tags: [Auth Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [MANAGER, STAFF, VETERINARIAN]
+ *     responses:
+ *       200:
+ *         description: Role updated.
+ *   delete:
+ *     summary: Remove staff member
+ *     description: Revokes a user's access to the gaushala.
+ *     tags: [Auth Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Staff member removed.
+ */
+
+/**
+ * @swagger
+ * components:
+ *   responses:
+ *     UnauthorizedError:
+ *       description: Missing or invalid token.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ErrorResponse'
+ *     ForbiddenError:
+ *       description: Permission denied.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ErrorResponse'
+ *     InternalError:
+ *       description: Unexpected server error.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ErrorResponse'
  */

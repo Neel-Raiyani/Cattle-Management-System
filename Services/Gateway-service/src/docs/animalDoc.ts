@@ -16,6 +16,7 @@
  *           description: Unique internal identifier (MongoDB ObjectId).
  *         name:
  *           type: string
+ *           minLength: 1
  *           example: 'Laxmi'
  *           description: Name assigned to the animal.
  *         tagNumber:
@@ -42,7 +43,7 @@
  *         birthDate:
  *           type: string
  *           format: date-time
- *           description: Mandatory birth date. Crucial for age and maturity calculations.
+ *           description: Mandatory birth date (ISO 8601). Crucial for age and maturity calculations.
  *         adultDate:
  *           type: string
  *           format: date-time
@@ -64,15 +65,18 @@
  *           description: Marks animals that are removed from breeding/production cycles.
  *         parity:
  *           type: integer
+ *           minimum: 0
  *           description: Number of times the cow has given birth (replaces lactationNumber).
  *         bullView:
  *           type: string
  *           description: Specific breeding classification or characteristics for bulls.
  *         motherMilk:
  *           type: number
+ *           minimum: 0
  *           description: Historical dairy performance of the animal's mother (in Liters).
  *         grandmotherMilk:
  *           type: number
+ *           minimum: 0
  *           description: Historical dairy performance of the animal's grandmother (in Liters).
  *         isHandicapped:
  *           type: boolean
@@ -88,12 +92,13 @@
  *         purchaseDate:
  *           type: string
  *           format: date-time
- *           description: Required if acquired via PURCHASE.
+ *           description: Required if acquired via PURCHASE (ISO 8601).
  *         purchasedFrom:
  *           type: string
  *           description: Vendor or location of purchase.
  *         purchasePrice:
  *           type: number
+ *           minimum: 0
  *           example: 45000
  *           description: Financial cost in local currency.
  *         ownerName:
@@ -125,12 +130,15 @@
  *           format: mongo-id
  *         buyer:
  *           type: string
+ *           minLength: 1
  *           example: 'Ramesh Patel'
  *         mobileNumber:
  *           type: string
+ *           pattern: '^[6-9]\d{9}$'
  *           example: '9888776655'
  *         amount:
  *           type: number
+ *           minimum: 0
  *           example: 52000
  *         saleDate:
  *           type: string
@@ -145,11 +153,13 @@
  *       properties:
  *         animalId:
  *           type: string
+ *           format: mongo-id
  *         deathDate:
  *           type: string
  *           format: date-time
  *         reason:
  *           type: string
+ *           minLength: 1
  *           example: 'Natural causes / Age'
  *         note:
  *           type: string
@@ -161,16 +171,237 @@
  *       properties:
  *         animalId:
  *           type: string
+ *           format: mongo-id
  *         donee:
  *           type: string
+ *           minLength: 1
  *           description: Recipient name.
  *         mobileNumber:
  *           type: string
+ *           pattern: '^[6-9]\d{9}$'
  *           example: '9876543210'
  *         photoUrl:
  *           type: string
  *           description: Key for any donation documentation or ceremony photo.
  */
+
+// ───────────────────────── Groups ─────────────────────────
+
+/**
+ * @swagger
+ * /api/animal/groups:
+ *   get:
+ *     summary: List logical groups
+ *     description: Returns only the names of all unique logical groups currently in use within the gaushala.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Unique group name array.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *   post:
+ *     summary: Create new cow group
+ *     description: Manually adds a new group name to the selection list.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 1
+ *                 example: 'High Producers'
+ *     responses:
+ *       201:
+ *         description: Group created.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /api/animal/groups/{id}:
+ *   patch:
+ *     summary: Rename group
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 1
+ *     responses:
+ *       200:
+ *         description: Renamed.
+ *   delete:
+ *     summary: Delete group
+ *     description: Removes a logical group from the gaushala catalog.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Group deleted.
+ */
+
+// ───────────────────────── Disposal ─────────────────────────
+
+/**
+ * @swagger
+ * /api/animal/sell:
+ *   post:
+ *     summary: Sell an animal
+ *     description: Records a sale transaction and updates the animal's status to 'SOLD'. Includes inventory removal.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/SellRecord'
+ *     responses:
+ *       201:
+ *         description: Sale recorded.
+ *       400:
+ *         description: Validation error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+
+/**
+ * @swagger
+ * /api/animal/death:
+ *   post:
+ *     summary: Mark animal as dead
+ *     description: Finalizes an animal's profile with death records and updates status to 'DEAD'.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/DeathRecord'
+ *     responses:
+ *       201:
+ *         description: Mortality documented.
+ *       400:
+ *         description: Validation error.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+
+/**
+ * @swagger
+ * /api/animal/donation:
+ *   post:
+ *     summary: Document donation
+ *     description: Changes animal status to 'DONATED' and records the recipient.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/DonationRecord'
+ *     responses:
+ *       201:
+ *         description: Donation archived.
+ *       400:
+ *         description: Validation error.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+
+/**
+ * @swagger
+ * /api/animal/disposal/{type}/{id}:
+ *   patch:
+ *     summary: Update disposal history
+ *     description: Adjusts existing sale, death, or donation records.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [sell, death, donation]
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Updated.
+ *       400:
+ *         description: Validation error.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+
+// ───────────────────────── Animals ─────────────────────────
 
 /**
  * @swagger
@@ -197,6 +428,16 @@
  *     responses:
  *       201:
  *         description: Successfully added.
+ *       400:
+ *         description: Validation error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
  */
 
 /**
@@ -234,6 +475,8 @@
  *     responses:
  *       200:
  *         description: Cow list with total meta.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 
 /**
@@ -267,123 +510,8 @@
  *     responses:
  *       200:
  *         description: List of bulls.
- */
-
-/**
- * @swagger
- * /api/animal/groups:
- *   get:
- *     summary: List logical groups
- *     description: Returns only the names of all unique logical groups currently in use within the gaushala.
- *     tags: [Animal Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *     responses:
- *       200:
- *         description: Unique group name array.
- */
-
-/**
- * @swagger
- * /api/animal/sell:
- *   post:
- *     summary: Sell an animal
- *     description: Records a sale transaction and updates the animal's status to 'SOLD'. Includes inventory removal.
- *     tags: [Animal Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/SellRecord'
- *     responses:
- *       201:
- *         description: Sale recorded.
- */
-
-/**
- * @swagger
- * /api/animal/death:
- *   post:
- *     summary: Mark animal as dead
- *     description: Finalizes an animal's profile with death records and updates status to 'DEAD'.
- *     tags: [Animal Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/DeathRecord'
- *     responses:
- *       201:
- *         description: Mortality documented.
- */
-
-/**
- * @swagger
- * /api/animal/donation:
- *   post:
- *     summary: Document donation
- *     description: Changes animal status to 'DONATED' and records the recipient.
- *     tags: [Animal Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/DonationRecord'
- *     responses:
- *       201:
- *         description: Donation archived.
- */
-
-/**
- * @swagger
- * /api/animal/disposal/{type}/{id}:
- *   patch:
- *     summary: Update disposal history
- *     description: Adjusts existing sale, death, or donation records.
- *     tags: [Animal Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: type
- *         required: true
- *         schema:
- *           type: string
- *           enum: [sell, death, donation]
- *       - in: path
- *         name: id
- *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *     responses:
- *       200:
- *         description: Updated.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 
 /**
@@ -414,6 +542,8 @@
  *     responses:
  *       200:
  *         description: Upload instructions generated.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 
 /**
@@ -435,6 +565,10 @@
  *     responses:
  *       200:
  *         description: Multi-layered profile retrieved.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: Animal not found.
  */
 
 /**
@@ -462,4 +596,10 @@
  *     responses:
  *       200:
  *         description: Profile updated.
+ *       400:
+ *         description: Validation error.
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: Animal not found.
  */

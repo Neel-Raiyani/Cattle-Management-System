@@ -15,6 +15,7 @@
  *           example: '65d1234567890abcdef12345'
  *         name:
  *           type: string
+ *           minLength: 1
  *           example: 'Foot and Mouth Disease'
  *           description: Common name of the illness.
  *
@@ -27,6 +28,7 @@
  *           example: '65d1234567890abcdef12346'
  *         name:
  *           type: string
+ *           minLength: 1
  *           example: 'FMD Vaccine'
  *           description: Commercial or scientific name of the vaccine.
  *
@@ -80,6 +82,7 @@
  *           type: string
  *         animalId:
  *           type: string
+ *           format: mongo-id
  *         doseDate:
  *           type: string
  *           format: date-time
@@ -104,6 +107,7 @@
  *           type: string
  *         animalId:
  *           type: string
+ *           format: mongo-id
  *         doseDate:
  *           type: string
  *           format: date-time
@@ -154,10 +158,17 @@
  *             properties:
  *               name:
  *                 type: string
+ *                 minLength: 1
  *                 example: Lumpy Skin Disease
  *     responses:
  *       201:
  *         description: Master entry created.
+ *       400:
+ *         description: Validation error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  */
 
 /**
@@ -186,10 +197,13 @@
  *             properties:
  *               name:
  *                 type: string
+ *                 minLength: 1
  *                 example: Brucellosis Vaccine
  *     responses:
  *       201:
  *         description: Master entry created.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
  */
 
 // ───────────────────────── Medical Records ─────────────────────────
@@ -214,21 +228,12 @@
  *     responses:
  *       201:
  *         description: Encounter archived.
- *   get:
- *     summary: Animal health history
- *     description: Retrieves all medical/encounter records for a specific animal.
- *     tags: [Health Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/GaushalaIdHeader'
- *       - in: query
- *         name: animalId
- *         required: true
- *         description: Target animal ID.
- *     responses:
- *       200:
- *         description: Multi-entry history.
+ *       400:
+ *         description: Validation error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  */
 
 /**
@@ -244,6 +249,9 @@
  *       - name: id
  *         in: path
  *         required: true
+ *         schema:
+ *           type: string
+ *           format: mongo-id
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
@@ -254,6 +262,30 @@
  *     responses:
  *       200:
  *         description: Changes saved.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /api/health/medical/animal/{animalId}:
+ *   get:
+ *     summary: Animal health history
+ *     description: Retrieves all medical/encounter records for a specific animal.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: path
+ *         name: animalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: mongo-id
+ *     responses:
+ *       200:
+ *         description: History retrieved.
  */
 
 // ───────────────────────── Vaccination ─────────────────────────
@@ -278,20 +310,8 @@
  *     responses:
  *       201:
  *         description: Dose documented.
- *   get:
- *     summary: Vaccination timeline
- *     description: Retrieves all doses and booster shots recorded for an animal.
- *     tags: [Health Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/GaushalaIdHeader'
- *       - in: query
- *         name: animalId
- *         required: true
- *     responses:
- *       200:
- *         description: Timeline array.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
  */
 
 /**
@@ -307,6 +327,9 @@
  *       - name: id
  *         in: path
  *         required: true
+ *         schema:
+ *           type: string
+ *           format: mongo-id
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
@@ -317,6 +340,30 @@
  *     responses:
  *       200:
  *         description: Updated.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /api/health/vaccination/animal/{animalId}:
+ *   get:
+ *     summary: Vaccination timeline
+ *     description: Retrieves all doses and booster shots recorded for an animal.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: path
+ *         name: animalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: mongo-id
+ *     responses:
+ *       200:
+ *         description: Timeline array.
  */
 
 // ───────────────────────── Deworming ─────────────────────────
@@ -324,6 +371,17 @@
 /**
  * @swagger
  * /api/health/deworming:
+ *   get:
+ *     summary: List all deworming actions
+ *     description: Retrieves a global list of recent deworming records in the gaushala.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: Global list.
  *   post:
  *     summary: Individual deworming
  *     description: Records a single deworming treatment for one animal.
@@ -341,20 +399,8 @@
  *     responses:
  *       201:
  *         description: Dose recorded.
- *   get:
- *     summary: Deworming history
- *     description: Lists past deworming doses for an animal, including upcoming scheduled doses.
- *     tags: [Health Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/GaushalaIdHeader'
- *       - in: query
- *         name: animalId
- *         required: true
- *     responses:
- *       200:
- *         description: History retrieved.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
  */
 
 /**
@@ -378,8 +424,10 @@
  *             properties:
  *               animalIds:
  *                 type: array
+ *                 minItems: 1
  *                 items:
  *                   type: string
+ *                   format: mongo-id
  *                 description: Subset of animal IDs treated.
  *               doseDate:
  *                 type: string
@@ -393,36 +441,22 @@
  *                 type: string
  *               vetId:
  *                 type: string
+ *                 format: mongo-id
  *               nextDoseDate:
  *                 type: string
  *                 format: date-time
  *     responses:
  *       201:
  *         description: All individual records created atomically.
- */
-
-/**
- * @swagger
- * /api/health/deworming/list:
- *   get:
- *     summary: Gaushala-wide deworming feed
- *     description: Returns the latest deworming events across all animals in the gaushala.
- *     tags: [Health Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/GaushalaIdHeader'
- *     responses:
- *       200:
- *         description: Paginated deworming log.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
  */
 
 /**
  * @swagger
  * /api/health/deworming/{id}:
  *   patch:
- *     summary: Update deworming dose
- *     description: Modifies quantity, company, or next dose date for a record.
+ *     summary: Adjust deworming record
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -430,6 +464,9 @@
  *       - name: id
  *         in: path
  *         required: true
+ *         schema:
+ *           type: string
+ *           format: mongo-id
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
@@ -439,14 +476,37 @@
  *             $ref: '#/components/schemas/DewormingRecord'
  *     responses:
  *       200:
- *         description: Updated.
+ *         description: Corrected.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
  */
-
-// ───────────────────────── Timeline ─────────────────────────
 
 /**
  * @swagger
- * /api/health/timeline/{animalId}:
+ * /api/health/deworming/animal/{animalId}:
+ *   get:
+ *     summary: Animal Deworming History
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: animalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: mongo-id
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: Personal history.
+ */
+
+// ───────────────────────── Unified Timeline ─────────────────────────
+
+/**
+ * @swagger
+ * /api/health/timeline/animal/{animalId}:
  *   get:
  *     summary: Integrated Health Passport
  *     description: "Returns a chronological merged feed of ALL health interactions: Medical visits, Vaccinations, and Deworming doses."
@@ -457,6 +517,9 @@
  *       - name: animalId
  *         in: path
  *         required: true
+ *         schema:
+ *           type: string
+ *           format: mongo-id
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
@@ -474,4 +537,18 @@
  *       schema:
  *         type: string
  *         description: Multi-tenant scope identifier for the gaushala.
+ *
+ *   responses:
+ *     UnauthorizedError:
+ *       description: Missing or invalid token.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ErrorResponse'
+ *     InternalError:
+ *       description: Unexpected server error.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ErrorResponse'
  */
