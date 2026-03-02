@@ -1,15 +1,17 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import { AppError } from '@utils/AppError.js';
 import logger from '@utils/logger.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 // ───────────────────────── Get Groups ─────────────────────────
-export const getGroups = async (req: any, res: Response, next: NextFunction) => {
+export const getGroups = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
 
         const groups = await prisma.cowGroup.findMany({
-            where: { gaushalaId },
+            where: { gaushalaId: gaushalaId as string },
             orderBy: { name: 'asc' }
         });
 
@@ -20,7 +22,7 @@ export const getGroups = async (req: any, res: Response, next: NextFunction) => 
 };
 
 // ───────────────────────── Create Group ─────────────────────────
-export const createGroup = async (req: any, res: Response, next: NextFunction) => {
+export const createGroup = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { name } = req.body;
@@ -30,7 +32,7 @@ export const createGroup = async (req: any, res: Response, next: NextFunction) =
         }
 
         const group = await prisma.cowGroup.create({
-            data: { gaushalaId, name: name.trim() }
+            data: { gaushalaId: gaushalaId as string, name: name.trim() }
         });
 
         logger.info(`Cow group created: "${name}" in Gaushala ${gaushalaId}`);
@@ -48,7 +50,7 @@ export const createGroup = async (req: any, res: Response, next: NextFunction) =
 };
 
 // ───────────────────────── Update Group ─────────────────────────
-export const updateGroup = async (req: any, res: Response, next: NextFunction) => {
+export const updateGroup = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
         const gaushalaId = req.headers['gaushala-id'] as string;
@@ -60,14 +62,14 @@ export const updateGroup = async (req: any, res: Response, next: NextFunction) =
 
         // Verify group exists and belongs to this gaushala
         const existing = await prisma.cowGroup.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId: gaushalaId as string }
         });
         if (!existing) {
             throw new AppError('Group not found', 404, 'GROUP_NOT_FOUND');
         }
 
         const group = await prisma.cowGroup.update({
-            where: { id },
+            where: { id: id as string },
             data: { name: name.trim() }
         });
 
@@ -85,19 +87,19 @@ export const updateGroup = async (req: any, res: Response, next: NextFunction) =
 };
 
 // ───────────────────────── Delete Group ─────────────────────────
-export const deleteGroup = async (req: any, res: Response, next: NextFunction) => {
+export const deleteGroup = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
         const gaushalaId = req.headers['gaushala-id'] as string;
 
         const existing = await prisma.cowGroup.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId: gaushalaId as string }
         });
         if (!existing) {
             throw new AppError('Group not found', 404, 'GROUP_NOT_FOUND');
         }
 
-        await prisma.cowGroup.delete({ where: { id } });
+        await prisma.cowGroup.delete({ where: { id: id as string } });
 
         logger.info(`Cow group deleted: "${existing.name}" from Gaushala ${gaushalaId}`);
         res.status(200).json({ success: true, message: 'Group deleted' });

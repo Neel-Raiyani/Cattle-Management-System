@@ -1,11 +1,13 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 /**
  * Record a single deworming dose.
  */
-export const recordDeworming = async (req: any, res: Response, next: NextFunction) => {
+export const recordDeworming = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { animalId, doseDate, doseType, companyName, quantity, vetId, nextDoseDate } = req.body;
@@ -43,7 +45,7 @@ export const recordDeworming = async (req: any, res: Response, next: NextFunctio
 /**
  * Record deworming for multiple animals at once.
  */
-export const recordBulkDeworming = async (req: any, res: Response, next: NextFunction) => {
+export const recordBulkDeworming = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { animalIds, doseDate, doseType, companyName, quantity, vetId, nextDoseDate } = req.body;
@@ -89,28 +91,28 @@ export const recordBulkDeworming = async (req: any, res: Response, next: NextFun
 /**
  * Update a deworming record.
  */
-export const updateDeworming = async (req: any, res: Response, next: NextFunction) => {
+export const updateDeworming = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { id } = req.params;
-        const updateData: any = req.body;
+        const updateData: Partial<Prisma.DewormingRecordUpdateInput> = req.body;
 
         const existing = await prisma.dewormingRecord.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId: gaushalaId as string }
         });
 
         if (!existing) {
             throw new AppError('Deworming record not found', 404);
         }
 
-        delete updateData.animalId;
-        delete updateData.gaushalaId;
+        delete (updateData as any).animalId;
+        delete (updateData as any).gaushalaId;
 
-        if (updateData.doseDate) updateData.doseDate = new Date(updateData.doseDate);
-        if (updateData.nextDoseDate) updateData.nextDoseDate = new Date(updateData.nextDoseDate);
+        if (updateData.doseDate) updateData.doseDate = new Date(updateData.doseDate as any);
+        if (updateData.nextDoseDate) updateData.nextDoseDate = new Date(updateData.nextDoseDate as any);
 
         const updated = await prisma.dewormingRecord.update({
-            where: { id },
+            where: { id: id as string },
             data: updateData
         });
 
@@ -126,13 +128,13 @@ export const updateDeworming = async (req: any, res: Response, next: NextFunctio
 /**
  * Get deworming history for an animal.
  */
-export const getDewormingHistoryByAnimal = async (req: any, res: Response, next: NextFunction) => {
+export const getDewormingHistoryByAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { animalId } = req.params;
 
         const history = await prisma.dewormingRecord.findMany({
-            where: { animalId, gaushalaId },
+            where: { animalId: animalId as string, gaushalaId: gaushalaId as string },
             orderBy: { doseDate: 'desc' }
         });
 
@@ -148,16 +150,17 @@ export const getDewormingHistoryByAnimal = async (req: any, res: Response, next:
 /**
  * List deworming records for a gaushala (often used for reports).
  */
-export const listDewormingRecords = async (req: any, res: Response, next: NextFunction) => {
+export const listDewormingRecords = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { startDate, endDate } = req.query;
 
-        const where: any = { gaushalaId };
+        const where: Prisma.DewormingRecordWhereInput = { gaushalaId: gaushalaId as string };
         if (startDate || endDate) {
-            where.doseDate = {};
-            if (startDate) where.doseDate.gte = new Date(startDate as string);
-            if (endDate) where.doseDate.lte = new Date(endDate as string);
+            const dateFilter: Prisma.DateTimeFilter = {};
+            if (startDate) dateFilter.gte = new Date(startDate as string);
+            if (endDate) dateFilter.lte = new Date(endDate as string);
+            where.doseDate = dateFilter;
         }
 
         const records = await prisma.dewormingRecord.findMany({

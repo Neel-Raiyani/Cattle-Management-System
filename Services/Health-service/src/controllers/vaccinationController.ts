@@ -1,11 +1,13 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 /**
  * Record a new vaccination.
  */
-export const recordVaccination = async (req: any, res: Response, next: NextFunction) => {
+export const recordVaccination = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { animalId, doseDate, doseType, vaccineId, remark } = req.body;
@@ -43,27 +45,27 @@ export const recordVaccination = async (req: any, res: Response, next: NextFunct
 /**
  * Update a vaccination record.
  */
-export const updateVaccination = async (req: any, res: Response, next: NextFunction) => {
+export const updateVaccination = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { id } = req.params;
-        const updateData: any = req.body;
+        const updateData: Partial<Prisma.VaccinationRecordUpdateInput> = req.body;
 
         const existingRecord = await prisma.vaccinationRecord.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId: gaushalaId as string }
         });
 
         if (!existingRecord) {
             throw new AppError('Vaccination record not found', 404, 'RECORD_NOT_FOUND');
         }
 
-        delete updateData.animalId;
-        delete updateData.gaushalaId;
+        delete (updateData as any).animalId;
+        delete (updateData as any).gaushalaId;
 
-        if (updateData.doseDate) updateData.doseDate = new Date(updateData.doseDate);
+        if (updateData.doseDate) updateData.doseDate = new Date(updateData.doseDate as any);
 
         const updatedRecord = await prisma.vaccinationRecord.update({
-            where: { id },
+            where: { id: id as string },
             data: updateData
         });
 
@@ -80,13 +82,13 @@ export const updateVaccination = async (req: any, res: Response, next: NextFunct
 /**
  * Get vaccination history for an animal.
  */
-export const getVaccinationHistoryByAnimal = async (req: any, res: Response, next: NextFunction) => {
+export const getVaccinationHistoryByAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { animalId } = req.params;
 
         const history = await prisma.vaccinationRecord.findMany({
-            where: { animalId, gaushalaId },
+            where: { animalId: animalId as string, gaushalaId: gaushalaId as string },
             orderBy: { doseDate: 'desc' }
         });
 

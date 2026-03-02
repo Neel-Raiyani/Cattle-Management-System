@@ -105,7 +105,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
 };
 
 // ───────────────────────── Get Cows (Paginated with Filters) ─────────────────────────
-export const getCows = async (req: any, res: Response, next: NextFunction) => {
+export const getCows = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { filter = 'all', search, page = '1', limit = '20' } = req.query;
@@ -158,8 +158,8 @@ export const getCows = async (req: any, res: Response, next: NextFunction) => {
             prisma.animal.count({ where })
         ]);
 
-        const bucket = process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos';
-        const cows = await Promise.all(animalsList.map(async (animal: any) => {
+        const bucket = (process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos') as string;
+        const cows = await Promise.all(animalsList.map(async (animal) => {
             const enriched: any = {
                 ...animal
             };
@@ -189,7 +189,7 @@ export const getCows = async (req: any, res: Response, next: NextFunction) => {
 };
 
 // ───────────────────────── Get Bulls (Paginated with Filters) ─────────────────────────
-export const getBulls = async (req: any, res: Response, next: NextFunction) => {
+export const getBulls = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { filter = 'all', search, page = '1', limit = '20' } = req.query;
@@ -267,13 +267,13 @@ export const getBulls = async (req: any, res: Response, next: NextFunction) => {
 };
 
 // ───────────────────────── Get Animal By ID ─────────────────────────
-export const getAnimalById = async (req: any, res: Response, next: NextFunction) => {
+export const getAnimalById = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
         const gaushalaId = req.headers['gaushala-id'] as string;
 
         const animal = await prisma.animal.findFirst({
-            where: { id, gaushalaId },
+            where: { id: id as string, gaushalaId: gaushalaId as string },
             include: {
                 sellRecord: true,
                 deathRecord: true,
@@ -306,14 +306,14 @@ export const getAnimalById = async (req: any, res: Response, next: NextFunction)
 };
 
 // ───────────────────────── Update Animal ─────────────────────────
-export const updateAnimal = async (req: any, res: Response, next: NextFunction) => {
+export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
         const gaushalaId = req.headers['gaushala-id'] as string;
 
         // Verify animal exists and belongs to this gaushala
         const existingAnimal = await prisma.animal.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId: gaushalaId as string }
         });
 
         if (!existingAnimal) {
@@ -405,7 +405,7 @@ export const updateAnimal = async (req: any, res: Response, next: NextFunction) 
         }
 
         const animal = await prisma.animal.update({
-            where: { id },
+            where: { id: id as string },
             data: updateData
         });
 
@@ -421,7 +421,7 @@ export const updateAnimal = async (req: any, res: Response, next: NextFunction) 
 };
 
 // ───────────────────────── Generate Pre-signed Upload URL ─────────────────────────
-export const generateUploadUrl = async (req: any, res: Response, next: NextFunction) => {
+export const generateUploadUrl = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { fileName, contentType, type } = req.query;
 

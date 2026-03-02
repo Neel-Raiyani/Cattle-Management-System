@@ -1,8 +1,8 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
 import { Prisma } from '@prisma/client';
-import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
+import logger from '@utils/logger.js';
 import type { AuthRequest } from '@appTypes/express.js';
 
 // ───────────────────────── Record Sale ─────────────────────────
@@ -16,7 +16,7 @@ export const recordSell = async (req: AuthRequest, res: Response, next: NextFunc
 
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const animal = await tx.animal.findFirst({
-                where: { id: animalId, gaushalaId }
+                where: { id: animalId as string, gaushalaId: gaushalaId as string }
             });
 
             if (!animal) {
@@ -32,7 +32,7 @@ export const recordSell = async (req: AuthRequest, res: Response, next: NextFunc
 
             const sellRecord = await tx.sellRecord.create({
                 data: {
-                    animalId,
+                    animalId: animalId as string,
                     buyer,
                     mobileNumber,
                     city: city || null,
@@ -44,7 +44,7 @@ export const recordSell = async (req: AuthRequest, res: Response, next: NextFunc
             });
 
             await tx.animal.update({
-                where: { id: animalId },
+                where: { id: animalId as string },
                 data: { status: 'SOLD' }
             });
 
@@ -70,7 +70,7 @@ export const recordDeath = async (req: AuthRequest, res: Response, next: NextFun
 
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const animal = await tx.animal.findFirst({
-                where: { id: animalId, gaushalaId }
+                where: { id: animalId as string, gaushalaId: gaushalaId as string }
             });
 
             if (!animal) {
@@ -86,7 +86,7 @@ export const recordDeath = async (req: AuthRequest, res: Response, next: NextFun
 
             const deathRecord = await tx.deathRecord.create({
                 data: {
-                    animalId,
+                    animalId: animalId as string,
                     dateOfDeath: new Date(dateOfDeath),
                     reason,
                     lastPhotoUrl: lastPhotoUrl || null
@@ -94,7 +94,7 @@ export const recordDeath = async (req: AuthRequest, res: Response, next: NextFun
             });
 
             await tx.animal.update({
-                where: { id: animalId },
+                where: { id: animalId as string },
                 data: { status: 'DEAD' }
             });
 
@@ -123,7 +123,7 @@ export const recordDonation = async (req: AuthRequest, res: Response, next: Next
 
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const animal = await tx.animal.findFirst({
-                where: { id: animalId, gaushalaId }
+                where: { id: animalId as string, gaushalaId: gaushalaId as string }
             });
 
             if (!animal) {
@@ -139,7 +139,7 @@ export const recordDonation = async (req: AuthRequest, res: Response, next: Next
 
             const donationRecord = await tx.donationRecord.create({
                 data: {
-                    animalId,
+                    animalId: animalId as string,
                     gaushalaName,
                     mobileNumber,
                     referenceBy: referenceBy || null,
@@ -149,7 +149,7 @@ export const recordDonation = async (req: AuthRequest, res: Response, next: Next
             });
 
             await tx.animal.update({
-                where: { id: animalId },
+                where: { id: animalId as string },
                 data: { status: 'DONATED' }
             });
 
@@ -179,7 +179,7 @@ export const updateDisposalRecord = async (req: AuthRequest, res: Response, next
         }
 
         // Prevent changing the animalId on disposal records
-        delete data.animalId;
+        delete (data as any).animalId;
 
         const validTypes = ['sell', 'death', 'donation'];
         if (!validTypes.includes(type)) {
@@ -194,7 +194,7 @@ export const updateDisposalRecord = async (req: AuthRequest, res: Response, next
         switch (type) {
             case 'sell':
                 result = await prisma.sellRecord.update({
-                    where: { id },
+                    where: { id: id as string },
                     data: {
                         buyer: data.buyer,
                         mobileNumber: data.mobileNumber,
@@ -208,9 +208,9 @@ export const updateDisposalRecord = async (req: AuthRequest, res: Response, next
                 break;
             case 'death':
                 result = await prisma.deathRecord.update({
-                    where: { id },
+                    where: { id: id as string },
                     data: {
-                        dateOfDeath: data.dateOfDeath ? new Date(data.dateOfDeath) : undefined,
+                        dateOfDeath: data.dateOfDeath ? new Date(data.dateOfDeath as any) : undefined,
                         reason: data.reason,
                         lastPhotoUrl: data.lastPhotoUrl
                     }
@@ -218,7 +218,7 @@ export const updateDisposalRecord = async (req: AuthRequest, res: Response, next
                 break;
             case 'donation':
                 result = await prisma.donationRecord.update({
-                    where: { id },
+                    where: { id: id as string },
                     data: {
                         gaushalaName: data.gaushalaName,
                         mobileNumber: data.mobileNumber,

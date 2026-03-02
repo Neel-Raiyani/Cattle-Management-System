@@ -94,7 +94,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
         logger.info(`User logged in: ${mobileNumber}`);
 
         // Define a type for the membership with gaushala included
-        type UserMembershipWithGaushala = Prisma.UserGaushalaGetPayload<{ include: { gaushala: true } }>;
+        interface UserMembershipWithGaushala extends Prisma.UserGaushalaGetPayload<{ include: { gaushala: true } }> { }
 
         // Return token and the list of gaushalas the user belongs to
         res.status(200).json({
@@ -142,7 +142,7 @@ export const getProfile = async (req: AuthRequest, res: Response, next: NextFunc
         }
 
         // Define a type for the user with memberships including gaushala
-        type UserWithMemberships = Prisma.UserGetPayload<{
+        interface UserWithMemberships extends Prisma.UserGetPayload<{
             select: {
                 id: true;
                 name: true;
@@ -155,7 +155,7 @@ export const getProfile = async (req: AuthRequest, res: Response, next: NextFunc
                     include: { gaushala: true };
                 };
             };
-        }>;
+        }> { }
 
         // Format for response
         const formattedUser = {

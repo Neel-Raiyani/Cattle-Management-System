@@ -58,7 +58,7 @@ export const getMyGaushalas = async (req: AuthRequest, res: Response, next: Next
             include: { gaushala: true }
         });
 
-        type MembershipWithGaushala = Prisma.UserGaushalaGetPayload<{ include: { gaushala: true } }>;
+        interface MembershipWithGaushala extends Prisma.UserGaushalaGetPayload<{ include: { gaushala: true } }> { }
 
         res.status(200).json({
             success: true,

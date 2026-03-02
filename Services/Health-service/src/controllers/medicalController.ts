@@ -13,7 +13,7 @@ export const recordMedicalVisit = async (req: AuthRequest, res: Response, next: 
         const {
             animalId, visitType, visitDate, visitNumber,
             vetId, diseaseId, medicalStatus, symptoms, treatment
-        } = req.body as any;
+        } = req.body;
 
         // Verify animal exists in this gaushala
         const animal = await prisma.animal.findFirst({
@@ -52,15 +52,15 @@ export const recordMedicalVisit = async (req: AuthRequest, res: Response, next: 
 /**
  * Update an existing medical record.
  */
-export const updateMedicalRecord = async (req: any, res: Response, next: NextFunction) => {
+export const updateMedicalRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { id } = req.params;
-        const updateData: any = req.body;
+        const updateData: Partial<Prisma.MedicalRecordUpdateInput> = req.body;
 
         // Ensure record exists and belongs to this gaushala
         const existingRecord = await prisma.medicalRecord.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId: gaushalaId as string }
         });
 
         if (!existingRecord) {
@@ -68,13 +68,15 @@ export const updateMedicalRecord = async (req: any, res: Response, next: NextFun
         }
 
         // Prevent animalId or gaushalaId from being changed via update
-        delete updateData.animalId;
-        delete updateData.gaushalaId;
+        delete (updateData as any).animalId;
+        delete (updateData as any).gaushalaId;
 
-        if (updateData.visitDate) updateData.visitDate = new Date(updateData.visitDate);
+        if (updateData.visitDate) {
+            updateData.visitDate = new Date(updateData.visitDate as any);
+        }
 
         const updatedRecord = await prisma.medicalRecord.update({
-            where: { id },
+            where: { id: id as string },
             data: updateData
         });
 
@@ -94,10 +96,10 @@ export const updateMedicalRecord = async (req: any, res: Response, next: NextFun
 export const getMedicalHistoryByAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { animalId } = req.params as { animalId: string };
+        const { animalId } = req.params;
 
         const history = await prisma.medicalRecord.findMany({
-            where: { animalId, gaushalaId },
+            where: { animalId: animalId as string, gaushalaId: gaushalaId as string },
             orderBy: { visitDate: 'desc' }
         });
 

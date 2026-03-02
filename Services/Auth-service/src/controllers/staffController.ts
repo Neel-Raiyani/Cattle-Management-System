@@ -92,7 +92,7 @@ export const getStaffList = async (req: AuthRequest, res: Response, next: NextFu
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { role } = req.query as { role?: string };
 
-        const where: Prisma.UserGaushalaWhereInput = { gaushalaId, isActive: true };
+        const where: any = { gaushalaId, isActive: true };
         if (role) where.role = role as any;
 
         const members = await prisma.userGaushala.findMany({
@@ -110,7 +110,7 @@ export const getStaffList = async (req: AuthRequest, res: Response, next: NextFu
             orderBy: { joinedAt: 'desc' }
         });
 
-        const staff = members.map(m => ({
+        const staff = members.map((m: any) => ({
             id: m.user.id,
             name: m.user.name,
             mobileNumber: m.user.mobileNumber,
@@ -171,7 +171,7 @@ export const updateStaff = async (req: AuthRequest, res: Response, next: NextFun
 
         // Update user details and role in a transaction
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-            const updateData: Prisma.UserUpdateInput = {};
+            const updateData: any = {};
             if (name !== undefined) updateData.name = name as string;
             if (city !== undefined) updateData.city = city as string;
 
