@@ -2,7 +2,7 @@
  * @swagger
  * tags:
  *   - name: Animal Service
- *     description: Comprehensive cattle management including health profiles, birth records, and disposal tracking via the Gateway.
+ *     description: Comprehensive cattle management including health profiles, birth records, disposal tracking, and specialized reporting.
  *
  * components:
  *   schemas:
@@ -63,10 +63,14 @@
  *         isRetired:
  *           type: boolean
  *           description: Marks animals that are removed from breeding/production cycles.
+ *         retiredDate:
+ *           type: string
+ *           format: date-time
+ *           description: The date when the animal was officially retired.
  *         parity:
  *           type: integer
  *           minimum: 0
- *           description: Number of times the cow has given birth (replaces lactationNumber).
+ *           description: Number of times the cow has given birth.
  *         bullView:
  *           type: string
  *           description: Specific breeding classification or characteristics for bulls.
@@ -118,71 +122,59 @@
  *         viewUrl:
  *           type: string
  *           format: url
- *           description: Secure temporary link for UI rendering (Expires quickly).
+ *           description: Secure temporary link for UI rendering.
+ *
+ *     AnimalSummary:
+ *       type: object
+ *       properties:
+ *         cows:
+ *           type: object
+ *           properties:
+ *             total: { type: integer }
+ *             heifer: { type: integer }
+ *             pregnant: { type: integer }
+ *             lactating: { type: integer }
+ *             dryOff: { type: integer }
+ *             retired: { type: integer }
+ *         bulls:
+ *           type: object
+ *           properties:
+ *             total: { type: integer }
+ *             calf: { type: integer }
+ *             retired: { type: integer }
  *
  *     SellRecord:
  *       type: object
- *       description: Record of a successful animal sale transaction.
  *       required: [animalId, buyer, mobileNumber, amount]
  *       properties:
- *         animalId:
- *           type: string
- *           format: mongo-id
- *         buyer:
- *           type: string
- *           minLength: 1
- *           example: 'Ramesh Patel'
- *         mobileNumber:
- *           type: string
- *           pattern: '^[6-9]\d{9}$'
- *           example: '9888776655'
- *         amount:
- *           type: number
- *           minimum: 0
- *           example: 52000
- *         saleDate:
- *           type: string
- *           format: date-time
- *         note:
- *           type: string
+ *         animalId: { type: string, format: mongo-id }
+ *         buyer: { type: string }
+ *         mobileNumber: { type: string, example: '9988776655' }
+ *         city: { type: string }
+ *         amount: { type: number, minimum: 0 }
+ *         referenceBy: { type: string }
+ *         photoUrl: { type: string }
+ *         soldAt: { type: string, format: date-time }
  *
  *     DeathRecord:
  *       type: object
- *       description: Documentation for animal mortality.
- *       required: [animalId, deathDate, reason]
+ *       required: [animalId, dateOfDeath, reason]
  *       properties:
- *         animalId:
- *           type: string
- *           format: mongo-id
- *         deathDate:
- *           type: string
- *           format: date-time
- *         reason:
- *           type: string
- *           minLength: 1
- *           example: 'Natural causes / Age'
- *         note:
- *           type: string
+ *         animalId: { type: string, format: mongo-id }
+ *         dateOfDeath: { type: string, format: date-time }
+ *         reason: { type: string }
+ *         lastPhotoUrl: { type: string }
  *
  *     DonationRecord:
  *       type: object
- *       description: Details regarding giving an animal away to another gaushala or person.
- *       required: [animalId, donee, mobileNumber]
+ *       required: [animalId, gaushalaName, mobileNumber]
  *       properties:
- *         animalId:
- *           type: string
- *           format: mongo-id
- *         donee:
- *           type: string
- *           minLength: 1
- *           description: Recipient name.
- *         mobileNumber:
- *           type: string
- *           pattern: '^[6-9]\d{9}$'
- *           example: '9876543210'
- *         photoUrl:
- *           type: string
- *           description: Key for any donation documentation or ceremony photo.
+ *         animalId: { type: string, format: mongo-id }
+ *         gaushalaName: { type: string }
+ *         mobileNumber: { type: string, example: '9988776655' }
+ *         referenceBy: { type: string }
+ *         photoUrl: { type: string }
+ *         donatedAt: { type: string, format: date-time }
  */
 
 // ───────────────────────── Groups ─────────────────────────
@@ -203,8 +195,6 @@
  *     responses:
  *       200:
  *         description: Unique group name array.
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
  *   post:
  *     summary: Create new cow group
  *     description: Manually adds a new group name to the selection list.
@@ -227,11 +217,6 @@
  *                 type: string
  *                 minLength: 1
  *                 example: 'High Producers'
- *     responses:
- *       201:
- *         description: Group created.
- *       400:
- *         $ref: '#/components/schemas/ValidationErrorResponse'
  */
 
 /**
@@ -259,12 +244,8 @@
  *               name:
  *                 type: string
  *                 minLength: 1
- *     responses:
- *       200:
- *         description: Renamed.
  *   delete:
  *     summary: Delete group
- *     description: Removes a logical group from the gaushala catalog.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -275,9 +256,110 @@
  *       - in: header
  *         name: gaushala-id
  *         required: true
+ */
+
+// ───────────────────────── Reports ─────────────────────────
+
+/**
+ * @swagger
+ * /api/animal/reports/summary:
+ *   get:
+ *     summary: Get gaushala status summary
+ *     description: Returns counts of animals partitioned by various biological and production statuses (Heifer, Pregnant, etc.).
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
  *     responses:
  *       200:
- *         description: Group deleted.
+ *         description: Detailed counts summary.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AnimalSummary'
+ */
+
+/**
+ * @swagger
+ * /api/animal/reports/udder-close:
+ *   get:
+ *     summary: List cows with udder quarter issues
+ *     description: Filters active cows based on the number of non-functional (closed) udder quarters. Returns minimized data.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *       - in: query
+ *         name: quarterCount
+ *         schema:
+ *           type: string
+ *           enum: [all, 1, 2, 3, 4]
+ *           default: all
+ *         description: Number of closed quarters to filter by.
+ *     responses:
+ *       200:
+ *         description: Filtered cow list.
+ */
+
+/**
+ * @swagger
+ * /api/animal/reports/eligible-retirement:
+ *   get:
+ *     summary: Get animals ready for retirement
+ *     description: Returns a list of all active cows and bulls that are NOT yet retired and do NOT have an active pregnancy journey. Lactating cows ARE included.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *       - in: query
+ *         name: gender
+ *         schema:
+ *           type: string
+ *           enum: [MALE, FEMALE]
+ *     responses:
+ *       200:
+ *         description: Dropdown data list.
+ */
+
+/**
+ * @swagger
+ * /api/animal/reports/retire:
+ *   post:
+ *     summary: Officially retire an animal
+ *     description: Marks an animal as retired. Updates 'isRetired' to true, records the retirement date, and resets production/pregnancy flags.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [animalId, retiredDate]
+ *             properties:
+ *               animalId:
+ *                 type: string
+ *                 format: mongo-id
+ *               retiredDate:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Animal status updated to retired.
  */
 
 // ───────────────────────── Disposal ─────────────────────────
@@ -287,7 +369,7 @@
  * /api/animal/sell:
  *   post:
  *     summary: Sell an animal
- *     description: Records a sale transaction and updates the animal's status to 'SOLD'. Includes inventory removal.
+ *     description: Records a sale and marks the animal status as SOLD.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -303,15 +385,7 @@
  *             $ref: '#/components/schemas/SellRecord'
  *     responses:
  *       201:
- *         description: Sale recorded.
- *       400:
- *         description: Validation error.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ValidationErrorResponse'
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
+ *         description: Record saved.
  */
 
 /**
@@ -319,7 +393,7 @@
  * /api/animal/death:
  *   post:
  *     summary: Mark animal as dead
- *     description: Finalizes an animal's profile with death records and updates status to 'DEAD'.
+ *     description: Records the death and marks the animal status as DEAD.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -335,11 +409,7 @@
  *             $ref: '#/components/schemas/DeathRecord'
  *     responses:
  *       201:
- *         description: Mortality documented.
- *       400:
- *         description: Validation error.
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
+ *         description: Record saved.
  */
 
 /**
@@ -347,7 +417,7 @@
  * /api/animal/donation:
  *   post:
  *     summary: Document donation
- *     description: Changes animal status to 'DONATED' and records the recipient.
+ *     description: Records a donation and marks the animal status as DONATED.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -363,11 +433,7 @@
  *             $ref: '#/components/schemas/DonationRecord'
  *     responses:
  *       201:
- *         description: Donation archived.
- *       400:
- *         description: Validation error.
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
+ *         description: Record saved.
  */
 
 /**
@@ -375,7 +441,6 @@
  * /api/animal/disposal/{type}/{id}:
  *   patch:
  *     summary: Update disposal history
- *     description: Adjusts existing sale, death, or donation records.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -394,11 +459,7 @@
  *         required: true
  *     responses:
  *       200:
- *         description: Updated.
- *       400:
- *         description: Validation error.
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
+ *         description: Record updated.
  */
 
 // ───────────────────────── Animals ─────────────────────────
@@ -408,7 +469,6 @@
  * /api/animal/add:
  *   post:
  *     summary: Register a new cow or bull
- *     description: Adds a new entry to the gaushala inventory. Automatically calculates 'adultDate'.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -416,28 +476,12 @@
  *       - in: header
  *         name: gaushala-id
  *         required: true
- *         schema:
- *           type: string
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/Animal'
- *             required: [gender, birthDate, acquisitionType]
- *     responses:
- *       201:
- *         description: Successfully added.
- *       400:
- *         description: Validation error.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ValidationErrorResponse'
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       500:
- *         $ref: '#/components/responses/InternalError'
  */
 
 /**
@@ -445,7 +489,7 @@
  * /api/animal/cows:
  *   get:
  *     summary: Advanced cow search and filtering
- *     description: Retrieves a list of female animals with status-based filtering (e.g., searching for all pregnant cows).
+ *     description: "Retrieves female animals. Note: Returns minimized data per item (name, tagNo, parity, cowNo, birthDate, adultDate, photoUrl)."
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -457,26 +501,16 @@
  *         name: filter
  *         schema:
  *           type: string
- *           enum: [all, lactating, heifer, pregnant, dryoff, retired, calves]
+ *           enum: [all, lactating, heifer, pregnant, dryoff, retired, handicapped, calves]
  *         description: Lifecycle and production state filtering.
  *       - in: query
  *         name: search
- *         description: Partial match on name or tag number.
  *       - in: query
  *         name: page
- *         schema:
- *           type: integer
- *           default: 1
+ *         schema: { type: integer, default: 1 }
  *       - in: query
  *         name: limit
- *         schema:
- *           type: integer
- *           default: 20
- *     responses:
- *       200:
- *         description: Cow list with total meta.
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
+ *         schema: { type: integer, default: 20 }
  */
 
 /**
@@ -484,7 +518,7 @@
  * /api/animal/bulls:
  *   get:
  *     summary: List bulls by status
- *     description: Specialized endpoint for male animals with age and retirement filters.
+ *     description: "Note: Returns minimized data per item (name, tagNo, birthDate, adultDate, photoUrl)."
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -498,20 +532,13 @@
  *           type: string
  *           enum: [all, retired, calf]
  *       - in: query
+ *         name: search
+ *       - in: query
  *         name: page
- *         schema:
- *           type: integer
- *           default: 1
+ *         schema: { type: integer, default: 1 }
  *       - in: query
  *         name: limit
- *         schema:
- *           type: integer
- *           default: 20
- *     responses:
- *       200:
- *         description: List of bulls.
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
+ *         schema: { type: integer, default: 20 }
  */
 
 /**
@@ -519,7 +546,6 @@
  * /api/animal/media/presigned-url:
  *   get:
  *     summary: Secure upload URL
- *     description: Retrieves a pre-authorized URL for uploading animal photos or disposal documentation directly to storage.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -535,15 +561,9 @@
  *         schema:
  *           type: string
  *           enum: [PHOTO, DISPOSAL, DOC]
- *         description: Specific storage bucket/path.
  *       - in: header
  *         name: gaushala-id
  *         required: true
- *     responses:
- *       200:
- *         description: Upload instructions generated.
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
  */
 
 /**
@@ -551,7 +571,6 @@
  * /api/animal/{id}:
  *   get:
  *     summary: Full animal profile
- *     description: Retrieves all available data for a single animal by its primary ID.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -562,13 +581,6 @@
  *       - in: header
  *         name: gaushala-id
  *         required: true
- *     responses:
- *       200:
- *         description: Multi-layered profile retrieved.
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       404:
- *         description: Animal not found.
  */
 
 /**
@@ -576,7 +588,6 @@
  * /api/animal/update/{id}:
  *   patch:
  *     summary: Update profile markers
- *     description: Allows modification of name, tag, status booleans, and other descriptive fields.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -593,13 +604,4 @@
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/Animal'
- *     responses:
- *       200:
- *         description: Profile updated.
- *       400:
- *         description: Validation error.
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       404:
- *         description: Animal not found.
  */

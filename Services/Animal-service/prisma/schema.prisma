@@ -107,6 +107,7 @@ model Animal {
   isDryOff        Boolean   @default(false)
   isHeifer        Boolean   @default(false)
   isRetired       Boolean   @default(false)
+  retiredDate     DateTime?
 
   // Bull Specific / Pedigree
   bullView        String?

@@ -126,6 +126,7 @@ export const getCows = async (req: AuthRequest, res: Response, next: NextFunctio
             case 'pregnant': where.isPregnant = true; break;
             case 'dryoff': where.isDryOff = true; break;
             case 'retired': where.isRetired = true; break;
+            case 'handicapped': where.isHandicapped = true; break;
             case 'calves': where.birthDate = { gt: twelveMonthsAgo }; break;
         }
 

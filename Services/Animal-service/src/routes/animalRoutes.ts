@@ -2,11 +2,14 @@ import express from 'express';
 import { registerAnimal, getCows, getBulls, getAnimalById, updateAnimal, generateUploadUrl } from '@controllers/animalController.js';
 import { recordSell, recordDeath, recordDonation, updateDisposalRecord } from '@controllers/disposalController.js';
 import { getGroups, createGroup, updateGroup, deleteGroup } from '@controllers/groupController.js';
+import reportRoutes from './reportRoutes.js';
 import { registerAnimalValidation, updateAnimalValidation, sellRecordValidation, deathRecordValidation, donationRecordValidation } from '@validators/animalValidators.js';
 import { auth } from '@middlewares/auth.js';
 import { gaushalaAuth } from '@middlewares/gaushalaAuth.js';
 
 const router = express.Router();
+
+router.use('/reports', reportRoutes);
 
 router.get('/media/presigned-url', auth, gaushalaAuth(), generateUploadUrl);
 
