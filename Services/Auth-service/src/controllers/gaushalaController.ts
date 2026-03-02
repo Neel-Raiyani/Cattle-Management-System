@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
 
 const prisma = new PrismaClient();
@@ -9,7 +9,7 @@ export const createGaushala = async (req: any, res: Response, next: NextFunction
         const userId = req.user.userId;
         const { name, city, state, totalCattle } = req.body;
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const gaushala = await tx.gaushala.create({
                 data: {
                     name,
@@ -48,7 +48,7 @@ export const getMyGaushalas = async (req: any, res: Response, next: NextFunction
             include: { gaushala: true }
         });
 
-        const gaushalas = memberships.map(m => ({
+        const gaushalas = memberships.map((m: any) => ({
             id: m.gaushala.id,
             name: m.gaushala.name,
             role: m.role,

@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
 
 const prisma = new PrismaClient();
@@ -41,7 +41,7 @@ export const addStaff = async (req: any, res: Response, next: NextFunction) => {
             }
         }
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Create user if not exists (no password — Phase 1)
             if (!user) {
                 user = await tx.user.create({
@@ -108,7 +108,7 @@ export const getStaffList = async (req: any, res: Response, next: NextFunction) 
             orderBy: { joinedAt: 'desc' }
         });
 
-        const staff = members.map(m => ({
+        const staff = members.map((m: any) => ({
             id: m.user.id,
             name: m.user.name,
             mobileNumber: m.user.mobileNumber,
@@ -168,7 +168,7 @@ export const updateStaff = async (req: any, res: Response, next: NextFunction) =
         }
 
         // Update user details and role in a transaction
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const updateData: Record<string, any> = {};
             if (name !== undefined) updateData.name = name;
             if (city !== undefined) updateData.city = city;

@@ -4,6 +4,7 @@ import { generateToken } from '@utils/jwt.js';
 import { sendSMS } from '@utils/sms.js';
 import logger from '@utils/logger.js';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -17,7 +18,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         const hashedPassword = await hashPassword(password);
 
         // Transactional creation: User + Gaushala + Membership (OWNER)
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const user = await tx.user.create({
                 data: {
                     mobileNumber,
@@ -95,7 +96,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         res.status(200).json({
             message: 'Login successful',
             token,
-            gaushalas: user.memberships.map(m => ({
+            gaushalas: user.memberships.map((m: any) => ({
                 id: m.gaushala.id,
                 name: m.gaushala.name,
                 role: m.role,
