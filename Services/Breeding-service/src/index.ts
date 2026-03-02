@@ -9,7 +9,7 @@ import { errorHandler } from './middlewares/error.js';
 import breedingRoutes from './routes/breedingRoutes.js';
 
 const app = express();
-const port = process.env.PORT || 5005;
+const port = process.env.BREEDING_PORT || 5005;
 
 // Connect Database
 connectDB();

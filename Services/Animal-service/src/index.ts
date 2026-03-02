@@ -11,7 +11,7 @@ import animalRoutes from '@routes/animalRoutes.js';
 import { initHeiferCron } from './services/cronService.js';
 
 const app = express();
-const port = process.env.PORT || 5002;
+const port = process.env.ANIMAL_PORT || 5002;
 
 // Connect Database
 connectDB();

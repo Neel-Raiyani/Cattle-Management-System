@@ -8,7 +8,7 @@ import { connectDB } from './config/db.js';
 import { errorHandler } from '@middlewares/error.js';
 
 const app = express();
-const port = process.env.PORT || 5004;
+const port = process.env.PRODUCTION_PORT || 5004;
 
 // Connect Database
 connectDB();

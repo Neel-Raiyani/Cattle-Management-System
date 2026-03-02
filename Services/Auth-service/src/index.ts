@@ -9,7 +9,7 @@ import { errorHandler } from '@middlewares/error.js';
 import authRoutes from '@routes/authRoutes.js';
 
 const app = express();
-const port = process.env.PORT || 5001;
+const port = process.env.AUTH_PORT || 5001;
 
 // Connect Database
 connectDB();

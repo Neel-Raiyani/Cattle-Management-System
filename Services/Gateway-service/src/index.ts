@@ -20,6 +20,19 @@ app.use(morgan('dev'));
 // Swagger Documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Health Check
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'UP', service: 'gateway' });
+});
+
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: 'Cattle Management System API Gateway is running',
+        docs: '/docs',
+        health: '/health'
+    });
+});
+
 // Proxy Routes
 app.use('/api/auth', createProxyMiddleware({
     target: process.env.AUTH_SERVICE_URL || 'http://localhost:5001',
