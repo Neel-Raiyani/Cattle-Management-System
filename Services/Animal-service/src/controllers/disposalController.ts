@@ -3,9 +3,10 @@ import prisma from '@config/db.js';
 import { Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 // ───────────────────────── Record Sale ─────────────────────────
-export const recordSell = async (req: any, res: Response, next: NextFunction) => {
+export const recordSell = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const {
@@ -62,7 +63,7 @@ export const recordSell = async (req: any, res: Response, next: NextFunction) =>
 };
 
 // ───────────────────────── Record Death ─────────────────────────
-export const recordDeath = async (req: any, res: Response, next: NextFunction) => {
+export const recordDeath = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { animalId, dateOfDeath, reason, lastPhotoUrl } = req.body;
@@ -112,7 +113,7 @@ export const recordDeath = async (req: any, res: Response, next: NextFunction) =
 };
 
 // ───────────────────────── Record Donation ─────────────────────────
-export const recordDonation = async (req: any, res: Response, next: NextFunction) => {
+export const recordDonation = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const {
@@ -167,9 +168,10 @@ export const recordDonation = async (req: any, res: Response, next: NextFunction
 };
 
 // ───────────────────────── Update Disposal Record ─────────────────────────
-export const updateDisposalRecord = async (req: any, res: Response, next: NextFunction) => {
+export const updateDisposalRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { type, id } = req.params;
+        const type = req.params.type as string;
+        const id = req.params.id as string;
         const data = req.body;
 
         if (Object.keys(data).length === 0) {

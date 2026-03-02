@@ -1,13 +1,18 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 // ───────────────────────── Get Children (Offspring) ─────────────────────────
-export const getChildren = async (req: any, res: Response, next: NextFunction) => {
+export const getChildren = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params; // Parent ID
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string; // Parent ID
 
         // 1. Fetch parent to determine gender
         const parent = await prisma.animal.findUnique({
@@ -19,7 +24,7 @@ export const getChildren = async (req: any, res: Response, next: NextFunction) =
         }
 
         // 2. Search criteria based on gender
-        const where: any = { gaushalaId };
+        const where: Prisma.AnimalWhereInput = { gaushalaId };
         if (parent.gender === 'FEMALE') {
             where.motherId = id;
         } else {

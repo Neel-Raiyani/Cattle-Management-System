@@ -4,11 +4,15 @@ import { Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
 import { getPresignedViewUrl } from '@utils/s3.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 // ───────────────────────── Initiate Journey ─────────────────────────
-export const initiateJourney = async (req: any, res: Response, next: NextFunction) => {
+export const initiateJourney = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
         const {
             animalId, conceiveDate, pregnancyType,
             bullId, bullName, bullTag,
@@ -68,10 +72,13 @@ export const initiateJourney = async (req: any, res: Response, next: NextFunctio
 };
 
 // ───────────────────────── Update Journey Initiation Details ─────────────────────────
-export const updateJourneyInitiation = async (req: any, res: Response, next: NextFunction) => {
+export const updateJourneyInitiation = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
         const {
             conceiveDate, pregnancyType,
             bullId, bullName, bullTag,
@@ -98,10 +105,13 @@ export const updateJourneyInitiation = async (req: any, res: Response, next: Nex
 };
 
 // ───────────────────────── Confirm Pregnancy (PD Popup) ─────────────────────────
-export const confirmPregnancy = async (req: any, res: Response, next: NextFunction) => {
+export const confirmPregnancy = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
         const { pdResult, pdDate } = req.body;
 
         if (pdResult === undefined || !pdDate) {
@@ -126,10 +136,13 @@ export const confirmPregnancy = async (req: any, res: Response, next: NextFuncti
 };
 
 // ───────────────────────── Mark Dry-Off (from Conception Screen) ─────────────────────────
-export const markDryOff = async (req: any, res: Response, next: NextFunction) => {
+export const markDryOff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
         const { dryOffDate } = req.body;
 
         if (!dryOffDate) {
@@ -152,10 +165,13 @@ export const markDryOff = async (req: any, res: Response, next: NextFunction) =>
 };
 
 // ───────────────────────── Record Delivery ─────────────────────────
-export const recordDelivery = async (req: any, res: Response, next: NextFunction) => {
+export const recordDelivery = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
         const {
             deliveryDate, calfStatus, calfGender,
             calfName, calfTagNumber, calfBreed, calfGroup,
@@ -192,7 +208,7 @@ export const recordDelivery = async (req: any, res: Response, next: NextFunction
         const adultDate = new Date(bDate);
         adultDate.setMonth(adultDate.getMonth() + 12);
 
-        await prisma.$transaction(async (tx: any) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // 1. Update Journey
             await tx.conceptionJourney.update({
                 where: { id, gaushalaId },
@@ -267,10 +283,13 @@ export const recordDelivery = async (req: any, res: Response, next: NextFunction
 };
 
 // ───────────────────────── Get Journey Details ─────────────────────────
-export const getJourneyDetails = async (req: any, res: Response, next: NextFunction) => {
+export const getJourneyDetails = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
 
         const journey = await prisma.conceptionJourney.findUnique({
             where: { id, gaushalaId }
@@ -304,16 +323,17 @@ export const getJourneyDetails = async (req: any, res: Response, next: NextFunct
 };
 
 // ───────────────────────── List Journeys (Filtered) ─────────────────────────
-export const listJourneys = async (req: any, res: Response, next: NextFunction) => {
+export const listJourneys = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { filter, animalId } = req.query;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const { filter, animalId } = req.query as { filter?: string; animalId?: string };
 
-        const where: any = { gaushalaId };
+        const where: Prisma.ConceptionJourneyWhereInput = { gaushalaId };
 
-        if (animalId) where.animalId = animalId as string;
-
-        if (animalId) where.animalId = animalId as string;
+        if (animalId) where.animalId = animalId;
 
         if (filter === 'check_pending') {
             where.status = 'INITIATED';
@@ -334,21 +354,21 @@ export const listJourneys = async (req: any, res: Response, next: NextFunction) 
             orderBy: { conceiveDate: 'desc' }
         });
 
-        const animalIds = [...new Set(journeys.map((j: any) => j.animalId))];
+        const animalIds = [...new Set(journeys.map(j => j.animalId))];
         const animals = await prisma.animal.findMany({
             where: { id: { in: animalIds } }
         });
-        const animalMap = new Map(animals.map((a: any) => [a.id, a]));
+        const animalMap = new Map(animals.map(a => [a.id, a]));
 
         const bucket = process.env.S3_BUCKET_NAME || 'breeding-media';
-        const formattedJourneys = await Promise.all(journeys.map(async (j: any) => {
-            const animalData = animalMap.get(j.animalId) as any;
+        const formattedJourneys = await Promise.all(journeys.map(async (j) => {
+            const animalData = animalMap.get(j.animalId);
 
             const deliveryViewUrl = j.deliveryPhoto ? await getPresignedViewUrl(bucket, j.deliveryPhoto) : null;
             const calfViewUrl = j.calfPhoto ? await getPresignedViewUrl(bucket, j.calfPhoto) : null;
 
             // Calculate total days from conceiveDate to now
-            const totalDays = Math.floor((new Date().getTime() - new Date(j.conceiveDate).getTime()) / (1000 * 60 * 60 * 24));
+            const totalDays = Math.floor((new Date().getTime() - new Date(j.conceiveDate!).getTime()) / (1000 * 60 * 60 * 24));
 
             return {
                 id: j.id,
@@ -372,10 +392,13 @@ export const listJourneys = async (req: any, res: Response, next: NextFunction) 
 };
 
 // ───────────────────────── Delete Journey ─────────────────────────
-export const deleteJourney = async (req: any, res: Response, next: NextFunction) => {
+export const deleteJourney = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
 
         await prisma.conceptionJourney.delete({ where: { id, gaushalaId } });
 
@@ -388,9 +411,12 @@ export const deleteJourney = async (req: any, res: Response, next: NextFunction)
 
 
 // ───────────────────────── Get Eligible Cows for Dry-Off ─────────────────────────
-export const getEligibleForDryOff = async (req: any, res: Response, next: NextFunction) => {
+export const getEligibleForDryOff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
 
         // Only PREGNANT cows can be moved to DRY_OFF from the Conception screen
         const journeys = await prisma.conceptionJourney.findMany({
@@ -405,9 +431,12 @@ export const getEligibleForDryOff = async (req: any, res: Response, next: NextFu
 };
 
 // ───────────────────────── Get Eligible Cows for Conception Journey ─────────────────────────
-export const getEligibleCowsForJourney = async (req: any, res: Response, next: NextFunction) => {
+export const getEligibleCowsForJourney = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
 
         // 1. Fetch all female, active, non-retired cows that are either Heifers or Lactating
         const cows = await prisma.animal.findMany({
@@ -460,9 +489,12 @@ export const getEligibleCowsForJourney = async (req: any, res: Response, next: N
 };
 
 // ───────────────────────── Get Bulls for Breeding Dropdown ─────────────────────────
-export const getBullsForDropdown = async (req: any, res: Response, next: NextFunction) => {
+export const getBullsForDropdown = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
 
         const now = new Date();
         const twelveMonthsAgo = new Date(now);

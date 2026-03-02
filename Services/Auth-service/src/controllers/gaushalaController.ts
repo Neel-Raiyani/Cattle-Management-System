@@ -1,12 +1,17 @@
-import { Request, Response, NextFunction } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Response, NextFunction } from 'express';
+import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
-const prisma = new PrismaClient();
-
-export const createGaushala = async (req: any, res: Response, next: NextFunction) => {
+// ──────────────────────── Create Gaushala ────────────────────────
+export const createGaushala = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user?.userId;
+        if (!userId) {
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
+
         const { name, city, state, totalCattle } = req.body;
 
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -40,23 +45,30 @@ export const createGaushala = async (req: any, res: Response, next: NextFunction
     }
 };
 
-export const getMyGaushalas = async (req: any, res: Response, next: NextFunction) => {
+// ──────────────────────── Get User's Gaushalas ────────────────────────
+export const getMyGaushalas = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user?.userId;
+        if (!userId) {
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
+
         const memberships = await prisma.userGaushala.findMany({
             where: { userId, isActive: true },
             include: { gaushala: true }
         });
 
-        const gaushalas = memberships.map((m: any) => ({
-            id: m.gaushala.id,
-            name: m.gaushala.name,
-            role: m.role,
-            city: m.gaushala.city,
-            totalCattle: m.gaushala.totalCattle
-        }));
+        type MembershipWithGaushala = Prisma.UserGaushalaGetPayload<{ include: { gaushala: true } }>;
 
-        res.status(200).json(gaushalas);
+        res.status(200).json({
+            success: true,
+            data: memberships.map((m: MembershipWithGaushala) => ({
+                id: m.gaushala.id,
+                name: m.gaushala.name,
+                role: m.role,
+                city: m.gaushala.city
+            }))
+        });
     } catch (error) {
         next(error);
     }

@@ -22,6 +22,9 @@
             "@config/*": [
                 "config/*"
             ],
+            "@appTypes/*": [
+                "types/*"
+            ],
             "@validators/*": [
                 "validators/*"
             ]

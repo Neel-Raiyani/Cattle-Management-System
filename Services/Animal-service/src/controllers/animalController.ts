@@ -1,11 +1,13 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Animal } from '@prisma/client';
 import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
 import { getPresignedUploadUrl, getPresignedViewUrl } from '@utils/s3.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 // ───────────────────────── Register Animal ─────────────────────────
-export const registerAnimal = async (req: any, res: Response, next: NextFunction) => {
+export const registerAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
 
@@ -235,7 +237,7 @@ export const getBulls = async (req: any, res: Response, next: NextFunction) => {
         ]);
 
         const bucket = process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos';
-        const bulls = await Promise.all(animalsList.map(async (animal: any) => {
+        const bulls = await Promise.all(animalsList.map(async (animal) => {
             const enriched: any = {
                 ...animal
             };

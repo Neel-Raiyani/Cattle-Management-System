@@ -1,13 +1,19 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma, PregnancyType } from '@prisma/client';
 import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 // ───────────────────────── Record Heat ─────────────────────────
-export const recordHeat = async (req: any, res: Response, next: NextFunction) => {
+export const recordHeat = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { animalId, date, breedingType, note } = req.body;
+        const gaushalaId = req.gaushala?.id as string;
+        const { animalId, date, breedingType, note } = req.body as { animalId: string; date: string; breedingType: PregnancyType; note?: string };
+
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
 
         // Auto-fetch parity from the animal's parity field
         const animal = await prisma.animal.findUnique({
@@ -39,19 +45,22 @@ export const recordHeat = async (req: any, res: Response, next: NextFunction) =>
 };
 
 // ───────────────────────── Get Heat Records ─────────────────────────
-export const getHeatRecords = async (req: any, res: Response, next: NextFunction) => {
+export const getHeatRecords = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { from, to, animalId } = req.query;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const { from, to, animalId } = req.query as { from?: string; to?: string; animalId?: string };
 
-        const where: any = { gaushalaId };
+        const where: Prisma.HeatRecordWhereInput = { gaushalaId };
 
-        if (animalId) where.animalId = animalId as string;
+        if (animalId) where.animalId = animalId;
 
         if (from || to) {
             where.date = {};
-            if (from) where.date.gte = new Date(from as string);
-            if (to) where.date.lte = new Date(to as string);
+            if (from) (where.date as Prisma.DateTimeFilter).gte = new Date(from);
+            if (to) (where.date as Prisma.DateTimeFilter).lte = new Date(to);
         }
 
         const records = await prisma.heatRecord.findMany({
@@ -59,21 +68,21 @@ export const getHeatRecords = async (req: any, res: Response, next: NextFunction
             orderBy: { date: 'desc' }
         });
 
-        const animalIds = [...new Set(records.map((r: any) => r.animalId))];
+        const animalIds = [...new Set(records.map(r => r.animalId))];
         const animals = await prisma.animal.findMany({
             where: { id: { in: animalIds } }
         });
-        const animalMap = new Map(animals.map((a: any) => [a.id, a]));
+        const animalMap = new Map(animals.map(a => [a.id, a]));
 
-        const formattedRecords = records.map((r: any) => {
-            const animalData = animalMap.get(r.animalId) as any;
+        const formattedRecords = records.map(r => {
+            const animalData = animalMap.get(r.animalId);
             return {
                 animalName: animalData?.name || null,
                 tagNumber: animalData?.tagNumber || null,
                 parity: r.parity,
                 breedingType: r.breedingType,
                 date: r.date,
-                note: (r as any).note || null
+                note: r.note || null
             };
         });
 
@@ -84,11 +93,14 @@ export const getHeatRecords = async (req: any, res: Response, next: NextFunction
 };
 
 // ───────────────────────── Update Heat Record ─────────────────────────
-export const updateHeatRecord = async (req: any, res: Response, next: NextFunction) => {
+export const updateHeatRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
-        const { date, parity, note } = req.body;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
+        const { date, parity, note } = req.body as { date?: string; parity?: number; note?: string };
 
         const record = await prisma.heatRecord.update({
             where: { id, gaushalaId },
@@ -106,10 +118,13 @@ export const updateHeatRecord = async (req: any, res: Response, next: NextFuncti
 };
 
 // ───────────────────────── Delete Heat Record ─────────────────────────
-export const deleteHeatRecord = async (req: any, res: Response, next: NextFunction) => {
+export const deleteHeatRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
 
         await prisma.heatRecord.delete({ where: { id, gaushalaId } });
 
@@ -119,10 +134,14 @@ export const deleteHeatRecord = async (req: any, res: Response, next: NextFuncti
         next(error);
     }
 };
+
 // ───────────────────────── Get Eligible Animals for Heat Dropdown ─────────────────────────
-export const getEligibleForHeat = async (req: any, res: Response, next: NextFunction) => {
+export const getEligibleForHeat = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
 
         // Cows that are lactating OR heifers are eligible for heat
         const animals = await prisma.animal.findMany({

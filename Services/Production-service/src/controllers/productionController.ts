@@ -1,26 +1,34 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
-import { Prisma } from '@prisma/client';
+import { Prisma, Session } from '@prisma/client';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
 import logger from '@utils/logger.js';
 
+interface MilkEntryInput {
+    animalId: string;
+    quantity: number; // Milk in Liters
+    feedQuantity: number; // Feed in Kg
+}
+
+// ───────────────────────── Record Daily Milk Production ─────────────────────────
 /**
  * Record milk yields in bulk for a date and session.
  * Also deducts feed quantity from inventory.
  */
-export const recordYields = async (req: any, res: Response, next: NextFunction) => {
+export const recordYields = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { date, session, entries } = req.body;
+        const { date, session, entries } = req.body as { date: string; session: Session; entries: MilkEntryInput[] };
 
         if (!date || !session || !entries || !Array.isArray(entries)) {
             throw new AppError('Date, session, and entries array are required', 400, 'MISSING_DATA');
         }
 
         // Calculate total feed required
-        const totalFeedRequired = entries.reduce((sum: number, entry: any) => sum + (Number(entry.feedQuantity) || 0), 0);
+        const totalFeedRequired = entries.reduce((sum: number, entry: MilkEntryInput) => sum + (Number(entry.feedQuantity) || 0), 0);
 
-        const entriesToCreate = entries.map((entry: any) => ({
+        const entriesToCreate = entries.map((entry: MilkEntryInput) => ({
             animalId: entry.animalId,
             gaushalaId,
             date: new Date(date),
@@ -69,21 +77,22 @@ export const recordYields = async (req: any, res: Response, next: NextFunction) 
             message: 'Milk yields recorded and feed inventory updated',
             count: result.count
         });
-    } catch (error: any) {
-        if (error.code === 'P2002') {
+    } catch (error: unknown) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
             return next(new AppError('One or more animals already have records for this date and session', 409, 'DUPLICATE_ENTRY'));
         }
         next(error);
     }
 };
 
+// ───────────────────────── Get Daily Production Overview ─────────────────────────
 /**
  * Get milk yield entries for a specific date and session.
  */
-export const getYieldEntries = async (req: any, res: Response, next: NextFunction) => {
+export const getYieldEntries = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { date, session } = req.query;
+        const { date, session } = req.query as { date: string; session: Session };
 
         if (!date || !session) {
             throw new AppError('Date and session are required', 400, 'MISSING_PARAMS');
@@ -92,8 +101,8 @@ export const getYieldEntries = async (req: any, res: Response, next: NextFunctio
         const entries = await prisma.milkRecord.findMany({
             where: {
                 gaushalaId,
-                date: new Date(date as string),
-                session: session as any
+                date: new Date(date),
+                session: session as Session
             }
         });
 
@@ -110,11 +119,11 @@ export const getYieldEntries = async (req: any, res: Response, next: NextFunctio
  * Update a single milk yield entry.
  * Adjusts feed inventory by reversing old value and applying new one.
  */
-export const updateYield = async (req: any, res: Response, next: NextFunction) => {
+export const updateYield = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { quantity, feedQuantity } = req.body;
+        const { quantity, feedQuantity } = req.body as { quantity?: number; feedQuantity?: number };
 
         const existing = await prisma.milkRecord.findFirst({
             where: { id, gaushalaId }
@@ -181,9 +190,9 @@ export const updateYield = async (req: any, res: Response, next: NextFunction) =
  * Delete a milk yield entry.
  * Reverses feed inventory deduction.
  */
-export const deleteYield = async (req: any, res: Response, next: NextFunction) => {
+export const deleteYield = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const gaushalaId = req.headers['gaushala-id'] as string;
 
         const existing = await prisma.milkRecord.findFirst({

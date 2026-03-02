@@ -5,8 +5,9 @@ import { sendSMS } from '@utils/sms.js';
 import logger from '@utils/logger.js';
 import prisma from '@config/db.js';
 import { Prisma } from '@prisma/client';
+import type { AuthRequest } from '@appTypes/express.js';
 
-export const register = async (req: Request, res: Response, next: NextFunction) => {
+export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { mobileNumber, password, name, city, gaushalaName, totalCattle } = req.body;
 
@@ -58,7 +59,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }
 };
 
-export const login = async (req: Request, res: Response, next: NextFunction) => {
+export const login = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { mobileNumber, password } = req.body;
 
@@ -92,11 +93,14 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
         logger.info(`User logged in: ${mobileNumber}`);
 
+        // Define a type for the membership with gaushala included
+        type UserMembershipWithGaushala = Prisma.UserGaushalaGetPayload<{ include: { gaushala: true } }>;
+
         // Return token and the list of gaushalas the user belongs to
         res.status(200).json({
             message: 'Login successful',
             token,
-            gaushalas: user.memberships.map((m: any) => ({
+            gaushalas: user.memberships.map((m: UserMembershipWithGaushala) => ({
                 id: m.gaushala.id,
                 name: m.gaushala.name,
                 role: m.role,
@@ -108,9 +112,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 };
 
-export const getProfile = async (req: any, res: Response, next: NextFunction) => {
+export const getProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user?.userId;
+        if (!userId) {
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
+
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -132,6 +140,22 @@ export const getProfile = async (req: any, res: Response, next: NextFunction) =>
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
+        // Define a type for the user with memberships including gaushala
+        type UserWithMemberships = Prisma.UserGetPayload<{
+            select: {
+                id: true;
+                name: true;
+                mobileNumber: true;
+                city: true;
+                language: true;
+                isActive: true;
+                createdAt: true;
+                memberships: {
+                    include: { gaushala: true };
+                };
+            };
+        }>;
 
         // Format for response
         const formattedUser = {

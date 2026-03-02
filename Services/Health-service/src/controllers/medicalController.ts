@@ -2,11 +2,12 @@ import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
 import { Prisma } from '@prisma/client';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 /**
  * Record a new medical visit (Illness/Checkup).
  */
-export const recordMedicalVisit = async (req: Request, res: Response, next: NextFunction) => {
+export const recordMedicalVisit = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const {
@@ -51,7 +52,7 @@ export const recordMedicalVisit = async (req: Request, res: Response, next: Next
 /**
  * Update an existing medical record.
  */
-export const updateMedicalRecord = async (req: Request, res: Response, next: NextFunction) => {
+export const updateMedicalRecord = async (req: any, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { id } = req.params;
@@ -90,10 +91,10 @@ export const updateMedicalRecord = async (req: Request, res: Response, next: Nex
 /**
  * Get all medical records for a specific animal.
  */
-export const getMedicalHistoryByAnimal = async (req: Request, res: Response, next: NextFunction) => {
+export const getMedicalHistoryByAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { animalId } = req.params;
+        const { animalId } = req.params as { animalId: string };
 
         const history = await prisma.medicalRecord.findMany({
             where: { animalId, gaushalaId },

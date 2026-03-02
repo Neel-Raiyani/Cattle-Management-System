@@ -28,6 +28,9 @@
             ],
             "@config/*": [
                 "src/config/*"
+            ],
+            "@appTypes/*": [
+                "src/types/*"
             ]
         }
     },

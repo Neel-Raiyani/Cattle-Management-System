@@ -1,11 +1,12 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
+import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
-
-const prisma = new PrismaClient();
+import { sendSMS } from '@utils/sms.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 // ───────────────────────── Add Staff ─────────────────────────
-export const addStaff = async (req: any, res: Response, next: NextFunction) => {
+export const addStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
         const { name, mobileNumber, role, city } = req.body;
@@ -42,9 +43,10 @@ export const addStaff = async (req: any, res: Response, next: NextFunction) => {
         }
 
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            let innerUser = user;
             // Create user if not exists (no password — Phase 1)
-            if (!user) {
-                user = await tx.user.create({
+            if (!innerUser) {
+                innerUser = await tx.user.create({
                     data: {
                         name,
                         mobileNumber,
@@ -57,13 +59,13 @@ export const addStaff = async (req: any, res: Response, next: NextFunction) => {
             // Link user to gaushala with the specified role
             const membership = await tx.userGaushala.create({
                 data: {
-                    userId: user.id,
+                    userId: innerUser.id,
                     gaushalaId,
                     role
                 }
             });
 
-            return { user, membership };
+            return { user: innerUser, membership };
         });
 
         logger.info(`Staff added: ${result.user.id} as ${role} to Gaushala ${gaushalaId}`);
@@ -85,13 +87,13 @@ export const addStaff = async (req: any, res: Response, next: NextFunction) => {
 };
 
 // ───────────────────────── Get Staff List ─────────────────────────
-export const getStaffList = async (req: any, res: Response, next: NextFunction) => {
+export const getStaffList = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { role } = req.query;
+        const { role } = req.query as { role?: string };
 
-        const where: any = { gaushalaId, isActive: true };
-        if (role) where.role = role;
+        const where: Prisma.UserGaushalaWhereInput = { gaushalaId, isActive: true };
+        if (role) where.role = role as any;
 
         const members = await prisma.userGaushala.findMany({
             where,
@@ -108,7 +110,7 @@ export const getStaffList = async (req: any, res: Response, next: NextFunction) 
             orderBy: { joinedAt: 'desc' }
         });
 
-        const staff = members.map((m: any) => ({
+        const staff = members.map(m => ({
             id: m.user.id,
             name: m.user.name,
             mobileNumber: m.user.mobileNumber,
@@ -128,10 +130,10 @@ export const getStaffList = async (req: any, res: Response, next: NextFunction) 
 };
 
 // ───────────────────────── Update Staff ─────────────────────────
-export const updateStaff = async (req: any, res: Response, next: NextFunction) => {
+export const updateStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { userId } = req.params;
+        const userId = req.params.userId as string;
         const { name, city, role } = req.body;
 
         // Explicitly block OWNER role assignment
@@ -169,9 +171,9 @@ export const updateStaff = async (req: any, res: Response, next: NextFunction) =
 
         // Update user details and role in a transaction
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-            const updateData: Record<string, any> = {};
-            if (name !== undefined) updateData.name = name;
-            if (city !== undefined) updateData.city = city;
+            const updateData: Prisma.UserUpdateInput = {};
+            if (name !== undefined) updateData.name = name as string;
+            if (city !== undefined) updateData.city = city as string;
 
             let updatedUser;
             if (Object.keys(updateData).length > 0) {
@@ -179,19 +181,27 @@ export const updateStaff = async (req: any, res: Response, next: NextFunction) =
                     where: { id: userId },
                     data: updateData
                 });
+            } else {
+                updatedUser = await tx.user.findUnique({ where: { id: userId } });
             }
 
             let updatedMembership;
             if (role !== undefined) {
                 updatedMembership = await tx.userGaushala.update({
                     where: { userId_gaushalaId: { userId, gaushalaId } },
-                    data: { role }
+                    data: { role: role as any }
                 });
+            } else {
+                updatedMembership = membership;
+            }
+
+            if (!updatedUser) {
+                throw new Error('User not found during update');
             }
 
             return {
-                user: updatedUser || await tx.user.findUnique({ where: { id: userId } }),
-                membership: updatedMembership || membership
+                user: updatedUser,
+                membership: updatedMembership
             };
         });
 
@@ -200,10 +210,10 @@ export const updateStaff = async (req: any, res: Response, next: NextFunction) =
             success: true,
             message: 'Staff member updated successfully',
             staff: {
-                id: result.user!.id,
-                name: result.user!.name,
-                mobileNumber: result.user!.mobileNumber,
-                city: result.user!.city,
+                id: result.user.id,
+                name: result.user.name,
+                mobileNumber: result.user.mobileNumber,
+                city: result.user.city,
                 role: result.membership.role
             }
         });
@@ -213,10 +223,10 @@ export const updateStaff = async (req: any, res: Response, next: NextFunction) =
 };
 
 // ───────────────────────── Remove Staff ─────────────────────────
-export const removeStaff = async (req: any, res: Response, next: NextFunction) => {
+export const removeStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.headers['gaushala-id'] as string;
-        const { userId } = req.params;
+        const userId = req.params.userId as string;
 
         const membership = await prisma.userGaushala.findUnique({
             where: {

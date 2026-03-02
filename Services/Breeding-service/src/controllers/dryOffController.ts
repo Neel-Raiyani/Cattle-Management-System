@@ -1,11 +1,16 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma } from '@prisma/client';
 import logger from '@utils/logger.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 // ───────────────────────── Add Dry-Off Record ─────────────────────────
-export const addDryOff = async (req: any, res: Response, next: NextFunction) => {
+export const addDryOff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
         const { animalId, date, reason, remarks } = req.body;
 
         const record = await prisma.dryOffRecord.create({
@@ -26,13 +31,16 @@ export const addDryOff = async (req: any, res: Response, next: NextFunction) => 
 };
 
 // ───────────────────────── Get Dry-Off Records ─────────────────────────
-export const getDryOffRecords = async (req: any, res: Response, next: NextFunction) => {
+export const getDryOffRecords = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { filter } = req.query; // filter: 'all', 'pregnant', 'other'
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const { filter } = req.query as { filter?: string }; // filter: 'all', 'pregnant', 'other'
 
-        let regularDryOffs: any[] = [];
-        let pregnantDryOffs: any[] = [];
+        let regularDryOffs: Prisma.DryOffRecordGetPayload<{}>[] = [];
+        let pregnantDryOffs: Prisma.ConceptionJourneyGetPayload<{}>[] = [];
 
         // 1. Fetch from regular DryOffRecord
         if (!filter || filter === 'all' || filter === 'other') {
@@ -64,11 +72,11 @@ export const getDryOffRecords = async (req: any, res: Response, next: NextFuncti
         const animals = await prisma.animal.findMany({
             where: { id: { in: animalIds } }
         });
-        const animalMap = new Map(animals.map((a: any) => [a.id, a]));
+        const animalMap = new Map(animals.map(a => [a.id, a]));
 
         // 4. Format and Combine
         const formattedRegular = regularDryOffs.map(r => {
-            const animal = animalMap.get(r.animalId) as any;
+            const animal = animalMap.get(r.animalId);
             return {
                 animalName: animal?.name || null,
                 date: r.date,
@@ -77,7 +85,7 @@ export const getDryOffRecords = async (req: any, res: Response, next: NextFuncti
         });
 
         const formattedPregnant = pregnantDryOffs.map(p => {
-            const animal = animalMap.get(p.animalId) as any;
+            const animal = animalMap.get(p.animalId);
             return {
                 animalName: animal?.name || null,
                 date: p.dryOffDate,
@@ -86,7 +94,7 @@ export const getDryOffRecords = async (req: any, res: Response, next: NextFuncti
         });
 
         const combined = [...formattedRegular, ...formattedPregnant].sort((a, b) =>
-            new Date(b.date).getTime() - new Date(a.date).getTime()
+            new Date(b.date!).getTime() - new Date(a.date!).getTime()
         );
 
         res.json({ success: true, data: combined });
@@ -96,10 +104,13 @@ export const getDryOffRecords = async (req: any, res: Response, next: NextFuncti
 };
 
 // ───────────────────────── Update Dry-Off Record ─────────────────────────
-export const updateDryOff = async (req: any, res: Response, next: NextFunction) => {
+export const updateDryOff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
         const { date, reason, remarks } = req.body;
 
         const record = await prisma.dryOffRecord.update({
@@ -118,10 +129,13 @@ export const updateDryOff = async (req: any, res: Response, next: NextFunction) 
 };
 
 // ───────────────────────── Delete Dry-Off Record ─────────────────────────
-export const deleteDryOff = async (req: any, res: Response, next: NextFunction) => {
+export const deleteDryOff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
 
         await prisma.dryOffRecord.delete({ where: { id, gaushalaId } });
 
@@ -133,9 +147,12 @@ export const deleteDryOff = async (req: any, res: Response, next: NextFunction) 
 };
 
 // ──────────────────────── Get Eligible Cows for Dry-Off Dropdown (Non-Pregnancy) ────────────────────────
-export const getEligibleForDryOffDropdown = async (req: any, res: Response, next: NextFunction) => {
+export const getEligibleForDryOffDropdown = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
 
         // Only lactating cows that are NOT pregnant are eligible for regular dry-off
         const animals = await prisma.animal.findMany({
@@ -155,7 +172,7 @@ export const getEligibleForDryOffDropdown = async (req: any, res: Response, next
             where: { gaushalaId, status: { notIn: ['COMPLETED', 'FAILED'] } },
             select: { animalId: true }
         });
-        const pregnantIds = new Set(activeJourneys.map((j: any) => j.animalId));
+        const pregnantIds = new Set(activeJourneys.map(j => j.animalId));
 
         const eligibleAnimals = animals.filter(a => !pregnantIds.has(a.id));
 

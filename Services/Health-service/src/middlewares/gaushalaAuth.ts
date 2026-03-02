@@ -1,6 +1,8 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
+import { Prisma } from '@prisma/client';
 
 /**
  * Middleware to verify the user's membership and role in a specific Gaushala.
@@ -9,7 +11,7 @@ import { AppError } from '@utils/AppError.js';
  * @param roles - Optional array of allowed roles. If empty, any active member is allowed.
  */
 export const gaushalaAuth = (roles: string[] = []) => {
-    return async (req: any, _res: Response, next: NextFunction) => {
+    return async (req: AuthRequest, _res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.userId;
             const gaushalaId = req.headers['gaushala-id'] as string;
@@ -52,6 +54,9 @@ export const gaushalaAuth = (roles: string[] = []) => {
 
             next();
         } catch (error) {
+            // If a Prisma error occurs, it will be caught here and passed to the next error handler.
+            // The specific handling for PrismaClientKnownRequestError (P2002, P2025 etc.)
+            // is typically done in a global error handling middleware.
             next(error);
         }
     };

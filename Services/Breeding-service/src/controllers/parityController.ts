@@ -1,19 +1,37 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { Prisma, PregnancyType } from '@prisma/client';
 import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
+
+interface ParityBody {
+    animalId: string;
+    parityNo: number;
+    cowPhoto?: string;
+    pregnancyType: PregnancyType;
+    bullId?: string;
+    bullName?: string;
+    deliveryDate: string;
+    pregnancyDate: string;
+    dryOffDate?: string;
+    note?: string;
+}
 
 // ───────────────────────── Add Parity Record ─────────────────────────
-export const addParityRecord = async (req: any, res: Response, next: NextFunction) => {
+export const addParityRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
         const {
             animalId, parityNo, cowPhoto, pregnancyType,
             bullId, bullName, deliveryDate, pregnancyDate,
             dryOffDate, note
-        } = req.body;
+        } = req.body as ParityBody;
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const record = await tx.parityRecord.create({
                 data: {
                     animalId,
@@ -56,10 +74,13 @@ export const addParityRecord = async (req: any, res: Response, next: NextFunctio
 };
 
 // ───────────────────────── Get Parity Records ─────────────────────────
-export const getParityRecords = async (req: any, res: Response, next: NextFunction) => {
+export const getParityRecords = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { animalId } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const animalId = req.params.animalId as string;
 
         const records = await prisma.parityRecord.findMany({
             where: { animalId, gaushalaId },
@@ -92,20 +113,23 @@ export const getParityRecords = async (req: any, res: Response, next: NextFuncti
 };
 
 // ───────────────────────── Update Parity Record ─────────────────────────
-export const updateParityRecord = async (req: any, res: Response, next: NextFunction) => {
+export const updateParityRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.gaushala.id as string;
-        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) {
+            return res.status(401).json({ message: 'Gaushala ID missing' });
+        }
+        const id = req.params.id as string;
         const {
             parityNo, cowPhoto, pregnancyType,
             bullId, bullName, deliveryDate, pregnancyDate,
             dryOffDate, note
-        } = req.body;
+        } = req.body as Partial<ParityBody>;
 
         const record = await prisma.parityRecord.update({
             where: { id, gaushalaId },
             data: {
-                ...(parityNo !== undefined && { parityNo }),
+                ...(parityNo !== undefined && { parityNo: Number(parityNo) }),
                 ...(cowPhoto !== undefined && { cowPhoto }),
                 ...(pregnancyType !== undefined && { pregnancyType }),
                 ...(bullId !== undefined && { bullId }),

@@ -1,17 +1,20 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@config/db.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 /**
  * Middleware to check if user belongs to a specific gaushala with a required role.
  * Expects gaushala-id in headers.
  */
 export const gaushalaAuth = (roles: string[] = []) => {
-    return async (req: any, res: Response, next: NextFunction) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user.userId;
-            const gaushalaId = req.headers['gaushala-id'];
+            const userId = req.user?.userId;
+            const gaushalaId = req.headers['gaushala-id'] as string;
+
+            if (!userId) {
+                return res.status(401).json({ message: 'User identity missing' });
+            }
 
             if (!gaushalaId) {
                 return res.status(400).json({ message: 'gaushala-id is required in headers' });
@@ -21,7 +24,7 @@ export const gaushalaAuth = (roles: string[] = []) => {
                 where: {
                     userId_gaushalaId: {
                         userId,
-                        gaushalaId: gaushalaId as string
+                        gaushalaId
                     }
                 }
             });

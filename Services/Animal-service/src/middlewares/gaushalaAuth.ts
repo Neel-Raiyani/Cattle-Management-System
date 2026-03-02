@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
 import { AppError } from '@utils/AppError.js';
+import type { AuthRequest } from '@appTypes/express.js';
 
 /**
  * Middleware to verify the user's membership and role in a specific Gaushala.
@@ -12,7 +13,7 @@ import { AppError } from '@utils/AppError.js';
  * @param roles - Optional array of allowed roles. If empty, any active member is allowed.
  */
 export const gaushalaAuth = (roles: string[] = []) => {
-    return async (req: any, _res: Response, next: NextFunction) => {
+    return async (req: AuthRequest, _res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.userId;
             const gaushalaId = req.headers['gaushala-id'] as string;

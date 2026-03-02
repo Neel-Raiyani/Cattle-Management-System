@@ -1,9 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { verifyToken } from '@utils/jwt.js';
-
-export interface AuthRequest extends Request {
-    user?: any;
-}
+import type { AuthRequest, UserPayload } from '@appTypes/express.js';
 
 export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
@@ -22,6 +19,6 @@ export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
         return res.status(401).json({ message: 'Invalid or expired token' });
     }
 
-    req.user = decoded;
+    req.user = decoded as UserPayload;
     next();
 };
