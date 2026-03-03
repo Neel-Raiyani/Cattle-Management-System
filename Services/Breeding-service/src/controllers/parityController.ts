@@ -3,6 +3,7 @@ import prisma from '@config/db.js';
 import { Prisma, PregnancyType } from '@prisma/client';
 import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
+import { getPresignedViewUrl } from '@utils/s3.js';
 import type { AuthRequest } from '@appTypes/express.js';
 
 interface ParityBody {
@@ -82,30 +83,73 @@ export const getParityRecords = async (req: AuthRequest, res: Response, next: Ne
         }
         const animalId = req.params.animalId as string;
 
-        const records = await prisma.parityRecord.findMany({
+        // 1. Fetch historical parity records
+        const historicalRecords = await prisma.parityRecord.findMany({
             where: { animalId, gaushalaId },
             orderBy: { parityNo: 'desc' }
         });
 
-        const animal = await prisma.animal.findUnique({
-            where: { id: animalId },
-            select: { name: true, tagNumber: true }
+        // 2. Fetch completed journeys (conception-based parity)
+        const journeyRecords = await prisma.conceptionJourney.findMany({
+            where: { animalId, gaushalaId, status: 'COMPLETED' },
+            orderBy: { parity: 'desc' }
         });
 
-        const data = records.map(r => ({
-            name: animal?.name || null,
-            tagno: animal?.tagNumber || null,
-            parity: r.parityNo,
-            pregnancyType: r.pregnancyType,
-            deliverydate: r.deliveryDate,
-            note: r.note,
-            bullname: r.bullName,
-            pregnancy_date: r.pregnancyDate
-        }));
+        // 3. Fetch animal details for header data
+        const animal = await prisma.animal.findUnique({
+            where: { id: animalId },
+            select: { name: true, tagNumber: true, animalNumber: true, photoUrl: true, isHeifer: true }
+        });
+
+        if (!animal) {
+            throw new AppError('Animal not found', 404, 'ANIMAL_NOT_FOUND');
+        }
+
+        const bucket = 'gaushala-media';
+        const animalPhoto = animal.photoUrl ? await getPresignedViewUrl(bucket, animal.photoUrl) : null;
+
+        // 4. Merge and format records
+        const combinedData = [
+            ...historicalRecords.map(r => ({
+                photo: animalPhoto,
+                name: animal.name,
+                tagno: animal.tagNumber,
+                cowNo: animal.animalNumber,
+                parity: r.parityNo,
+                isHeifer: animal.isHeifer,
+                calfStatus: null,
+                breedingType: r.pregnancyType,
+                totalDays: Math.floor((new Date(r.deliveryDate).getTime() - new Date(r.pregnancyDate).getTime()) / (1000 * 60 * 60 * 24)),
+                totalMilk: 0, // Placeholder as production data is in another service
+                pregnantDate: r.pregnancyDate,
+                deliveryDate: r.deliveryDate,
+                bullName: r.bullName || '-',
+                note: r.note,
+                type: 'HISTORICAL'
+            })),
+            ...journeyRecords.map(j => ({
+                photo: animalPhoto,
+                name: animal.name,
+                tagno: animal.tagNumber,
+                cowNo: animal.animalNumber,
+                parity: j.parity + 1,
+                isHeifer: animal.isHeifer,
+                calfStatus: j.calfStatus,
+                breedingType: j.pregnancyType,
+                totalDays: j.deliveryDate ? Math.floor((new Date(j.deliveryDate).getTime() - new Date(j.conceiveDate).getTime()) / (1000 * 60 * 60 * 24)) : 0,
+                totalMilk: 0,
+                pregnantDate: j.conceiveDate,
+                deliveryDate: j.deliveryDate,
+                bullName: j.bullName || '-',
+                note: null,
+                type: 'JOURNEY'
+            }))
+        ].sort((a, b) => b.parity - a.parity);
 
         res.status(200).json({
             success: true,
-            data
+            totalParity: combinedData.length,
+            data: combinedData
         });
     } catch (error) {
         next(error);

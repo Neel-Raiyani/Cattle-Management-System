@@ -6,6 +6,7 @@ import { recordHeat, getHeatRecords, updateHeatRecord, deleteHeatRecord, getElig
 import { addDryOff, getDryOffRecords, updateDryOff, deleteDryOff, getEligibleForDryOffDropdown } from '@controllers/dryOffController.js';
 import { addParityRecord, getParityRecords, updateParityRecord } from '@controllers/parityController.js';
 import { getChildren } from '@controllers/lineageController.js';
+import reportRoutes from './reportRoutes.js';
 import {
     initiateJourney, updateJourneyInitiation, confirmPregnancy,
     markDryOff, recordDelivery, getJourneyDetails,
@@ -69,5 +70,8 @@ router.patch('/journey/:id/confirm', auth, gaushalaAuth(['OWNER', 'MANAGER', 'VE
 router.patch('/journey/:id/dry-off', auth, gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), markDryOffValidation, markDryOff);
 router.patch('/journey/:id/deliver', auth, gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), recordDeliveryValidation, recordDelivery);
 router.delete('/journey/:id', auth, gaushalaAuth(['OWNER', 'MANAGER']), deleteJourney);
+
+// ───────────────────────── Reports ─────────────────────────
+router.use('/reports', reportRoutes);
 
 export default router;

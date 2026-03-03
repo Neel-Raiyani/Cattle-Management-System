@@ -244,6 +244,100 @@
  *         description: Deleted.
  */
 
+// ───────────────────────── Reports ─────────────────────────
+
+/**
+ * @swagger
+ * /api/breeding/reports/heat:
+ *   get:
+ *     summary: Heat Record Report
+ *     description: Returns heat observations with cow identity details (photo, tag, etc.). Supports animal-wise or date-wise filtering.
+ *     tags: [Breeding Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *       - in: query
+ *         name: animalId
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: Heat report list. Fields include breedingType (NATURAL, AI).
+ */
+
+/**
+ * @swagger
+ * /api/breeding/reports/pregnancy:
+ *   get:
+ *     summary: Pregnancy Record Report
+ *     description: Returns active or pending pregnancies (Date-wise). Includes identity, totalDays (since conception), parity, and breedingType (NATURAL, AI).
+ *     tags: [Breeding Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: Pregnancy report list with totalCount.
+ */
+
+/**
+ * @swagger
+ * /api/breeding/reports/delivery:
+ *   get:
+ *     summary: Delivery Record Report
+ *     description: Returns completed deliveries with calfStatus (ALIVE, DEAD, ABORTED) and calfGender (MALE, FEMALE) details.
+ *     tags: [Breeding Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: Delivery report list with totalCount.
+ */
+
+/**
+ * @swagger
+ * /api/breeding/reports/parity/dropdown:
+ *   get:
+ *     summary: Animals for Parity Report
+ *     description: Returns a list of all active female animals for the parity report selection dropdown.
+ *     tags: [Breeding Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: gaushala-id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Animal identity list.
+ */
+
 // ───────────────────────── Dry-Off ─────────────────────────
 
 /**
@@ -381,8 +475,8 @@
  * @swagger
  * /api/breeding/parity/{animalId}:
  *   get:
- *     summary: Full birth history
- *     description: Retrieves all recorded calving events for an animal.
+ *     summary: Full birth history (Parity Report)
+ *     description: Returns a comprehensive list of all past birth events, combining historical manual entries and completed conception journeys. Includes photo, status, and gender details.
  *     tags: [Breeding Service]
  *     security:
  *       - bearerAuth: []
@@ -395,7 +489,7 @@
  *         required: true
  *     responses:
  *       200:
- *         description: Parity timeline.
+ *         description: Sorted parity timeline (Newest first).
  */
 
 /**
