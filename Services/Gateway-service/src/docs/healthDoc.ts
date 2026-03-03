@@ -509,7 +509,7 @@
  * /api/health/reports/deworming:
  *   get:
  *     summary: Deworming Report (Date-wise or Animal-wise)
- *     description: Returns deworming records with cow identity and calculated last dose date.
+ *     description: "Returns deworming records with cow identity. Fields: photo, name, tagno, animalNo, doseDate, companyName, doctorName, lastDoseDate, nextDoseDate, quantity, doseType."
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -553,7 +553,7 @@
  * /api/health/reports/medical:
  *   get:
  *     summary: Medical Report (Animal-wise, Date-wise, or Disease-wise)
- *     description: Returns detailed medical interaction history including identity, vet name, and disease details.
+ *     description: "Returns detailed medical history. Fields: photo, name, tagno, animalNo, medicalStatus, visitType, disease, doctorName, visitDate."
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -581,7 +581,7 @@
  * /api/health/reports/vaccine:
  *   get:
  *     summary: Vaccine Report (Animal-wise, Date-wise, or Vaccine-wise)
- *     description: Returns vaccination history including identity, vaccine name, and dose details.
+ *     description: "Returns vaccination records. Fields: photo, name, tagno, animalNo, vaccine, doseDate, remark, dosetype."
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -602,6 +602,170 @@
  *     responses:
  *       200:
  *         description: List of vaccination records with dose details.
+ */
+
+/**
+ * @swagger
+ * /api/health/reports/lab:
+ *   get:
+ *     summary: Lab Test Report (Animal-wise, Date-wise, or Test-wise)
+ *     description: "Returns diagnostic laboratory details. Fields: photo, name, tagno, animalNo, labtestName, sampleDate, resultDate, Remark."
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: animalId
+ *         description: Filter by specific animal.
+ *       - in: query
+ *         name: labtestId
+ *         description: Filter by specific lab test type.
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: List of lab records with clinical details.
+ */
+
+// ───────────────────────── Lab Testing ─────────────────────────
+
+/**
+ * @swagger
+ * /api/health/lab/master:
+ *   get:
+ *     summary: List Lab Test Types
+ *     description: Returns the gaushala-wise list of available lab tests for dropdowns.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: List of lab test masters.
+ *   post:
+ *     summary: Add Lab Test Type
+ *     description: Creates a new lab test type for the gaushala.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string, example: "Milk Analysis" }
+ *     responses:
+ *       201:
+ *         description: Lab test type created.
+ *
+ * /api/health/lab/master/{id}:
+ *   delete:
+ *     summary: Delete Lab Test Type
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: Lab test type deleted.
+ */
+
+/**
+ * @swagger
+ * /api/health/lab:
+ *   get:
+ *     summary: List Lab Records
+ *     description: Returns a list of all clinical lab results, optionally filtered by animal.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: animalId
+ *     responses:
+ *       200:
+ *         description: List of lab records.
+ *   post:
+ *     summary: Create Lab Record
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [animalId, labtestId, sampleDate]
+ *             properties:
+ *               animalId: { type: string }
+ *               labtestId: { type: string }
+ *               sampleDate: { type: string, format: date-time }
+ *               resultDate: { type: string, format: date-time }
+ *               result: { type: string, enum: ["POSITIVE", "NEGATIVE"] }
+ *               attachmentUrl: { type: string }
+ *               remark: { type: string }
+ *     responses:
+ *       201:
+ *         description: Lab record created.
+ *
+ * /api/health/lab/{id}:
+ *   put:
+ *     summary: Update Lab Record
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               labtestId: { type: string }
+ *               sampleDate: { type: string, format: date-time }
+ *               resultDate: { type: string, format: date-time }
+ *               result: { type: string, enum: ["POSITIVE", "NEGATIVE"] }
+ *               attachmentUrl: { type: string }
+ *               remark: { type: string }
+ *     responses:
+ *       200:
+ *         description: Lab record updated.
+ *   delete:
+ *     summary: Delete Lab Record
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: Lab record deleted.
  */
 
 // ───────────────────────── Unified Timeline ─────────────────────────

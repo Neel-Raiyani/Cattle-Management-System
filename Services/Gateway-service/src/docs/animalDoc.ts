@@ -88,6 +88,18 @@
  *         handicapReason:
  *           type: string
  *           description: Brief explanation of the disability.
+ *         isUdderClosedFL:
+ *           type: boolean
+ *           description: Front-Left udder quarter status.
+ *         isUdderClosedFR:
+ *           type: boolean
+ *           description: Front-Right udder quarter status.
+ *         isUdderClosedBL:
+ *           type: boolean
+ *           description: Back-Left udder quarter status.
+ *         isUdderClosedBR:
+ *           type: boolean
+ *           description: Back-Right udder quarter status.
  *         acquisitionType:
  *           type: string
  *           enum: [BIRTH, PURCHASE, DONATION]

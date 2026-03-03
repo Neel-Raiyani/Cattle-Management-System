@@ -98,7 +98,7 @@ export const getDewormingDropdowns = async (req: AuthRequest, res: Response, nex
 
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
 
-        const where: Prisma.AnimalWhereInput = { gaushalaId, status: 'ACTIVE' };
+        const where: any = { gaushalaId, status: 'ACTIVE' };
         if (type === 'COW') {
             where.gender = 'FEMALE';
         } else if (type === 'BULL') {
@@ -256,6 +256,76 @@ export const getVaccineReport = async (req: AuthRequest, res: Response, next: Ne
                 doseDate: r.doseDate,
                 remark: r.remark || '-',
                 dosetype: r.doseType
+            };
+        });
+
+        res.json({ success: true, totalCount: records.length, data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── Lab Report ─────────────────────────
+/**
+ * Lab Report (Animal-wise, Date-wise, or Labtest-wise)
+ * Returns photo, name, tagno, animal no., labtest name, sample date, result date, Remark
+ */
+export const getLabReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.headers['gaushala-id'] as string;
+        if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
+
+        const { from, to, animalId, labtestId } = req.query as { from?: string; to?: string; animalId?: string; labtestId?: string };
+
+        const where: any = { gaushalaId };
+
+        if (animalId) where.animalId = animalId;
+        if (labtestId) where.labtestId = labtestId;
+        if (from || to) {
+            where.sampleDate = {};
+            if (from) where.sampleDate.gte = new Date(from);
+            if (to) where.sampleDate.lte = new Date(to);
+        }
+
+        const records = await (prisma as any).labRecord.findMany({
+            where,
+            orderBy: { sampleDate: 'desc' }
+        });
+
+        const animalIds = [...new Set(records.map((r: any) => r.animalId))] as string[];
+        const lIds = [...new Set(records.map((r: any) => r.labtestId))] as string[];
+
+        const animals = await prisma.animal.findMany({
+            where: { id: { in: animalIds } },
+            select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
+        });
+
+        const labtestMasters = await (prisma as any).labtestMaster.findMany({
+            where: { id: { in: lIds } },
+            select: { id: true, name: true }
+        });
+
+        const animalMap = new Map();
+        for (const a of animals) {
+            const photoUrl = a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null;
+            animalMap.set(a.id, { ...a, photoUrl });
+        }
+
+        const labtestMap = new Map(labtestMasters.map((l: any) => [l.id, l.name]));
+
+        const data = records.map((r: any) => {
+            const animal = animalMap.get(r.animalId);
+            const labtestName = labtestMap.get(r.labtestId) || 'Unknown';
+
+            return {
+                photo: animal?.photoUrl || null,
+                name: animal?.name || null,
+                tagno: animal?.tagNumber || null,
+                animalNo: animal?.animalNumber || null,
+                labtestName,
+                sampleDate: r.sampleDate,
+                resultDate: r.resultDate,
+                Remark: r.remark || '-'
             };
         });
 

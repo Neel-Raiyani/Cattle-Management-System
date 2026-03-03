@@ -58,6 +58,26 @@ model VaccineMaster {
   @@map("vaccine_masters")
 }
 
+model LabtestMaster {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  gaushalaId  String   @db.ObjectId
+  createdAt   DateTime @default(now())
+
+  @@unique([name, gaushalaId])
+  @@map("labtest_masters")
+}
+
+model LabtestMaster {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  gaushalaId  String   @db.ObjectId
+  createdAt   DateTime @default(now())
+
+  @@unique([name, gaushalaId])
+  @@map("labtest_masters")
+}
+
 // ───────────────────────── Health Records ─────────────────────────
 
 model MedicalRecord {
@@ -106,6 +126,38 @@ model DewormingRecord {
   updatedAt     DateTime  @updatedAt
 
   @@map("deworming_records")
+}
+
+model LabRecord {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  animalId      String    @db.ObjectId
+  gaushalaId    String    @db.ObjectId
+  labtestId     String    @db.ObjectId   // Reference to LabtestMaster.id
+  sampleDate    DateTime
+  resultDate    DateTime?
+  result        String?                  // e.g. "POSITIVE" | "NEGATIVE"
+  attachmentUrl String?
+  remark        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("lab_records")
+}
+
+model LabRecord {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  animalId      String    @db.ObjectId
+  gaushalaId    String    @db.ObjectId
+  labtestId     String    @db.ObjectId   // Reference to LabtestMaster.id
+  sampleDate    DateTime
+  resultDate    DateTime?
+  result        String?                  // e.g. "POSITIVE" | "NEGATIVE"
+  attachmentUrl String?
+  remark        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("lab_records")
 }
 
 // ───────────────────────── External References (Partial Models) ─────────────────────────
