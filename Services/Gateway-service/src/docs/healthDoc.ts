@@ -502,6 +502,108 @@
  *         description: Personal history.
  */
 
+// ───────────────────────── Reports ─────────────────────────
+
+/**
+ * @swagger
+ * /api/health/reports/deworming:
+ *   get:
+ *     summary: Deworming Report (Date-wise or Animal-wise)
+ *     description: Returns deworming records with cow identity and calculated last dose date.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: animalId
+ *         description: Optional ID for animal-wise report.
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: List of deworming records with identity.
+ */
+
+/**
+ * @swagger
+ * /api/health/reports/deworming/dropdown:
+ *   get:
+ *     summary: Animal Select for Report
+ *     description: Returns animals filtered by type (COW/BULL) for the report dropdown.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [COW, BULL] }
+ *     responses:
+ *       200:
+ *         description: List of animal identities.
+ */
+
+/**
+ * @swagger
+ * /api/health/reports/medical:
+ *   get:
+ *     summary: Medical Report (Animal-wise, Date-wise, or Disease-wise)
+ *     description: Returns detailed medical interaction history including identity, vet name, and disease details.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: animalId
+ *         description: Filter by specific animal.
+ *       - in: query
+ *         name: diseaseId
+ *         description: Filter by specific disease.
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: List of medical records with clinical details.
+ */
+
+/**
+ * @swagger
+ * /api/health/reports/vaccine:
+ *   get:
+ *     summary: Vaccine Report (Animal-wise, Date-wise, or Vaccine-wise)
+ *     description: Returns vaccination history including identity, vaccine name, and dose details.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: animalId
+ *         description: Filter by specific animal.
+ *       - in: query
+ *         name: vaccineId
+ *         description: Filter by specific vaccine.
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: List of vaccination records with dose details.
+ */
+
 // ───────────────────────── Unified Timeline ─────────────────────────
 
 /**

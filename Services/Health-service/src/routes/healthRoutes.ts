@@ -8,6 +8,7 @@ import { recordMedicalVisit, updateMedicalRecord, getMedicalHistoryByAnimal } fr
 import { recordVaccination, updateVaccination, getVaccinationHistoryByAnimal } from '@controllers/vaccinationController.js';
 import { recordDeworming, recordBulkDeworming, updateDeworming, getDewormingHistoryByAnimal, listDewormingRecords } from '@controllers/dewormingController.js';
 import { getHealthTimeline } from '@controllers/timelineController.js';
+import reportRoutes from '@routes/reportRoutes.js';
 
 // Validators
 import {
@@ -46,5 +47,8 @@ router.get('/deworming/animal/:animalId', auth, gaushalaAuth(), getDewormingHist
 
 // ───────────────────────── Unified Timeline ─────────────────────────
 router.get('/timeline/animal/:animalId', auth, gaushalaAuth(), getHealthTimeline);
+
+// ───────────────────────── Reports ─────────────────────────
+router.use('/reports', reportRoutes);
 
 export default router;

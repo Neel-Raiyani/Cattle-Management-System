@@ -122,14 +122,25 @@ model UserGaushala {
   @@map("user_gaushalas")
 }
 
+model User {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("users")
+}
+
 model Animal {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String?
   tagNumber       String?
+  animalNumber    String?
+  photoUrl        String?
+  gender          Gender   @default(FEMALE)
+  isHeifer        Boolean  @default(false)
+  status          AnimalStatus @default(ACTIVE)
   gaushalaId      String   @db.ObjectId
-  
-  // Note: We only need these for relations if we were using a SQL DB.
-  // In MongoDB, we'll just store the ID and fetch when needed.
-  // But having the model definition helps with Prisma Client types.
   
   @@map("animals")
 }
