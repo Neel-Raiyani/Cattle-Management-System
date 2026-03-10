@@ -34,8 +34,9 @@
  *           description: Biological gender of the animal.
  *         cowBreed:
  *           type: string
+ *           enum: [Gir, Sahiwal, Red_Sindhi, Tharparkar, Kankrej, Rathi, Punganur, Badri, Hallikar, Kangayam, Hariana, Mewati, Nagori, Nimadi, Malvi, Kherigarh, Amritmahal, Umblachery, Pulikulam, Bargur, Ongole, Red_Kandhari, Gaolao, Gangatiri, Siri, Motu, Vechur, Jersey, Holstein_Friesian, Brown_Swiss]
  *           example: Gir
- *           description: Breed designation (e.g., Gir, Sahiwal, HL).
+ *           description: Breed designation.
  *         cowGroup:
  *           type: string
  *           example: 'Milk-Yielders'

@@ -63,6 +63,12 @@ app.use('/api/breeding', createProxyMiddleware({
     changeOrigin: true
 }));
 
+// Media Service Proxy
+app.use('/api/media', createProxyMiddleware({
+    target: process.env.MEDIA_SERVICE_URL || 'http://localhost:5006',
+    changeOrigin: true
+}));
+
 
 app.listen(port, () => {
     console.log(`[gateway-service]: Gateway is running at http://localhost:${port}`);

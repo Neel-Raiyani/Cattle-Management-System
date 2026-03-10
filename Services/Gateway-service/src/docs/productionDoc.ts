@@ -54,14 +54,17 @@
  *         date:
  *           type: string
  *           format: date
- *         morning:
+ *         session:
+ *           type: string
+ *           enum: [MORNING, EVENING]
+ *         quantity:
  *           type: number
  *           minimum: 0
- *           description: Morning yield in Liters.
- *         evening:
+ *           description: Yield in Liters.
+ *         feedQuantity:
  *           type: number
  *           minimum: 0
- *           description: Evening yield in Liters.
+ *           description: Feed consumed in Kg.
  *         total:
  *           type: number
  *           description: Read-only; calculated sum.

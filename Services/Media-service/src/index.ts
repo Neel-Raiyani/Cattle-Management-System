@@ -5,11 +5,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { connectDB } from './config/db.js';
-import { errorHandler } from './middlewares/error.js';
-import breedingRoutes from './routes/breedingRoutes.js';
+import { errorHandler } from '@middlewares/error.js';
 
 const app = express();
-const port = process.env.BREEDING_PORT || 5005;
+const port = process.env.PORT || 5006;
 
 // Connect Database
 connectDB();
@@ -21,15 +20,12 @@ app.use(helmet());
 app.use(morgan('dev'));
 
 // Routes
-app.get('/health', (req, res) => {
-    res.json({ status: 'OK', service: 'Breeding Service' });
-});
-
-app.use('/', breedingRoutes);
+import mediaRoutes from '@routes/mediaRoutes.js';
+app.use('/', mediaRoutes);
 
 // Error Handler
 app.use(errorHandler);
 
 app.listen(port, () => {
-    console.log(`[breeding-service]: Server is running at http://localhost:${port}`);
+    console.log(`[media-service]: Server is running at http://localhost:${port}`);
 });

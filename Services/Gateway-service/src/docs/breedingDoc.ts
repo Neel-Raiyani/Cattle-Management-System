@@ -100,6 +100,11 @@
  *         deliveryDate:
  *           type: string
  *           format: date-time
+ *         pregnancyType:
+ *           type: string
+ *           enum: [NATURAL, AI]
+ *         cowPhoto:
+ *           type: string
  *         calfId:
  *           type: string
  *           format: mongo-id
@@ -763,6 +768,7 @@
  *                 type: string
  *               calfBreed:
  *                 type: string
+ *                 enum: [Gir, Sahiwal, Red_Sindhi, Tharparkar, Kankrej, Rathi, Punganur, Badri, Hallikar, Kangayam, Hariana, Mewati, Nagori, Nimadi, Malvi, Kherigarh, Amritmahal, Umblachery, Pulikulam, Bargur, Ongole, Red_Kandhari, Gaolao, Gangatiri, Siri, Motu, Vechur, Jersey, Holstein_Friesian, Brown_Swiss]
  *               calfGroup:
  *                 type: string
  *               calfAppearance:

@@ -32,6 +32,11 @@
  *           example: 'FMD Vaccine'
  *           description: Commercial or scientific name of the vaccine.
  *
+ *     Species:
+ *       type: string
+ *       enum: [COW, BUFFALO]
+ *       description: Generic classification of bovine.
+ *
  *     MedicalRecord:
  *       type: object
  *       description: Detailed entry for a veterinary visit or health check.
