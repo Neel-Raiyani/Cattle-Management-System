@@ -1,14 +1,15 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { AuthRequest } from '@appTypes/express.js';
 import { AppError } from '@utils/AppError.js';
 import logger from '@utils/logger.js';
 
 /**
  * Get all milk distribution categories for a Gaushala.
  */
-export const getCategories = async (req: any, res: Response, next: NextFunction) => {
+export const getCategories = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         const categories = await prisma.milkDistributionCategory.findMany({
             where: { gaushalaId },
@@ -27,9 +28,9 @@ export const getCategories = async (req: any, res: Response, next: NextFunction)
 /**
  * Create a new distribution category.
  */
-export const createCategory = async (req: any, res: Response, next: NextFunction) => {
+export const createCategory = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { name } = req.body;
 
         if (!name) {
@@ -60,10 +61,10 @@ export const createCategory = async (req: any, res: Response, next: NextFunction
 /**
  * Update a distribution category.
  */
-export const updateCategory = async (req: any, res: Response, next: NextFunction) => {
+export const updateCategory = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { name } = req.body;
 
         if (!name) {
@@ -72,7 +73,7 @@ export const updateCategory = async (req: any, res: Response, next: NextFunction
 
         // Verify existence and ownership
         const existing = await prisma.milkDistributionCategory.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId }
         });
 
         if (!existing) {
@@ -80,7 +81,7 @@ export const updateCategory = async (req: any, res: Response, next: NextFunction
         }
 
         const category = await prisma.milkDistributionCategory.update({
-            where: { id },
+            where: { id: id as string },
             data: { name: name.trim() }
         });
 
@@ -102,13 +103,13 @@ export const updateCategory = async (req: any, res: Response, next: NextFunction
  * Delete a distribution category.
  * Note: Should consider what happens to existing distribution records using this category.
  */
-export const deleteCategory = async (req: any, res: Response, next: NextFunction) => {
+export const deleteCategory = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         const existing = await prisma.milkDistributionCategory.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId }
         });
 
         if (!existing) {
@@ -117,7 +118,7 @@ export const deleteCategory = async (req: any, res: Response, next: NextFunction
 
         // Check if category is in use
         const distributionInUse = await prisma.milkDistribution.findFirst({
-            where: { categoryId: id }
+            where: { categoryId: id as string }
         });
 
         if (distributionInUse) {
@@ -125,7 +126,7 @@ export const deleteCategory = async (req: any, res: Response, next: NextFunction
         }
 
         await prisma.milkDistributionCategory.delete({
-            where: { id }
+            where: { id: id as string }
         });
 
         logger.info(`Distribution category deleted: ${existing.name} in Gaushala ${gaushalaId}`);

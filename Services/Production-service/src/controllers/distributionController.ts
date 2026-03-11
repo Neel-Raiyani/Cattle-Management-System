@@ -1,14 +1,15 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { AuthRequest } from '@appTypes/express.js';
 import { AppError } from '@utils/AppError.js';
 import logger from '@utils/logger.js';
 
 /**
  * Record milk distribution for a category on a specific date/session.
  */
-export const recordDistribution = async (req: any, res: Response, next: NextFunction) => {
+export const recordDistribution = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { date, session, categoryId, quantity } = req.body;
 
         if (!date || !session || !categoryId || quantity === undefined) {
@@ -49,9 +50,9 @@ export const recordDistribution = async (req: any, res: Response, next: NextFunc
 /**
  * Get distribution records for a specific date and session.
  */
-export const getDistributions = async (req: any, res: Response, next: NextFunction) => {
+export const getDistributions = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { date, session } = req.query;
 
         const where: any = { gaushalaId };
@@ -90,14 +91,14 @@ export const getDistributions = async (req: any, res: Response, next: NextFuncti
 /**
  * Update a distribution record.
  */
-export const updateDistribution = async (req: any, res: Response, next: NextFunction) => {
+export const updateDistribution = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { quantity, categoryId, date, session } = req.body;
 
         const existing = await prisma.milkDistribution.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId }
         });
 
         if (!existing) {
@@ -111,7 +112,7 @@ export const updateDistribution = async (req: any, res: Response, next: NextFunc
         if (session) data.session = session;
 
         const updated = await prisma.milkDistribution.update({
-            where: { id },
+            where: { id: id as string },
             data
         });
 
@@ -130,20 +131,20 @@ export const updateDistribution = async (req: any, res: Response, next: NextFunc
 /**
  * Delete a distribution record.
  */
-export const deleteDistribution = async (req: any, res: Response, next: NextFunction) => {
+export const deleteDistribution = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         const existing = await prisma.milkDistribution.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId }
         });
 
         if (!existing) {
             throw new AppError('Distribution record not found', 404, 'RECORD_NOT_FOUND');
         }
 
-        await prisma.milkDistribution.delete({ where: { id } });
+        await prisma.milkDistribution.delete({ where: { id: id as string } });
 
         logger.info(`Deleted distribution record ${id} in Gaushala ${gaushalaId}`);
 

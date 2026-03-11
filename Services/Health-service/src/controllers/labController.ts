@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
-import { AuthRequest } from '@middlewares/auth.js';
+import { AuthRequest } from '@appTypes/express.js';
 import { AppError } from '@utils/AppError.js';
 import { getPresignedViewUrl } from '@utils/s3.js';
 
@@ -9,7 +9,7 @@ import { getPresignedViewUrl } from '@utils/s3.js';
  */
 export const createLabRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { animalId, labtestId, sampleDate, resultDate, result, attachmentUrl, remark } = req.body;
 
         if (!animalId || !labtestId || !sampleDate) {
@@ -45,7 +45,7 @@ export const createLabRecord = async (req: AuthRequest, res: Response, next: Nex
 export const updateLabRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { labtestId, sampleDate, resultDate, result, attachmentUrl, remark } = req.body;
 
         const record = await (prisma as any).labRecord.findFirst({
@@ -82,7 +82,7 @@ export const updateLabRecord = async (req: AuthRequest, res: Response, next: Nex
 export const deleteLabRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         const record = await (prisma as any).labRecord.findFirst({
             where: { id, gaushalaId }
@@ -108,7 +108,7 @@ export const deleteLabRecord = async (req: AuthRequest, res: Response, next: Nex
  */
 export const listLabRecords = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { animalId } = req.query;
 
         const where: any = { gaushalaId };

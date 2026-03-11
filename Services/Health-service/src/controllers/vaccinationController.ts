@@ -9,7 +9,7 @@ import type { AuthRequest } from '@appTypes/express.js';
  */
 export const recordVaccination = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { animalId, doseDate, doseType, vaccineId, remark } = req.body;
 
         // Verify animal
@@ -47,8 +47,8 @@ export const recordVaccination = async (req: AuthRequest, res: Response, next: N
  */
 export const updateVaccination = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
         const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
         const updateData: Partial<Prisma.VaccinationRecordUpdateInput> = req.body;
 
         const existingRecord = await prisma.vaccinationRecord.findFirst({
@@ -84,7 +84,7 @@ export const updateVaccination = async (req: AuthRequest, res: Response, next: N
  */
 export const getVaccinationHistoryByAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { animalId } = req.params;
 
         const history = await prisma.vaccinationRecord.findMany({

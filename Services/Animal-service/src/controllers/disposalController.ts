@@ -8,7 +8,7 @@ import type { AuthRequest } from '@appTypes/express.js';
 // ───────────────────────── Record Sale ─────────────────────────
 export const recordSell = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const {
             animalId, buyer, mobileNumber, city,
             amount, referenceBy, photoUrl, soldAt
@@ -65,7 +65,7 @@ export const recordSell = async (req: AuthRequest, res: Response, next: NextFunc
 // ───────────────────────── Record Death ─────────────────────────
 export const recordDeath = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { animalId, dateOfDeath, reason, lastPhotoUrl } = req.body;
 
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -115,7 +115,7 @@ export const recordDeath = async (req: AuthRequest, res: Response, next: NextFun
 // ───────────────────────── Record Donation ─────────────────────────
 export const recordDonation = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const {
             animalId, gaushalaName, mobileNumber,
             referenceBy, photoUrl, donatedAt

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
 import { AppError } from '@utils/AppError.js';
+import { AuthRequest } from '@appTypes/express.js';
 
 /**
  * Fetch all global diseases for dropdowns.
@@ -22,7 +23,7 @@ export const getAllDiseases = async (_req: Request, res: Response, next: NextFun
 /**
  * Add a new global disease.
  */
-export const addDisease = async (req: Request, res: Response, next: NextFunction) => {
+export const addDisease = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { name } = req.body;
         if (!name) throw new AppError('Disease name is required', 400);
@@ -61,7 +62,7 @@ export const getAllVaccines = async (_req: Request, res: Response, next: NextFun
 /**
  * Add a new global vaccine.
  */
-export const addVaccine = async (req: Request, res: Response, next: NextFunction) => {
+export const addVaccine = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { name } = req.body;
         if (!name) throw new AppError('Vaccine name is required', 400);
@@ -83,9 +84,9 @@ export const addVaccine = async (req: Request, res: Response, next: NextFunction
 /**
  * Fetch all lab tests for a specific gaushala.
  */
-export const getLabTests = async (req: Request, res: Response, next: NextFunction) => {
+export const getLabTests = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
 
         const labTests = await (prisma as any).labtestMaster.findMany({
@@ -105,9 +106,9 @@ export const getLabTests = async (req: Request, res: Response, next: NextFunctio
 /**
  * Add a new lab test for a specific gaushala.
  */
-export const addLabTest = async (req: Request, res: Response, next: NextFunction) => {
+export const addLabTest = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
 
         const { name } = req.body;
@@ -133,10 +134,10 @@ export const addLabTest = async (req: Request, res: Response, next: NextFunction
 /**
  * Delete a lab test master.
  */
-export const deleteLabTest = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteLabTest = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
 

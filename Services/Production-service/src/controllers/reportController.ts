@@ -1,14 +1,15 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
+import { AuthRequest } from '@appTypes/express.js';
 import { AppError } from '@utils/AppError.js';
 
 /**
  * Daily Milk Report: detailed feed vs milk for all registered animals for a date.
  * Note: Ideally, this would join with Animal-service to get names. 
  */
-export const getDailyMilkReport = async (req: any, res: Response, next: NextFunction) => {
+export const getDailyMilkReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { date } = req.query;
 
         if (!date) {
@@ -167,9 +168,9 @@ export const getCowMonthlyReport = async (req: any, res: Response, next: NextFun
 /**
  * Distribution Summary: Breakdown of milk allocation for a period.
  */
-export const getDistributionSummary = async (req: any, res: Response, next: NextFunction) => {
+export const getDistributionSummary = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { startDate, endDate } = req.query;
 
         const where: any = { gaushalaId };
@@ -214,9 +215,9 @@ export const getDistributionSummary = async (req: any, res: Response, next: Next
  * Parity Report: Yield trends indexed by lactation number (requires animal data).
  * For now, returns animalId and production stats.
  */
-export const getParityReport = async (req: any, res: Response, next: NextFunction) => {
+export const getParityReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         // This effectively needs a join with Animal-service.
         // Simplest: Fetch all records and return aggregated by animalId.

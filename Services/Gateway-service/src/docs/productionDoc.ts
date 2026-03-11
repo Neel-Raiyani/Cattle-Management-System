@@ -101,9 +101,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Category list.
@@ -113,9 +111,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -139,9 +135,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -164,9 +158,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Deleted.
@@ -183,9 +175,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Inventory list.
@@ -201,9 +191,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -226,9 +214,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: date
  *         required: true
@@ -256,9 +242,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -309,9 +293,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Updated.
@@ -324,9 +306,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Deleted.
@@ -344,9 +324,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -362,9 +340,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List retrieved.
@@ -382,9 +358,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -408,9 +382,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Removed.
@@ -427,9 +399,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: date
  *         required: true
@@ -450,9 +420,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: month
  *         required: true
@@ -477,9 +445,7 @@
  *       - in: path
  *         name: animalId
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Animal-wise yield data.
@@ -494,9 +460,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: startDate
  *       - in: query
@@ -516,9 +480,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Parity performance metrics.

@@ -216,9 +216,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Unique group name array.
@@ -229,9 +227,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -258,9 +254,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -280,9 +274,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  */
 
 // ───────────────────────── Reports ─────────────────────────
@@ -297,9 +289,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Detailed counts summary.
@@ -319,9 +309,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: quarterCount
  *         schema:
@@ -344,9 +332,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: gender
  *         schema:
@@ -367,9 +353,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -401,9 +385,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -425,9 +407,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -449,9 +429,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -481,9 +459,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Record updated.
@@ -500,9 +476,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -521,9 +495,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: filter
  *         schema:
@@ -550,9 +522,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: filter
  *         schema:
@@ -588,9 +558,7 @@
  *         schema:
  *           type: string
  *           enum: [PHOTO, DISPOSAL, DOC]
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  */
 
 /**
@@ -605,9 +573,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  */
 
 /**
@@ -622,9 +588,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:

@@ -801,13 +801,6 @@
  * @swagger
  * components:
  *   parameters:
- *     GaushalaIdHeader:
- *       in: header
- *       name: gaushala-id
- *       required: true
- *       schema:
- *         type: string
- *         description: Multi-tenant scope identifier for the gaushala.
  *
  *   responses:
  *     UnauthorizedError:

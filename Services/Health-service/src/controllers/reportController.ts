@@ -11,7 +11,7 @@ import type { AuthRequest } from '@appTypes/express.js';
  */
 export const getDewormingReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
 
         const { from, to, animalId } = req.query as { from?: string; to?: string; animalId?: string };
@@ -123,7 +123,7 @@ export const getDewormingDropdowns = async (req: AuthRequest, res: Response, nex
  */
 export const getMedicalReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
 
         const { from, to, animalId, diseaseId } = req.query as { from?: string; to?: string; animalId?: string; diseaseId?: string };
@@ -202,7 +202,7 @@ export const getMedicalReport = async (req: AuthRequest, res: Response, next: Ne
  */
 export const getVaccineReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
 
         const { from, to, animalId, vaccineId } = req.query as { from?: string; to?: string; animalId?: string; vaccineId?: string };
@@ -272,7 +272,7 @@ export const getVaccineReport = async (req: AuthRequest, res: Response, next: Ne
  */
 export const getLabReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
 
         const { from, to, animalId, labtestId } = req.query as { from?: string; to?: string; animalId?: string; labtestId?: string };

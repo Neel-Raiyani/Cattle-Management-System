@@ -8,7 +8,7 @@ import { getPresignedViewUrl } from '@utils/s3.js';
 // ───────────────────────── Get Animal Summary ─────────────────────────
 export const getAnimalSummary = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         const now = new Date();
         const twelveMonthsAgo = new Date(now);
@@ -55,7 +55,7 @@ export const getAnimalSummary = async (req: AuthRequest, res: Response, next: Ne
 // ───────────────────────── Get Udder Close Cows ─────────────────────────
 export const getUdderCloseCows = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { quarterCount = 'all', page = '1', limit = '20' } = req.query;
 
         const pageNum = Math.max(1, parseInt(page as string) || 1);
@@ -155,7 +155,7 @@ export const getUdderCloseCows = async (req: AuthRequest, res: Response, next: N
 // ───────────────────────── Retire Animal ─────────────────────────
 export const retireAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { animalId, retiredDate } = req.body;
 
         if (!animalId || !retiredDate) {
@@ -195,7 +195,7 @@ export const retireAnimal = async (req: AuthRequest, res: Response, next: NextFu
 // ───────────────────────── Get Eligible for Retirement ─────────────────────────
 export const getEligibleForRetirement = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { gender } = req.query; // Optional filter
 
         const where: any = {

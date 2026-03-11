@@ -18,7 +18,7 @@ interface MilkEntryInput {
  */
 export const recordYields = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { date, session, entries } = req.body as { date: string; session: Session; entries: MilkEntryInput[] };
 
         if (!date || !session || !entries || !Array.isArray(entries)) {
@@ -91,7 +91,7 @@ export const recordYields = async (req: AuthRequest, res: Response, next: NextFu
  */
 export const getYieldEntries = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { date, session } = req.query as { date: string; session: Session };
 
         if (!date || !session) {
@@ -121,12 +121,12 @@ export const getYieldEntries = async (req: AuthRequest, res: Response, next: Nex
  */
 export const updateYield = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const id = req.params.id as string;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
         const { quantity, feedQuantity } = req.body as { quantity?: number; feedQuantity?: number };
 
         const existing = await prisma.milkRecord.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId }
         });
 
         if (!existing) {
@@ -167,7 +167,7 @@ export const updateYield = async (req: AuthRequest, res: Response, next: NextFun
 
             // 4. Update Milk Record
             await tx.milkRecord.update({
-                where: { id },
+                where: { id: id as string },
                 data: {
                     quantity: newQuantity,
                     feedQuantity: newFeedQuantity
@@ -192,11 +192,11 @@ export const updateYield = async (req: AuthRequest, res: Response, next: NextFun
  */
 export const deleteYield = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const id = req.params.id as string;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
 
         const existing = await prisma.milkRecord.findFirst({
-            where: { id, gaushalaId }
+            where: { id: id as string, gaushalaId }
         });
 
         if (!existing) {
@@ -205,7 +205,7 @@ export const deleteYield = async (req: AuthRequest, res: Response, next: NextFun
 
         await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // 1. Delete Record
-            await tx.milkRecord.delete({ where: { id } });
+            await tx.milkRecord.delete({ where: { id: id as string } });
 
             // 2. Reverse Inventory (Add back consumed feed)
             if (existing.feedQuantity && existing.feedQuantity > 0) {

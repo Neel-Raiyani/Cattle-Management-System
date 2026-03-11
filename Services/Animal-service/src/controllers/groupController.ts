@@ -8,7 +8,7 @@ import type { AuthRequest } from '@appTypes/express.js';
 // ───────────────────────── Get Groups ─────────────────────────
 export const getGroups = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         const groups = await prisma.cowGroup.findMany({
             where: { gaushalaId: gaushalaId as string },
@@ -24,7 +24,7 @@ export const getGroups = async (req: AuthRequest, res: Response, next: NextFunct
 // ───────────────────────── Create Group ─────────────────────────
 export const createGroup = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { name } = req.body;
 
         if (!name || !name.trim()) {
@@ -53,7 +53,7 @@ export const createGroup = async (req: AuthRequest, res: Response, next: NextFun
 export const updateGroup = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { name } = req.body;
 
         if (!name || !name.trim()) {
@@ -90,7 +90,7 @@ export const updateGroup = async (req: AuthRequest, res: Response, next: NextFun
 export const deleteGroup = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         const existing = await prisma.cowGroup.findFirst({
             where: { id: id as string, gaushalaId: gaushalaId as string }

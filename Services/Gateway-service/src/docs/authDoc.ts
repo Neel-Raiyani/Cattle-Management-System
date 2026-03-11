@@ -11,6 +11,15 @@
  *       scheme: bearer
  *       bearerFormat: JWT
  *
+ *   parameters:
+ *     GaushalaIdHeader:
+ *       in: header
+ *       name: gaushala-id
+ *       required: true
+ *       schema:
+ *         type: string
+ *         description: Multi-tenant scope identifier for the gaushala.
+ *
  *   schemas:
  *     ErrorResponse:
  *       type: object
@@ -443,9 +452,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *         schema:
  *           type: string
  *         description: Target Gaushala ID.
@@ -487,9 +494,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -508,9 +513,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Staff list.
@@ -528,9 +531,7 @@
  *       - in: path
  *         name: userId
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -554,9 +555,7 @@
  *       - in: path
  *         name: userId
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Staff member removed.

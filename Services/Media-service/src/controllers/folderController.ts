@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
-import type { AuthRequest } from '../types/express.js';
+import { AuthRequest } from '@appTypes/express.js';
 import { AppError } from '@utils/AppError.js';
 import { deleteS3Object } from '@utils/s3.js';
 
@@ -9,7 +9,7 @@ import { deleteS3Object } from '@utils/s3.js';
  */
 export const createFolder = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { name, type } = req.body;
         if (!name || !type) {
             throw new AppError('Name and type are required', 400);
@@ -41,7 +41,7 @@ export const createFolder = async (req: AuthRequest, res: Response, next: NextFu
  */
 export const getFolders = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { type } = req.query;
 
         const where: any = { gaushalaId };
@@ -75,7 +75,7 @@ export const getFolders = async (req: AuthRequest, res: Response, next: NextFunc
  */
 export const renameFolder = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { id } = req.params;
         const { name } = req.body;
         if (!name) throw new AppError('Name is required', 400);
@@ -106,8 +106,8 @@ export const renameFolder = async (req: AuthRequest, res: Response, next: NextFu
  */
 export const deleteFolder = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
         const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
 
         const folder = await (prisma as any).folder.findFirst({
             where: { id, gaushalaId },

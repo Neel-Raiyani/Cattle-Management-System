@@ -163,9 +163,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -190,9 +188,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: animalId
  *       - in: query
@@ -218,9 +214,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of animals.
@@ -238,9 +232,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -263,9 +255,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Deleted.
@@ -283,9 +273,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: animalId
  *       - in: query
@@ -309,9 +297,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: from
  *         schema: { type: string, format: date }
@@ -333,9 +319,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: from
  *         schema: { type: string, format: date }
@@ -357,9 +341,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Animal identity list.
@@ -377,9 +359,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -399,9 +379,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: animalId
  *         required: true
@@ -421,9 +399,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Dropdown list.
@@ -441,9 +417,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -464,9 +438,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Record removed.
@@ -484,9 +456,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -511,9 +481,7 @@
  *       - in: path
  *         name: animalId
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Sorted parity timeline (Newest first).
@@ -531,9 +499,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -557,9 +523,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -584,9 +548,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Progress list.
@@ -602,9 +564,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of cows.
@@ -619,9 +579,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Eligible cows list.
@@ -639,9 +597,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Multi-stage breakdown.
@@ -655,9 +611,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -677,9 +631,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Journey terminated.
@@ -698,9 +650,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -732,9 +682,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -764,9 +712,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -818,9 +764,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of bulls for dropdown.

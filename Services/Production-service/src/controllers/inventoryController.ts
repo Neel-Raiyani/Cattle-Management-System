@@ -11,7 +11,7 @@ import type { AuthRequest } from '@appTypes/express.js';
  */
 export const getInventoryStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         let inventory = await prisma.feedInventory.findUnique({
             where: { gaushalaId: gaushalaId as string }
@@ -43,7 +43,7 @@ export const getInventoryStatus = async (req: AuthRequest, res: Response, next: 
  */
 export const updateInventory = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { quantity, description } = req.body;
 
         if (quantity === undefined) {

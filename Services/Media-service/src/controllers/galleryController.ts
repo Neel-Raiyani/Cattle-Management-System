@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
-import type { AuthRequest } from '../types/express.js';
+import { AuthRequest } from '@appTypes/express.js';
 import { AppError } from '@utils/AppError.js';
 import { getPresignedUploadUrl, getPresignedViewUrl, deleteS3Object } from '@utils/s3.js';
 
@@ -31,7 +31,7 @@ export const getUploadUrl = async (req: AuthRequest, res: Response, next: NextFu
  */
 export const registerMediaItem = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { folderId, fileName, originalName, mimeType, size } = req.body;
         if (!folderId || !fileName || !originalName || !mimeType || !size) {
             throw new AppError('folderId, fileName, originalName, mimeType, and size are required', 400);
@@ -70,7 +70,7 @@ export const registerMediaItem = async (req: AuthRequest, res: Response, next: N
  */
 export const getFolderItems = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { folderId } = req.params;
 
         const folder = await (prisma as any).folder.findFirst({
@@ -103,7 +103,7 @@ export const getFolderItems = async (req: AuthRequest, res: Response, next: Next
  */
 export const deleteMediaItem = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { id } = req.params;
 
         const item = await (prisma as any).galleryItem.findFirst({

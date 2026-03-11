@@ -15,10 +15,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *         schema: { type: string }
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of animals without ear tags.
@@ -34,10 +31,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *         schema: { type: string }
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of cows due for heat observation.
@@ -53,10 +47,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *         schema: { type: string }
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of journeys needing pregnancy diagnosis.
@@ -72,10 +63,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *         schema: { type: string }
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of cows eligible for insemination.
@@ -91,10 +79,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *         schema: { type: string }
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of journeys with expected delivery dates.
@@ -110,10 +95,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *         schema: { type: string }
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of animals due for deworming.

@@ -9,7 +9,7 @@ import type { AuthRequest } from '@appTypes/express.js';
  */
 export const recordDeworming = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { animalId, doseDate, doseType, companyName, quantity, vetId, nextDoseDate } = req.body;
 
         const animal = await prisma.animal.findFirst({
@@ -93,8 +93,8 @@ export const recordBulkDeworming = async (req: AuthRequest, res: Response, next:
  */
 export const updateDeworming = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
         const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
         const updateData: Partial<Prisma.DewormingRecordUpdateInput> = req.body;
 
         const existing = await prisma.dewormingRecord.findFirst({
@@ -130,8 +130,8 @@ export const updateDeworming = async (req: AuthRequest, res: Response, next: Nex
  */
 export const getDewormingHistoryByAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
         const { animalId } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
 
         const history = await prisma.dewormingRecord.findMany({
             where: { animalId: animalId as string, gaushalaId: gaushalaId as string },

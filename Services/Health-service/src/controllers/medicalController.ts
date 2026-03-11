@@ -9,7 +9,7 @@ import type { AuthRequest } from '@appTypes/express.js';
  */
 export const recordMedicalVisit = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const {
             animalId, visitType, visitDate, visitNumber,
             vetId, diseaseId, medicalStatus, symptoms, treatment
@@ -54,7 +54,7 @@ export const recordMedicalVisit = async (req: AuthRequest, res: Response, next: 
  */
 export const updateMedicalRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { id } = req.params;
         const updateData: Partial<Prisma.MedicalRecordUpdateInput> = req.body;
 
@@ -95,7 +95,7 @@ export const updateMedicalRecord = async (req: AuthRequest, res: Response, next:
  */
 export const getMedicalHistoryByAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { animalId } = req.params;
 
         const history = await prisma.medicalRecord.findMany({

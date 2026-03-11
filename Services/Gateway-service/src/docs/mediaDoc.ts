@@ -57,9 +57,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -75,9 +73,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
  *         name: type
  *         schema:
@@ -100,9 +96,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -125,9 +119,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Folder deleted.
@@ -152,9 +144,7 @@
  *         name: fileType
  *         required: true
  *         description: MIME type (e.g. image/jpeg, video/mp4)
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Presigned URL generated.
@@ -187,9 +177,7 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -214,9 +202,7 @@
  *       - in: path
  *         name: folderId
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: List of media items.
@@ -234,9 +220,7 @@
  *       - in: path
  *         name: id
  *         required: true
- *       - in: header
- *         name: gaushala-id
- *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Item deleted.
