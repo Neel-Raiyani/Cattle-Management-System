@@ -40,7 +40,7 @@ router.get('/inventory', getInventoryStatus);
 router.post('/inventory/update', gaushalaAuth(['OWNER', 'MANAGER']), inventoryUpdateValidation, updateInventory);
 
 // ───────────────────────── Milking / Production ─────────────────────────
-router.post('/yields', gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), recordYieldValidation, recordYields);
+router.post('/yields/bulk', gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), recordYieldValidation, recordYields);
 router.get('/yields', getYieldEntries);
 router.patch('/yields/:id', gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), updateYieldValidation, updateYield);
 router.delete('/yields/:id', gaushalaAuth(['OWNER', 'MANAGER']), deleteYield);

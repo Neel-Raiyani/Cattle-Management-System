@@ -69,6 +69,11 @@ app.use('/api/media', createProxyMiddleware({
     changeOrigin: true
 }));
 
+// Alert Service Proxy
+app.use('/api/alert', createProxyMiddleware({
+    target: process.env.ALERT_SERVICE_URL || 'http://localhost:5007',
+    changeOrigin: true
+}));
 
 app.listen(port, () => {
     console.log(`[gateway-service]: Gateway is running at http://localhost:${port}`);

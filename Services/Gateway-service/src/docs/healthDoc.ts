@@ -54,7 +54,7 @@
  *           description: Reason for the veterinary interaction.
  *         visitDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *           description: Precise date of the visit.
  *         visitNumber:
  *           type: string
@@ -90,7 +90,7 @@
  *           format: mongo-id
  *         doseDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *           description: Date of administration.
  *         doseType:
  *           type: string
@@ -115,7 +115,7 @@
  *           format: mongo-id
  *         doseDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *         doseType:
  *           type: string
  *           enum: [INJECTION, TABLET]
@@ -131,7 +131,7 @@
  *           format: mongo-id
  *         nextDoseDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *           description: Scheduled date for followup.
  */
 
@@ -436,7 +436,7 @@
  *                 description: Subset of animal IDs treated.
  *               doseDate:
  *                 type: string
- *                 format: date-time
+ *                 format: date
  *               doseType:
  *                 type: string
  *                 enum: [INJECTION, TABLET]
@@ -449,7 +449,7 @@
  *                 format: mongo-id
  *               nextDoseDate:
  *                 type: string
- *                 format: date-time
+ *                 format: date
  *     responses:
  *       201:
  *         description: All individual records created atomically.
@@ -722,10 +722,10 @@
  *             properties:
  *               animalId: { type: string }
  *               labtestId: { type: string }
- *               sampleDate: { type: string, format: date-time }
- *               resultDate: { type: string, format: date-time }
+ *               sampleDate: { type: string, format: date }
+ *               resultDate: { type: string, format: date }
  *               result: { type: string, enum: ["POSITIVE", "NEGATIVE"] }
- *               attachmentUrl: { type: string }
+ *               attachmentUrl: { type: string, format: binary }
  *               remark: { type: string }
  *     responses:
  *       201:
@@ -750,10 +750,10 @@
  *             type: object
  *             properties:
  *               labtestId: { type: string }
- *               sampleDate: { type: string, format: date-time }
- *               resultDate: { type: string, format: date-time }
+ *               sampleDate: { type: string, format: date }
+ *               resultDate: { type: string, format: date }
  *               result: { type: string, enum: ["POSITIVE", "NEGATIVE"] }
- *               attachmentUrl: { type: string }
+ *               attachmentUrl: { type: string, format: binary }
  *               remark: { type: string }
  *     responses:
  *       200:

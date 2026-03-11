@@ -158,6 +158,23 @@
  *     responses:
  *       200:
  *         description: Presigned URL generated.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     uploadUrl:
+ *                       type: string
+ *                       format: url
+ *                       description: Temporary S3 upload URL.
+ *                     key:
+ *                       type: string
+ *                       description: S3 object key to use when registering the item.
  */
 
 /**

@@ -43,11 +43,11 @@
  *           description: Logical group assignment for management purposes.
  *         birthDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *           description: Mandatory birth date (ISO 8601). Crucial for age and maturity calculations.
  *         adultDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *           description: Automatically calculated date (Birth date + 12 months) when treated as an adult.
  *         isPregnant:
  *           type: boolean
@@ -66,7 +66,7 @@
  *           description: Marks animals that are removed from breeding/production cycles.
  *         retiredDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *           description: The date when the animal was officially retired.
  *         parity:
  *           type: integer
@@ -108,7 +108,7 @@
  *           description: Source of entry into the gaushala.
  *         purchaseDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *           description: Required if acquired via PURCHASE (ISO 8601).
  *         purchasedFrom:
  *           type: string
@@ -124,6 +124,20 @@
  *         ownerMobile:
  *           type: string
  *           description: Contact number of the previous owner.
+ *         motherName:
+ *           type: string
+ *           description: Name of the animal's mother (for lineage tracking).
+ *         fatherName:
+ *           type: string
+ *           description: Name of the animal's father (for lineage tracking).
+ *         motherId:
+ *           type: string
+ *           format: mongo-id
+ *           description: Reference to the mother's profile (if registered in the system).
+ *         fatherId:
+ *           type: string
+ *           format: mongo-id
+ *           description: Reference to the father's profile (if registered in the system).
  *         status:
  *           type: string
  *           enum: [ACTIVE, SOLD, DEAD, DONATED]
@@ -166,15 +180,15 @@
  *         city: { type: string }
  *         amount: { type: number, minimum: 0 }
  *         referenceBy: { type: string }
- *         photoUrl: { type: string }
- *         soldAt: { type: string, format: date-time }
+ *         photoUrl: { type: string, format: binary }
+ *         soldAt: { type: string, format: date }
  *
  *     DeathRecord:
  *       type: object
  *       required: [animalId, dateOfDeath, reason]
  *       properties:
  *         animalId: { type: string, format: mongo-id }
- *         dateOfDeath: { type: string, format: date-time }
+ *         dateOfDeath: { type: string, format: date }
  *         reason: { type: string }
  *         lastPhotoUrl: { type: string }
  *
@@ -186,8 +200,8 @@
  *         gaushalaName: { type: string }
  *         mobileNumber: { type: string, example: '9988776655' }
  *         referenceBy: { type: string }
- *         photoUrl: { type: string }
- *         donatedAt: { type: string, format: date-time }
+ *         photoUrl: { type: string, format: binary }
+ *         donatedAt: { type: string, format: date }
  */
 
 // ───────────────────────── Groups ─────────────────────────
@@ -369,7 +383,7 @@
  *                 format: mongo-id
  *               retiredDate:
  *                 type: string
- *                 format: date-time
+ *                 format: date
  *     responses:
  *       200:
  *         description: Animal status updated to retired.

@@ -19,16 +19,15 @@
  *           description: ID of the cow in heat.
  *         date:
  *           type: string
- *           format: date-time
+ *           format: date
  *           description: Date and time when the heat was observed.
  *         breedingType:
  *           type: string
  *           enum: [NATURAL, AI]
  *           description: "AI: Artificial Insemination, NATURAL: Bull breeding."
- *         bullId:
+ *         note:
  *           type: string
- *           format: mongo-id
- *           description: Reference to the bull (if internal).
+ *           description: Additional remarks or observations.
  *
  *     DryOffRecord:
  *       type: object
@@ -41,7 +40,7 @@
  *           type: string
  *         date:
  *           type: string
- *           format: date-time
+ *           format: date
  *         reason:
  *           type: string
  *           enum: [ILLNESS, LOW_YIELD, MEDICATED, OTHER]
@@ -59,11 +58,23 @@
  *           type: string
  *         conceiveDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *           description: Starting date of the conception period.
  *         pregnancyType:
  *           type: string
  *           enum: [NATURAL, AI]
+ *         bullId:
+ *           type: string
+ *           format: mongo-id
+ *           description: Reference to the bull (if internal).
+ *         bullName:
+ *           type: string
+ *         bullTag:
+ *           type: string
+ *         serialNumber:
+ *           type: string
+ *         companyName:
+ *           type: string
  *         currentStage:
  *           type: string
  *           enum: [INITIATED, PD_CONFIRMED, DRY_OFF, DELIVERED, ABORTED]
@@ -73,13 +84,13 @@
  *           description: Result of the Pregnancy Diagnosis check.
  *         pdDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *         dryOffDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *         deliveryDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *
  *     ParityRecord:
  *       type: object
@@ -96,19 +107,25 @@
  *           description: Sequence number of the birth (e.g. 1st calf, 2nd calf).
  *         pregnancyDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *         deliveryDate:
  *           type: string
- *           format: date-time
+ *           format: date
  *         pregnancyType:
  *           type: string
  *           enum: [NATURAL, AI]
- *         cowPhoto:
- *           type: string
- *         calfId:
+ *         bullId:
  *           type: string
  *           format: mongo-id
- *           description: Link to the registered offspring profile.
+ *         bullName:
+ *           type: string
+ *         cowPhoto:
+ *           type: string
+ *         dryOffDate:
+ *           type: string
+ *           format: date
+ *         note:
+ *           type: string
  */
 
 // ───────────────────────── Media ─────────────────────────
@@ -178,7 +195,12 @@
  *         required: true
  *       - in: query
  *         name: animalId
- *         required: true
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, format: date }
  *     responses:
  *       200:
  *         description: List of records.
@@ -691,7 +713,7 @@
  *                 type: boolean
  *               pdDate:
  *                 type: string
- *                 format: date-time
+ *                 format: date
  *     responses:
  *       200:
  *         description: Result saved.
@@ -723,7 +745,7 @@
  *             properties:
  *               dryOffDate:
  *                 type: string
- *                 format: date-time
+ *                 format: date
  *     responses:
  *       200:
  *         description: Stage updated to DRY_OFF.
@@ -755,7 +777,7 @@
  *             properties:
  *               deliveryDate:
  *                 type: string
- *                 format: date-time
+ *                 format: date
  *               calfStatus:
  *                 type: string
  *                 enum: [ALIVE, DEAD, ABORTED]

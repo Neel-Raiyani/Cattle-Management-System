@@ -39,7 +39,7 @@
  *           example: KG
  *         lastUpdated:
  *           type: string
- *           format: date-time
+ *           format: date
  *
  *     MilkRecord:
  *       type: object
@@ -220,27 +220,6 @@
 /**
  * @swagger
  * /api/production/yields:
- *   post:
- *     summary: Log daily milk yield
- *     description: Records morning and evening production for one animal.
- *     tags: [Production Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: header
- *         name: gaushala-id
- *         required: true
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/MilkRecord'
- *     responses:
- *       201:
- *         description: Yield recorded.
- *       400:
- *         $ref: '#/components/schemas/ValidationErrorResponse'
  *   get:
  *     summary: List daily yields
  *     tags: [Production Service]
@@ -250,6 +229,18 @@
  *       - in: header
  *         name: gaushala-id
  *         required: true
+ *       - in: query
+ *         name: date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: session
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [MORNING, EVENING]
  *     responses:
  *       200:
  *         description: History retrieved.
@@ -274,23 +265,33 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [date, records]
+ *             required: [date, session, entries]
  *             properties:
  *               date:
  *                 type: string
  *                 format: date
- *               records:
+ *               session:
+ *                 type: string
+ *                 enum: [MORNING, EVENING]
+ *                 description: Milking session identifier.
+ *               entries:
  *                 type: array
+ *                 minItems: 1
  *                 items:
  *                   type: object
- *                   required: [animalId, morning, evening]
+ *                   required: [animalId, quantity, feedQuantity]
  *                   properties:
  *                     animalId:
  *                       type: string
- *                     morning:
+ *                       format: mongo-id
+ *                     quantity:
  *                       type: number
- *                     evening:
+ *                       minimum: 0
+ *                       description: Milk yield in Liters.
+ *                     feedQuantity:
  *                       type: number
+ *                       minimum: 0
+ *                       description: Feed consumed in Kg.
  *     responses:
  *       201:
  *         description: Records saved.
