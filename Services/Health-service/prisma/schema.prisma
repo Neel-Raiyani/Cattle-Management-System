@@ -166,6 +166,7 @@ model Animal {
   gender          Gender   @default(FEMALE)
   isHeifer        Boolean  @default(false)
   status          AnimalStatus @default(ACTIVE)
+  isActive        Boolean  @default(true)
   gaushalaId      String   @db.ObjectId
   
   @@map("animals")

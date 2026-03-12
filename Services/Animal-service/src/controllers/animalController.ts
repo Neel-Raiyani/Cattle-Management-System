@@ -9,7 +9,7 @@ import type { AuthRequest } from '@appTypes/express.js';
 // ───────────────────────── Register Animal ─────────────────────────
 export const registerAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         const {
             name, tagNumber, animalNumber, gender,
@@ -107,7 +107,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
 // ───────────────────────── Get Cows (Paginated with Filters) ─────────────────────────
 export const getCows = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { filter = 'all', search, page = '1', limit = '20' } = req.query;
 
         const pageNum = Math.max(1, parseInt(page as string) || 1);
@@ -118,7 +118,7 @@ export const getCows = async (req: AuthRequest, res: Response, next: NextFunctio
         const twelveMonthsAgo = new Date(now);
         twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
-        const where: any = { gaushalaId, gender: 'FEMALE' };
+        const where: any = { gaushalaId, gender: 'FEMALE', isActive: true };
 
         switch (filter) {
             case 'lactating': where.isLactating = true; break;
@@ -192,7 +192,7 @@ export const getCows = async (req: AuthRequest, res: Response, next: NextFunctio
 // ───────────────────────── Get Bulls (Paginated with Filters) ─────────────────────────
 export const getBulls = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { filter = 'all', search, page = '1', limit = '20' } = req.query;
 
         const pageNum = Math.max(1, parseInt(page as string) || 1);
@@ -203,7 +203,7 @@ export const getBulls = async (req: AuthRequest, res: Response, next: NextFuncti
         const twelveMonthsAgo = new Date(now);
         twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
-        const where: any = { gaushalaId, gender: 'MALE' };
+        const where: any = { gaushalaId, gender: 'MALE', isActive: true };
 
         switch (filter) {
             case 'retired': where.isRetired = true; break;
@@ -274,7 +274,7 @@ export const getAnimalById = async (req: AuthRequest, res: Response, next: NextF
         const gaushalaId = req.headers['gaushala-id'] as string;
 
         const animal = await prisma.animal.findFirst({
-            where: { id: id as string, gaushalaId: gaushalaId as string },
+            where: { id: id as string, gaushalaId, isActive: true },
             include: {
                 sellRecord: true,
                 deathRecord: true,
@@ -314,7 +314,7 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
 
         // Verify animal exists and belongs to this gaushala
         const existingAnimal = await prisma.animal.findFirst({
-            where: { id: id as string, gaushalaId: gaushalaId as string }
+            where: { id: id as string, gaushalaId, isActive: true }
         });
 
         if (!existingAnimal) {
@@ -445,6 +445,67 @@ export const generateUploadUrl = async (req: AuthRequest, res: Response, next: N
         res.status(200).json({
             success: true,
             ...result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── Delete Animal (Soft Delete + Cascading Hard Delete) ─────────────────────────
+export const deleteAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+
+        const animal = await prisma.animal.findFirst({
+            where: { id: id as string, gaushalaId, isActive: true }
+        });
+
+        if (!animal) {
+            throw new AppError('Animal not found in this Gaushala', 404, 'ANIMAL_NOT_FOUND');
+        }
+
+        await prisma.$transaction(async (tx) => {
+            // 1. Soft delete the animal
+            await tx.animal.update({
+                where: { id: id as string },
+                data: { isActive: false }
+            });
+
+            // 2. Soft delete any disposal records
+            await tx.sellRecord.updateMany({
+                where: { animalId: id as string },
+                data: { isActive: false }
+            });
+            await tx.deathRecord.updateMany({
+                where: { animalId: id as string },
+                data: { isActive: false }
+            });
+            await tx.donationRecord.updateMany({
+                where: { animalId: id as string },
+                data: { isActive: false }
+            });
+
+            // 3. Hard delete Health-service records (Shadow models)
+            await tx.medicalRecord.deleteMany({ where: { animalId: id as string } });
+            await tx.vaccinationRecord.deleteMany({ where: { animalId: id as string } });
+            await tx.dewormingRecord.deleteMany({ where: { animalId: id as string } });
+            await tx.labRecord.deleteMany({ where: { animalId: id as string } });
+
+            // 4. Hard delete Production-service records (Shadow models)
+            await tx.milkRecord.deleteMany({ where: { animalId: id as string } });
+
+            // 5. Hard delete Breeding-service records (Shadow models)
+            await tx.parityRecord.deleteMany({ where: { animalId: id as string } });
+            await tx.heatRecord.deleteMany({ where: { animalId: id as string } });
+            await tx.dryOffRecord.deleteMany({ where: { animalId: id as string } });
+            await tx.conceptionJourney.deleteMany({ where: { animalId: id as string } });
+        });
+
+        logger.info(`Animal soft-deleted and history cleared: ${id} in Gaushala ${gaushalaId}`);
+        res.status(200).json({
+            success: true,
+            message: 'Animal and its history deleted successfully'
         });
     } catch (error) {
         next(error);

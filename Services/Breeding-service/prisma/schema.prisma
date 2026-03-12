@@ -151,6 +151,7 @@ model Animal {
   ownerMobile     String?
 
   status          AnimalStatus @default(ACTIVE)
+  isActive        Boolean  @default(true)
   photoUrl        String?
 
   createdAt       DateTime @default(now())

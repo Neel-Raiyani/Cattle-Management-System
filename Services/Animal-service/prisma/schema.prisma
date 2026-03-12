@@ -147,6 +147,7 @@ model Animal {
   deathRecord     DeathRecord?
   donationRecord  DonationRecord?
 
+  isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -166,6 +167,7 @@ model SellRecord {
   referenceBy   String?
   photoUrl      String?
 
+  isActive      Boolean  @default(true)
   soldAt        DateTime @default(now())
 
   @@map("sell_records")
@@ -180,6 +182,7 @@ model DeathRecord {
   reason        String
   lastPhotoUrl  String?
 
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
 
   @@map("death_records")
@@ -195,9 +198,66 @@ model DonationRecord {
   referenceBy   String?
   photoUrl      String?
 
+  isActive      Boolean  @default(true)
   donatedAt     DateTime @default(now())
 
   @@map("donation_records")
+}
+
+// ───────────────────────── Shadow Models for Cascading Hard Deletion ─────────────────────────
+
+model MedicalRecord {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String   @db.ObjectId
+  @@map("medical_records")
+}
+
+model VaccinationRecord {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  animalId    String   @db.ObjectId
+  @@map("vaccination_records")
+}
+
+model DewormingRecord {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  animalId      String    @db.ObjectId
+  @@map("deworming_records")
+}
+
+model LabRecord {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  animalId      String    @db.ObjectId
+  @@map("lab_records")
+}
+
+model MilkRecord {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String   @db.ObjectId
+  @@map("milk_records")
+}
+
+model ParityRecord {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String         @db.ObjectId
+  @@map("parity_records")
+}
+
+model HeatRecord {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String         @db.ObjectId
+  @@map("heat_records")
+}
+
+model DryOffRecord {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String       @db.ObjectId
+  @@map("dry_off_records")
+}
+
+model ConceptionJourney {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String         @db.ObjectId
+  @@map("conception_journeys")
 }
 
 model UserGaushala {

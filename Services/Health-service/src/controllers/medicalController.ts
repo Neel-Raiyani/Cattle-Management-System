@@ -17,7 +17,7 @@ export const recordMedicalVisit = async (req: AuthRequest, res: Response, next: 
 
         // Verify animal exists in this gaushala
         const animal = await prisma.animal.findFirst({
-            where: { id: animalId, gaushalaId }
+            where: { id: animalId, gaushalaId, isActive: true }
         });
 
         if (!animal) {
@@ -97,6 +97,14 @@ export const getMedicalHistoryByAnimal = async (req: AuthRequest, res: Response,
     try {
         const gaushalaId = req.gaushala?.id as string;
         const { animalId } = req.params;
+
+        const animal = await prisma.animal.findFirst({
+            where: { id: animalId as string, gaushalaId: gaushalaId as string, isActive: true }
+        });
+
+        if (!animal) {
+            throw new AppError('Animal not found or inactive', 404, 'ANIMAL_NOT_FOUND');
+        }
 
         const history = await prisma.medicalRecord.findMany({
             where: { animalId: animalId as string, gaushalaId: gaushalaId as string },

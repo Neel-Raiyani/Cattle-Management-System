@@ -25,6 +25,21 @@ export const recordYields = async (req: AuthRequest, res: Response, next: NextFu
             throw new AppError('Date, session, and entries array are required', 400, 'MISSING_DATA');
         }
 
+        // Verify all animals are active and belong to this gaushala
+        const animalIds = entries.map(e => e.animalId);
+        const activeAnimals = await prisma.animal.findMany({
+            where: {
+                id: { in: animalIds },
+                gaushalaId,
+                isActive: true
+            },
+            select: { id: true }
+        });
+
+        if (activeAnimals.length !== entries.length) {
+            throw new AppError('One or more animals are inactive or not found', 404, 'ANIMAL_NOT_ACTIVE');
+        }
+
         // Calculate total feed required
         const totalFeedRequired = entries.reduce((sum: number, entry: MilkEntryInput) => sum + (Number(entry.feedQuantity) || 0), 0);
 

@@ -13,7 +13,7 @@ export const recordDeworming = async (req: AuthRequest, res: Response, next: Nex
         const { animalId, doseDate, doseType, companyName, quantity, vetId, nextDoseDate } = req.body;
 
         const animal = await prisma.animal.findFirst({
-            where: { id: animalId, gaushalaId }
+            where: { id: animalId, gaushalaId, isActive: true }
         });
 
         if (!animal) {
@@ -58,7 +58,8 @@ export const recordBulkDeworming = async (req: AuthRequest, res: Response, next:
         const animals = await prisma.animal.findMany({
             where: {
                 id: { in: animalIds },
-                gaushalaId
+                gaushalaId,
+                isActive: true
             }
         });
 

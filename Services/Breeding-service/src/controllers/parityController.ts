@@ -51,7 +51,7 @@ export const addParityRecord = async (req: AuthRequest, res: Response, next: Nex
 
             // Update animal status
             await tx.animal.update({
-                where: { id: animalId },
+                where: { id: animalId, isActive: true },
                 data: {
                     parity: parityNo,
                     isLactating: true,
@@ -96,8 +96,8 @@ export const getParityRecords = async (req: AuthRequest, res: Response, next: Ne
         });
 
         // 3. Fetch animal details for header data
-        const animal = await prisma.animal.findUnique({
-            where: { id: animalId },
+        const animal = await prisma.animal.findFirst({
+            where: { id: animalId, isActive: true },
             select: { name: true, tagNumber: true, animalNumber: true, photoUrl: true, isHeifer: true }
         });
 

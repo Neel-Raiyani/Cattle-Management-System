@@ -40,8 +40,8 @@ export const initiateJourney = async (req: AuthRequest, res: Response, next: Nex
         }
 
         // Auto-fetch parity from the animal's parity field
-        const animal = await prisma.animal.findUnique({
-            where: { id: animalId }
+        const animal = await prisma.animal.findFirst({
+            where: { id: animalId, isActive: true }
         });
         if (!animal) {
             throw new AppError('Animal not found', 404, 'ANIMAL_NOT_FOUND');
@@ -196,8 +196,8 @@ export const recordDelivery = async (req: AuthRequest, res: Response, next: Next
             throw new AppError('Conception journey not found', 404, 'JOURNEY_NOT_FOUND');
         }
 
-        const mother = await prisma.animal.findUnique({
-            where: { id: journey.animalId }
+        const mother = await prisma.animal.findFirst({
+            where: { id: journey.animalId, isActive: true }
         });
 
         if (!mother) {
@@ -299,8 +299,8 @@ export const getJourneyDetails = async (req: AuthRequest, res: Response, next: N
             throw new AppError('Conception journey not found', 404, 'JOURNEY_NOT_FOUND');
         }
 
-        const animal = await prisma.animal.findUnique({
-            where: { id: journey.animalId }
+        const animal = await prisma.animal.findFirst({
+            where: { id: journey.animalId, isActive: true }
         });
 
         const bucket = process.env.S3_BUCKET_NAME || 'breeding-media';
@@ -356,7 +356,7 @@ export const listJourneys = async (req: AuthRequest, res: Response, next: NextFu
 
         const animalIds = [...new Set(journeys.map(j => j.animalId))];
         const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds } }
+            where: { id: { in: animalIds }, isActive: true }
         });
         const animalMap = new Map(animals.map(a => [a.id, a]));
 
@@ -444,6 +444,7 @@ export const getEligibleCowsForJourney = async (req: AuthRequest, res: Response,
                 gaushalaId,
                 gender: 'FEMALE',
                 status: 'ACTIVE',
+                isActive: true,
                 isRetired: false,
                 OR: [
                     { isHeifer: true },
@@ -506,6 +507,7 @@ export const getBullsForDropdown = async (req: AuthRequest, res: Response, next:
                 gaushalaId,
                 gender: 'MALE',
                 isRetired: false,
+                isActive: true,
                 birthDate: { lte: twelveMonthsAgo }
             },
             select: {

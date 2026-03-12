@@ -16,7 +16,7 @@ export const recordSell = async (req: AuthRequest, res: Response, next: NextFunc
 
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const animal = await tx.animal.findFirst({
-                where: { id: animalId as string, gaushalaId: gaushalaId as string }
+                where: { id: animalId as string, gaushalaId: gaushalaId as string, isActive: true }
             });
 
             if (!animal) {
@@ -70,7 +70,7 @@ export const recordDeath = async (req: AuthRequest, res: Response, next: NextFun
 
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const animal = await tx.animal.findFirst({
-                where: { id: animalId as string, gaushalaId: gaushalaId as string }
+                where: { id: animalId as string, gaushalaId: gaushalaId as string, isActive: true }
             });
 
             if (!animal) {
@@ -123,7 +123,7 @@ export const recordDonation = async (req: AuthRequest, res: Response, next: Next
 
         const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const animal = await tx.animal.findFirst({
-                where: { id: animalId as string, gaushalaId: gaushalaId as string }
+                where: { id: animalId as string, gaushalaId: gaushalaId as string, isActive: true }
             });
 
             if (!animal) {
@@ -235,6 +235,53 @@ export const updateDisposalRecord = async (req: AuthRequest, res: Response, next
             success: true,
             message: 'Record updated successfully',
             record: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── Delete Disposal Record (Soft Delete) ─────────────────────────
+export const deleteDisposalRecord = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { type, id } = req.params;
+        const gaushalaId = req.gaushala?.id as string;
+
+        const validTypes = ['sell', 'death', 'donation'];
+        if (!validTypes.includes(type as string)) {
+            throw new AppError(`Invalid disposal type '${type}'`, 400, 'INVALID_DISPOSAL_TYPE');
+        }
+
+        let record;
+        switch (type) {
+            case 'sell':
+                record = await prisma.sellRecord.findFirst({ where: { id: id as string, isActive: true } });
+                if (record) {
+                    await prisma.sellRecord.update({ where: { id: id as string }, data: { isActive: false } });
+                }
+                break;
+            case 'death':
+                record = await prisma.deathRecord.findFirst({ where: { id: id as string, isActive: true } });
+                if (record) {
+                    await prisma.deathRecord.update({ where: { id: id as string }, data: { isActive: false } });
+                }
+                break;
+            case 'donation':
+                record = await prisma.donationRecord.findFirst({ where: { id: id as string, isActive: true } });
+                if (record) {
+                    await prisma.donationRecord.update({ where: { id: id as string }, data: { isActive: false } });
+                }
+                break;
+        }
+
+        if (!record) {
+            throw new AppError('Record not found', 404, 'RECORD_NOT_FOUND');
+        }
+
+        logger.info(`Disposal record soft-deleted: ${type}/${id} in Gaushala ${gaushalaId}`);
+        res.status(200).json({
+            success: true,
+            message: 'Record deleted successfully'
         });
     } catch (error) {
         next(error);

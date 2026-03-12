@@ -43,6 +43,7 @@ export const getEarTagAlerts = async (req: AuthRequest, res: Response, next: Nex
             where: {
                 gaushalaId,
                 status: 'ACTIVE',
+                isActive: true,
                 OR: [
                     { tagNumber: null },
                     { tagNumber: '' }
@@ -78,6 +79,7 @@ export const getHeatAlerts = async (req: AuthRequest, res: Response, next: NextF
                 gaushalaId,
                 gender: 'FEMALE',
                 status: 'ACTIVE',
+                isActive: true,
                 isPregnant: false,
                 isRetired: false,
                 isHeifer: true
@@ -170,7 +172,7 @@ export const getPregnancyCheckAlerts = async (req: AuthRequest, res: Response, n
         type AnimalItem = { id: string; name: string | null; tagNumber: string | null; animalNumber: string | null; photoUrl: string | null };
         const animalIds = journeys.map((j: JourneyItem) => j.animalId);
         const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds } },
+            where: { id: { in: animalIds }, isActive: true },
             select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
         });
         const animalMap = new Map(animals.map((a: AnimalItem) => [a.id, a]));
@@ -204,6 +206,7 @@ export const getInseminationAlerts = async (req: AuthRequest, res: Response, nex
                 gaushalaId,
                 gender: 'FEMALE',
                 status: 'ACTIVE',
+                isActive: true,
                 isHeifer: true,
                 isPregnant: false,
                 isRetired: false,
@@ -323,7 +326,7 @@ export const getDeliveryAlerts = async (req: AuthRequest, res: Response, next: N
         type DeliveryAnimal = { id: string; name: string | null; tagNumber: string | null; animalNumber: string | null; photoUrl: string | null };
         const animalIds = journeys.map((j: DeliveryJourney) => j.animalId);
         const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds } },
+            where: { id: { in: animalIds }, isActive: true },
             select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
         });
         const animalMap = new Map(animals.map((a: DeliveryAnimal) => [a.id, a]));
@@ -387,7 +390,8 @@ export const getDewormingAlerts = async (req: AuthRequest, res: Response, next: 
         const animals = await prisma.animal.findMany({
             where: {
                 id: { in: animalIds },
-                status: 'ACTIVE'
+                status: 'ACTIVE',
+                isActive: true
             },
             select: {
                 id: true,

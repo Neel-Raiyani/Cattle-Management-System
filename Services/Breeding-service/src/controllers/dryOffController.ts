@@ -70,7 +70,7 @@ export const getDryOffRecords = async (req: AuthRequest, res: Response, next: Ne
         ])];
 
         const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds } }
+            where: { id: { in: animalIds }, isActive: true }
         });
         const animalMap = new Map(animals.map(a => [a.id, a]));
 
@@ -158,7 +158,8 @@ export const getEligibleForDryOffDropdown = async (req: AuthRequest, res: Respon
         const animals = await prisma.animal.findMany({
             where: {
                 gaushalaId,
-                isLactating: true
+                isLactating: true,
+                isActive: true
             },
             select: {
                 id: true,

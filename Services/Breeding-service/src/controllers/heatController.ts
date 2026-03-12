@@ -16,8 +16,8 @@ export const recordHeat = async (req: AuthRequest, res: Response, next: NextFunc
         }
 
         // Auto-fetch parity from the animal's parity field
-        const animal = await prisma.animal.findUnique({
-            where: { id: animalId }
+        const animal = await prisma.animal.findFirst({
+            where: { id: animalId, isActive: true }
         });
 
         if (!animal) {
@@ -70,7 +70,7 @@ export const getHeatRecords = async (req: AuthRequest, res: Response, next: Next
 
         const animalIds = [...new Set(records.map(r => r.animalId))];
         const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds } }
+            where: { id: { in: animalIds }, isActive: true }
         });
         const animalMap = new Map(animals.map(a => [a.id, a]));
 
@@ -147,6 +147,7 @@ export const getEligibleForHeat = async (req: AuthRequest, res: Response, next: 
         const animals = await prisma.animal.findMany({
             where: {
                 gaushalaId,
+                isActive: true,
                 OR: [
                     { isLactating: true },
                     { isHeifer: true }

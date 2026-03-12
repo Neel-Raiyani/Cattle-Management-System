@@ -12,8 +12,12 @@ export const createLabRecord = async (req: AuthRequest, res: Response, next: Nex
         const gaushalaId = req.gaushala?.id as string;
         const { animalId, labtestId, sampleDate, resultDate, result, attachmentUrl, remark } = req.body;
 
-        if (!animalId || !labtestId || !sampleDate) {
-            throw new AppError('animalId, labtestId, and sampleDate are required', 400);
+        const animal = await (prisma as any).animal.findFirst({
+            where: { id: animalId, gaushalaId, isActive: true }
+        });
+
+        if (!animal) {
+            throw new AppError('Animal not found or inactive', 404, 'ANIMAL_NOT_FOUND');
         }
 
         const record = await (prisma as any).labRecord.create({
@@ -112,7 +116,15 @@ export const listLabRecords = async (req: AuthRequest, res: Response, next: Next
         const { animalId } = req.query;
 
         const where: any = { gaushalaId };
-        if (animalId) where.animalId = animalId;
+        if (animalId) {
+            const animal = await (prisma as any).animal.findFirst({
+                where: { id: animalId as string, gaushalaId: gaushalaId as string, isActive: true }
+            });
+            if (!animal) {
+                throw new AppError('Animal not found or inactive', 404, 'ANIMAL_NOT_FOUND');
+            }
+            where.animalId = animalId;
+        }
 
         const records = await (prisma as any).labRecord.findMany({
             where,

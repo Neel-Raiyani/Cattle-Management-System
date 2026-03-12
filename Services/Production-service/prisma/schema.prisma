@@ -31,6 +31,13 @@ enum Session {
   EVENING
 }
 
+model Animal {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  isActive        Boolean  @default(true)
+  gaushalaId      String   @db.ObjectId
+  @@map("animals")
+}
+
 model MilkDistributionCategory {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   gaushalaId      String   @db.ObjectId

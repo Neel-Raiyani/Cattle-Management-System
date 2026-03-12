@@ -48,7 +48,7 @@
  *         adultDate:
  *           type: string
  *           format: date
- *           description: Automatically calculated date (Birth date + 12 months) when treated as an adult.
+ *           description: Read-only; Automatically calculated date (Birth date + 12 months) when treated as an adult.
  *         isPregnant:
  *           type: boolean
  *           description: Read-only; synced from Breeding service.
@@ -142,7 +142,7 @@
  *           type: string
  *           enum: [ACTIVE, SOLD, DEAD, DONATED]
  *           example: ACTIVE
- *           description: Lifecycle availability of the animal.
+ *           description: Lifecycle availability. Managed via registration and disposal endpoints.
  *         photoUrl:
  *           type: string
  *           description: Internal storage key for the primary image.
@@ -150,6 +150,10 @@
  *           type: string
  *           format: url
  *           description: Secure temporary link for UI rendering.
+ *         isActive:
+ *           type: boolean
+ *           default: true
+ *           description: Read-only soft-deletion flag.
  *
  *     AnimalSummary:
  *       type: object
@@ -202,6 +206,67 @@
  *         referenceBy: { type: string }
  *         photoUrl: { type: string, format: binary }
  *         donatedAt: { type: string, format: date }
+ *
+ *     AnimalCreateInput:
+ *       type: object
+ *       required: [gender, acquisitionType, birthDate]
+ *       description: Fields required or optional when registering a new animal. Internal fields (id, adultDate, status) are excluded.
+ *       properties:
+ *         name: { type: string, minLength: 1, example: 'Laxmi' }
+ *         tagNumber: { type: string, example: 'TAG123' }
+ *         animalNumber: { type: string, example: 'C001' }
+ *         gender: { type: string, enum: [MALE, FEMALE], example: FEMALE }
+ *         cowBreed: { type: string, enum: [Gir, Sahiwal, Red_Sindhi, Tharparkar, Kankrej, Rathi, Punganur, Badri, Hallikar, Kangayam, Hariana, Mewati, Nagori, Nimadi, Malvi, Kherigarh, Amritmahal, Umblachery, Pulikulam, Bargur, Ongole, Red_Kandhari, Gaolao, Gangatiri, Siri, Motu, Vechur, Jersey, Holstein_Friesian, Brown_Swiss], example: Gir }
+ *         cowGroup: { type: string, example: 'Milk-Yielders' }
+ *         birthDate: { type: string, format: date, example: '2023-01-01' }
+ *         parity: { type: integer, minimum: 0, default: 0 }
+ *         isPregnant: { type: boolean, default: false }
+ *         bullView: { type: string }
+ *         motherMilk: { type: number, minimum: 0 }
+ *         grandmotherMilk: { type: number, minimum: 0 }
+ *         isHandicapped: { type: boolean, default: false }
+ *         handicapReason: { type: string }
+ *         acquisitionType: { type: string, enum: [BIRTH, PURCHASE, DONATION], example: PURCHASE }
+ *         purchaseDate: { type: string, format: date }
+ *         purchasedFrom: { type: string }
+ *         purchasePrice: { type: number, minimum: 0 }
+ *         ownerName: { type: string }
+ *         ownerMobile: { type: string }
+ *         photoUrl: { type: string, description: 'Internal storage key for photo' }
+ *         isUdderClosedFL: { type: boolean, default: false }
+ *         isUdderClosedFR: { type: boolean, default: false }
+ *         isUdderClosedBL: { type: boolean, default: false }
+ *         isUdderClosedBR: { type: boolean, default: false }
+ *         motherName: { type: string }
+ *         fatherName: { type: string }
+ *         motherId: { type: string, format: mongo-id }
+ *         fatherId: { type: string, format: mongo-id }
+ *
+ *     AnimalUpdateInput:
+ *       type: object
+ *       description: Fields allowed for updating an animal profile. All fields are optional. Logic-driven fields (adultDate) remain excluded.
+ *       properties:
+ *         name: { type: string, minLength: 1 }
+ *         tagNumber: { type: string }
+ *         animalNumber: { type: string }
+ *         cowGroup: { type: string }
+ *         birthDate: { type: string, format: date }
+ *         isPregnant: { type: boolean }
+ *         parity: { type: integer, minimum: 0 }
+ *         bullView: { type: string }
+ *         motherMilk: { type: number, minimum: 0 }
+ *         grandmotherMilk: { type: number, minimum: 0 }
+ *         isHandicapped: { type: boolean }
+ *         handicapReason: { type: string }
+ *         photoUrl: { type: string }
+ *         isUdderClosedFL: { type: boolean }
+ *         isUdderClosedFR: { type: boolean }
+ *         isUdderClosedBL: { type: boolean }
+ *         isUdderClosedBR: { type: boolean }
+ *         motherName: { type: string }
+ *         fatherName: { type: string }
+ *         motherId: { type: string, format: mongo-id }
+ *         fatherId: { type: string, format: mongo-id }
  */
 
 // ───────────────────────── Groups ─────────────────────────
@@ -472,6 +537,7 @@
  * /api/animal/add:
  *   post:
  *     summary: Register a new cow or bull
+ *     description: Automatically calculates 'adultDate', 'isHeifer', and 'isLactating' based on birthDate and parity.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -482,7 +548,7 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Animal'
+ *             $ref: '#/components/schemas/AnimalCreateInput'
  */
 
 /**
@@ -581,6 +647,7 @@
  * /api/animal/update/{id}:
  *   patch:
  *     summary: Update profile markers
+ *     description: Updating birthDate or parity triggers automatic recalculation of 'adultDate', 'isHeifer', and 'isLactating' unless manually overridden in the same request.
  *     tags: [Animal Service]
  *     security:
  *       - bearerAuth: []
@@ -594,5 +661,5 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Animal'
+ *             $ref: '#/components/schemas/AnimalUpdateInput'
  */
