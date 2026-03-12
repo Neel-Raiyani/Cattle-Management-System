@@ -7,7 +7,9 @@ import {
     getPregnancyCheckAlerts,
     getInseminationAlerts,
     getDeliveryAlerts,
-    getDewormingAlerts
+    getDewormingAlerts,
+    getAdultAlerts,
+    getLabAlerts
 } from '@controllers/alertController.js';
 
 const router = Router();
@@ -23,5 +25,7 @@ router.get('/pregnancy-check', getPregnancyCheckAlerts);
 router.get('/insemination', getInseminationAlerts);
 router.get('/delivery', getDeliveryAlerts);
 router.get('/deworming', getDewormingAlerts);
+router.get('/adult', getAdultAlerts);
+router.get('/lab-test', getLabAlerts);
 
 export default router;

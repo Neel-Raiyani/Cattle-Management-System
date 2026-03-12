@@ -101,4 +101,36 @@
  *         description: List of animals due for deworming.
  */
 
+/**
+ * @swagger
+ * /api/alert/adult:
+ *   get:
+ *     summary: Adult maturity alerts
+ *     description: Animals that have crossed their adultDate (typically 12 months) and are up to 15 months old.
+ *     tags: [Alert Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: List of animals in the 12-15 month age bracket.
+ */
+
+/**
+ * @swagger
+ * /api/alert/lab-test:
+ *   get:
+ *     summary: Pending lab test alerts
+ *     description: Lab records that have been sampled but are missing the final result.
+ *     tags: [Alert Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: List of lab records with missing results.
+ */
+
 export { };

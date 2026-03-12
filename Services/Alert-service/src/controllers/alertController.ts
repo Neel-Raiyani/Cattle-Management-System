@@ -12,6 +12,8 @@ const DELIVERY_ALERT_DAYS = 250;    // Alert 30 days before expected delivery (2
 const GESTATION_DAYS = 280;         // Full gestation period
 const INSEMINATION_WAIT_DAYS = 60;  // Wait period after delivery before next insemination
 const DEWORMING_ALERT_DAYS = 7;     // Alert N days before nextDoseDate
+const ADULT_LOWER_MONTHS = 12;      // Start alert at 12 months
+const ADULT_UPPER_MONTHS = 15;      // Stop alert at 15 months
 
 // ───────────────────────── Helpers ─────────────────────────
 
@@ -26,6 +28,13 @@ const daysFromNow = (days: number): Date => {
     const d = new Date();
     d.setDate(d.getDate() + days);
     d.setHours(23, 59, 59, 999);
+    return d;
+};
+
+const monthsAgo = (months: number): Date => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - months);
+    d.setHours(0, 0, 0, 0);
     return d;
 };
 
@@ -422,6 +431,98 @@ export const getDewormingAlerts = async (req: AuthRequest, res: Response, next: 
             });
 
         logger.info(`Fetched ${data.length} deworming alerts for Gaushala ${gaushalaId}`);
+        res.json({ success: true, count: data.length, data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── 7. Adult Alert ─────────────────────────
+
+export const getAdultAlerts = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.gaushala?.id as string;
+        const upperLimit = monthsAgo(ADULT_LOWER_MONTHS);
+        const lowerLimit = monthsAgo(ADULT_UPPER_MONTHS);
+
+        const animals = await prisma.animal.findMany({
+            where: {
+                gaushalaId,
+                status: 'ACTIVE',
+                isActive: true,
+                birthDate: {
+                    lte: upperLimit,
+                    gte: lowerLimit
+                }
+            },
+            select: {
+                id: true,
+                name: true,
+                tagNumber: true,
+                animalNumber: true,
+                gender: true,
+                birthDate: true,
+                adultDate: true,
+                photoUrl: true
+            },
+            orderBy: { birthDate: 'asc' }
+        });
+
+        const now = new Date();
+        const data = animals.map(animal => ({
+            ...animal,
+            ageInMonths: animal.birthDate
+                ? Math.floor(diffDays(animal.birthDate, now) / 30.44)
+                : null
+        }));
+
+        logger.info(`Fetched ${data.length} adult alerts for Gaushala ${gaushalaId}`);
+        res.json({ success: true, count: data.length, data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── 8. Lab Test Alert ─────────────────────────
+
+export const getLabAlerts = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.gaushala?.id as string;
+
+        const labRecords = await prisma.labRecord.findMany({
+            where: {
+                gaushalaId,
+                result: null
+            },
+            orderBy: { sampleDate: 'desc' }
+        });
+
+        if (labRecords.length === 0) {
+            return res.json({ success: true, count: 0, data: [] });
+        }
+
+        const animalIds = labRecords.map(r => r.animalId);
+        const animals = await prisma.animal.findMany({
+            where: { id: { in: animalIds }, isActive: true },
+            select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
+        });
+        const animalMap = new Map(animals.map(a => [a.id, a]));
+
+        const labtestIds = labRecords.map(r => r.labtestId);
+        const labtestMasters = await prisma.labtestMaster.findMany({
+            where: { id: { in: labtestIds } }
+        });
+        const labtestMap = new Map(labtestMasters.map(m => [m.id, m.name]));
+
+        const data = labRecords.map(record => ({
+            id: record.id,
+            animal: animalMap.get(record.animalId) || null,
+            testName: labtestMap.get(record.labtestId) || 'Unknown Test',
+            sampleDate: record.sampleDate,
+            remark: record.remark
+        }));
+
+        logger.info(`Fetched ${data.length} lab alerts for Gaushala ${gaushalaId}`);
         res.json({ success: true, count: data.length, data });
     } catch (error) {
         next(error);
