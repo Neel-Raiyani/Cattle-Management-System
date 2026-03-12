@@ -153,7 +153,7 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [mobileNumber, password, name, city, gaushalaName]
+ *             required: [mobileNumber, password, confirmPassword, name, city, gaushalaName]
  *             properties:
  *               mobileNumber:
  *                 type: string
@@ -166,6 +166,12 @@
  *                 minLength: 6
  *                 example: Password@123
  *                 description: Secure password (Min 6 characters).
+ *               confirmPassword:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: Password@123
+ *                 description: Must match the password.
  *               name:
  *                 type: string
  *                 minLength: 1
@@ -372,7 +378,7 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [mobileNumber, otp, newPassword]
+ *             required: [mobileNumber, otp, newPassword, confirmPassword]
  *             properties:
  *               mobileNumber:
  *                 type: string
@@ -388,6 +394,12 @@
  *                 format: password
  *                 minLength: 6
  *                 example: NewSecurePassword@123
+ *               confirmPassword:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: NewSecurePassword@123
+ *                 description: Must match the new password.
  *     responses:
  *       200:
  *         description: Password reset complete.
@@ -416,7 +428,7 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [oldPassword, newPassword]
+ *             required: [oldPassword, newPassword, confirmPassword]
  *             properties:
  *               oldPassword:
  *                 type: string
@@ -427,6 +439,12 @@
  *                 format: password
  *                 minLength: 6
  *                 example: ChangedPassword@789
+ *               confirmPassword:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: ChangedPassword@789
+ *                 description: Must match the new password.
  *     responses:
  *       200:
  *         description: Password updated.

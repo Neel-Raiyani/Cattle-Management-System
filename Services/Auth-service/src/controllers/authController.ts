@@ -9,7 +9,11 @@ import type { AuthRequest } from '@appTypes/express.js';
 
 export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { mobileNumber, password, name, city, gaushalaName, totalCattle } = req.body;
+        const { mobileNumber, password, confirmPassword, name, city, gaushalaName, totalCattle } = req.body;
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({ message: 'Passwords do not match' });
+        }
 
         const existingUser = await prisma.user.findUnique({ where: { mobileNumber } });
         if (existingUser) {
@@ -210,7 +214,12 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
 
 export const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { mobileNumber, otp, newPassword } = req.body;
+        const { mobileNumber, otp, newPassword, confirmPassword } = req.body;
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: 'Passwords do not match' });
+        }
+
         const user = await prisma.user.findUnique({ where: { mobileNumber } });
 
         if (!user || user.otp !== otp || !user.otpExpires || user.otpExpires < new Date()) {
@@ -257,7 +266,11 @@ export const updateSettings = async (req: any, res: Response, next: NextFunction
 export const changePassword = async (req: any, res: Response, next: NextFunction) => {
     try {
         const userId = req.user.userId;
-        const { oldPassword, newPassword } = req.body;
+        const { oldPassword, newPassword, confirmPassword } = req.body;
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: 'Passwords do not match' });
+        }
 
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
