@@ -679,6 +679,7 @@
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [name]
  *             properties:
  *               name: { type: string, example: "Milk Analysis" }
  *     responses:

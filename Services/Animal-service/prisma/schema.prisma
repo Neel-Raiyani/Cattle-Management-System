@@ -84,8 +84,8 @@ model Animal {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
 
   // Basic Info
-  name            String?
-  tagNumber       String?
+  name            String
+  tagNumber       String
   animalNumber    String?
   gender          Gender
   gaushalaId      String   @db.ObjectId // Link to Gaushala entity in Auth-service

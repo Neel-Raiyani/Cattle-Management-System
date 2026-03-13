@@ -25,8 +25,11 @@ export const validate = (req: Request, res: Response, next: NextFunction) => {
 export const registerAnimalValidation = [
     body('gender')
         .isIn(['MALE', 'FEMALE']).withMessage('Gender must be MALE or FEMALE'),
+    body('name')
+        .notEmpty().withMessage('Name is required')
+        .isString().withMessage('Name must be a string'),
     body('tagNumber')
-        .optional()
+        .notEmpty().withMessage('Tag number is required')
         .isString().withMessage('Tag number must be a string'),
     body('acquisitionType')
         .isIn(['BIRTH', 'PURCHASE', 'DONATION']).withMessage('Acquisition type must be BIRTH, PURCHASE, or DONATION'),
@@ -34,7 +37,11 @@ export const registerAnimalValidation = [
         .optional()
         .isString().withMessage('Cow breed must be a string'),
     body('birthDate')
+        .notEmpty().withMessage('Birth date is required')
         .isISO8601().withMessage('Birth date must be a valid ISO 8601 date'),
+    body('parity')
+        .notEmpty().withMessage('Parity is required')
+        .isInt({ min: 0 }).withMessage('Parity must be a non-negative integer'),
     body('purchasePrice')
         .optional()
         .isFloat({ min: 0 }).withMessage('Purchase price must be a positive number'),

@@ -20,31 +20,24 @@
  *
  *     FeedInventory:
  *       type: object
- *       description: Tracking of cattle feed stock levels.
- *       required: [feedName, quantity, unit]
+ *       description: Tracking of cattle feed stock levels for a Gaushala.
+ *       required: [totalQuantity]
  *       properties:
  *         id:
  *           type: string
- *         feedName:
- *           type: string
- *           minLength: 1
- *           example: 'Maize Silage'
- *         quantity:
+ *         totalQuantity:
  *           type: number
  *           minimum: 0
  *           example: 500
- *         unit:
+ *           description: Total feed stock in Kg.
+ *         updatedAt:
  *           type: string
- *           enum: [KG, TON, BAG]
- *           example: KG
- *         lastUpdated:
- *           type: string
- *           format: date
+ *           format: date-time
  *
  *     MilkRecord:
  *       type: object
  *       description: Daily milk yield entry for an individual animal.
- *       required: [animalId, date, morning, evening]
+ *       required: [animalId, date, session, quantity, feedQuantity]
  *       properties:
  *         id:
  *           type: string
@@ -65,14 +58,11 @@
  *           type: number
  *           minimum: 0
  *           description: Feed consumed in Kg.
- *         total:
- *           type: number
- *           description: Read-only; calculated sum.
  *
  *     DistributionRecord:
  *       type: object
  *       description: Allocation of daily milk yield to a specific category.
- *       required: [categoryId, date, amount]
+ *       required: [categoryId, date, session, quantity]
  *       properties:
  *         id:
  *           type: string
@@ -82,7 +72,10 @@
  *         date:
  *           type: string
  *           format: date
- *         amount:
+ *         session:
+ *           type: string
+ *           enum: [MORNING, EVENING]
+ *         quantity:
  *           type: number
  *           minimum: 0
  *           description: Amount allocated in Liters.
@@ -366,10 +359,16 @@
  *           schema:
  *             type: object
  *             properties:
- *               amount:
+ *               quantity:
  *                 type: number
- *               remarks:
+ *               categoryId:
  *                 type: string
+ *               date:
+ *                 type: string
+ *                 format: date
+ *               session:
+ *                 type: string
+ *                 enum: [MORNING, EVENING]
  *     responses:
  *       200:
  *         description: Updated.

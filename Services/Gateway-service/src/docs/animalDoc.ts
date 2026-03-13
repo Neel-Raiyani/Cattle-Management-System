@@ -8,6 +8,7 @@
  *   schemas:
  *     Animal:
  *       type: object
+ *       required: [id, name, tagNumber, gender, parity, birthDate, acquisitionType, status]
  *       description: Detailed profile of a bovine animal within the gaushala.
  *       properties:
  *         id:
@@ -209,7 +210,7 @@
  *
  *     AnimalCreateInput:
  *       type: object
- *       required: [gender, acquisitionType, birthDate]
+ *       required: [name, tagNumber, gender, parity, birthDate, acquisitionType]
  *       description: Fields required or optional when registering a new animal. Internal fields (id, adultDate, status) are excluded.
  *       properties:
  *         name: { type: string, minLength: 1, example: 'Laxmi' }
@@ -353,6 +354,7 @@
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [name]
  *             properties:
  *               name:
  *                 type: string
