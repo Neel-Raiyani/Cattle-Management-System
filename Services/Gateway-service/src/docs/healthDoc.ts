@@ -153,6 +153,8 @@
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -192,6 +194,8 @@
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     requestBody:
  *       required: true
  *       content:

@@ -64,7 +64,7 @@ export const getDailyMilkReport = async (req: AuthRequest, res: Response, next: 
  */
 export const getMonthlyMilkReport = async (req: any, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { year, month } = req.query; // numeric
 
         if (!year || !month) {
@@ -118,7 +118,7 @@ export const getMonthlyMilkReport = async (req: any, res: Response, next: NextFu
 export const getCowMonthlyReport = async (req: any, res: Response, next: NextFunction) => {
     try {
         const { animalId } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { year, month } = req.query;
 
         if (!year || !month) {

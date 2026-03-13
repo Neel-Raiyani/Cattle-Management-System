@@ -471,9 +471,6 @@
  *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
- *         schema:
- *           type: string
- *         description: Target Gaushala ID.
  *     requestBody:
  *       required: true
  *       content:

@@ -220,7 +220,6 @@
  *         cowGroup: { type: string, example: 'Milk-Yielders' }
  *         birthDate: { type: string, format: date, example: '2023-01-01' }
  *         parity: { type: integer, minimum: 0, default: 0 }
- *         isPregnant: { type: boolean, default: false }
  *         bullView: { type: string }
  *         motherMilk: { type: number, minimum: 0 }
  *         grandmotherMilk: { type: number, minimum: 0 }
@@ -285,6 +284,19 @@
  *     responses:
  *       200:
  *         description: Unique group name array.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 groups:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       name: { type: string }
  *   post:
  *     summary: Create new cow group
  *     description: Manually adds a new group name to the selection list.
@@ -305,6 +317,21 @@
  *                 type: string
  *                 minLength: 1
  *                 example: 'High Producers'
+ *     responses:
+ *       201:
+ *         description: Group created successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: 'Group created' }
+ *                 group: { type: object }
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
+ *       409:
+ *         description: Group name already exists.
  */
 
 /**
@@ -330,6 +357,11 @@
  *               name:
  *                 type: string
  *                 minLength: 1
+ *     responses:
+ *       200:
+ *         description: Group renamed successfully.
+ *       404:
+ *         $ref: '#/components/schemas/ErrorResponse'
  *   delete:
  *     summary: Delete group
  *     tags: [Animal Service]
@@ -340,6 +372,11 @@
  *         name: id
  *         required: true
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: Group deleted successfully.
+ *       404:
+ *         $ref: '#/components/schemas/ErrorResponse'
  */
 
 // ───────────────────────── Reports ─────────────────────────
@@ -385,6 +422,15 @@
  *     responses:
  *       200:
  *         description: Filtered cow list.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 cows:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/Animal' }
  */
 
 /**
@@ -406,6 +452,15 @@
  *     responses:
  *       200:
  *         description: Dropdown data list.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 animals:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/Animal' }
  */
 
 /**
@@ -436,6 +491,13 @@
  *     responses:
  *       200:
  *         description: Animal status updated to retired.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: 'Animal status updated to retired' }
  */
 
 // ───────────────────────── Disposal ─────────────────────────
@@ -460,6 +522,13 @@
  *     responses:
  *       201:
  *         description: Record saved.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: 'Record saved' }
  */
 
 /**
@@ -482,6 +551,13 @@
  *     responses:
  *       201:
  *         description: Record saved.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: 'Record saved' }
  */
 
 /**
@@ -504,6 +580,13 @@
  *     responses:
  *       201:
  *         description: Record saved.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: 'Record saved' }
  */
 
 /**
@@ -528,6 +611,13 @@
  *     responses:
  *       200:
  *         description: Record updated.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: 'Record updated' }
  */
 
 // ───────────────────────── Animals ─────────────────────────
@@ -549,6 +639,17 @@
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/AnimalCreateInput'
+ *     responses:
+ *       201:
+ *         description: Animal registered successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: 'Animal registered successfully' }
+ *                 animal: { $ref: '#/components/schemas/Animal' }
  */
 
 /**
@@ -576,6 +677,18 @@
  *       - in: query
  *         name: limit
  *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200:
+ *         description: Paginated cow list.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 cows:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/Animal' }
  */
 
 /**
@@ -602,6 +715,18 @@
  *       - in: query
  *         name: limit
  *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200:
+ *         description: Paginated bull list.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 bulls:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/Animal' }
  */
 
 /**
@@ -625,6 +750,17 @@
  *           type: string
  *           enum: [PHOTO, DISPOSAL, DOC]
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: Pre-signed URL generated.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 uploadUrl: { type: string }
+ *                 viewUrl: { type: string }
  */
 
 /**
@@ -640,6 +776,18 @@
  *         name: id
  *         required: true
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: Animal profile data retrieved.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 animal: { $ref: '#/components/schemas/Animal' }
+ *       404:
+ *         $ref: '#/components/schemas/ErrorResponse'
  */
 
 /**
@@ -662,4 +810,15 @@
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/AnimalUpdateInput'
+ *     responses:
+ *       200:
+ *         description: Animal updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: 'Animal updated successfully' }
+ *                 animal: { $ref: '#/components/schemas/Animal' }
  */

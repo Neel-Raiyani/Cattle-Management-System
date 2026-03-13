@@ -146,6 +146,7 @@
  *       - in: query
  *         name: fileType
  *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Presigned URL generated.
@@ -783,6 +784,7 @@
  *       - in: path
  *         name: id
  *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Children profiles.

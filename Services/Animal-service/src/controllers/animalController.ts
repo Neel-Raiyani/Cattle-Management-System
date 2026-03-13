@@ -14,7 +14,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
         const {
             name, tagNumber, animalNumber, gender,
             cowBreed, cowGroup, birthDate,
-            isPregnant, parity,
+            parity,
             bullView, motherMilk, grandmotherMilk, isHandicapped, handicapReason,
             acquisitionType, purchaseDate, purchasedFrom, purchasePrice, ownerName, ownerMobile,
             photoUrl,
@@ -63,7 +63,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
                 cowGroup: cowGroup || null,
                 birthDate: bDate,
                 adultDate,
-                isPregnant: isPregnant ?? false,
+                isPregnant: false,
                 parity: parityValue,
                 isLactating: autoLactating,
                 isDryOff: false,
@@ -271,7 +271,7 @@ export const getBulls = async (req: AuthRequest, res: Response, next: NextFuncti
 export const getAnimalById = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         const animal = await prisma.animal.findFirst({
             where: { id: id as string, gaushalaId, isActive: true },
@@ -310,7 +310,7 @@ export const getAnimalById = async (req: AuthRequest, res: Response, next: NextF
 export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
 
         // Verify animal exists and belongs to this gaushala
         const existingAnimal = await prisma.animal.findFirst({

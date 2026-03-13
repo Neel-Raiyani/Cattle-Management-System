@@ -47,7 +47,7 @@ export const recordDeworming = async (req: AuthRequest, res: Response, next: Nex
  */
 export const recordBulkDeworming = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { animalIds, doseDate, doseType, companyName, quantity, vetId, nextDoseDate } = req.body;
 
         if (!Array.isArray(animalIds) || animalIds.length === 0) {
@@ -153,7 +153,7 @@ export const getDewormingHistoryByAnimal = async (req: AuthRequest, res: Respons
  */
 export const listDewormingRecords = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { startDate, endDate } = req.query;
 
         const where: Prisma.DewormingRecordWhereInput = { gaushalaId: gaushalaId as string };

@@ -93,7 +93,7 @@ export const getDewormingReport = async (req: AuthRequest, res: Response, next: 
  */
 export const getDewormingDropdowns = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { type } = req.query as { type?: 'COW' | 'BULL' };
 
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });

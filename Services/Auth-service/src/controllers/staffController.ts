@@ -8,7 +8,7 @@ import type { AuthRequest } from '@appTypes/express.js';
 // ───────────────────────── Add Staff ─────────────────────────
 export const addStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { name, mobileNumber, role, city } = req.body;
 
         // Explicitly block OWNER role assignment
@@ -89,7 +89,7 @@ export const addStaff = async (req: AuthRequest, res: Response, next: NextFuncti
 // ───────────────────────── Get Staff List ─────────────────────────
 export const getStaffList = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const { role } = req.query as { role?: string };
 
         const where: any = { gaushalaId, isActive: true };
@@ -132,7 +132,7 @@ export const getStaffList = async (req: AuthRequest, res: Response, next: NextFu
 // ───────────────────────── Update Staff ─────────────────────────
 export const updateStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const userId = req.params.userId as string;
         const { name, city, role } = req.body;
 
@@ -225,7 +225,7 @@ export const updateStaff = async (req: AuthRequest, res: Response, next: NextFun
 // ───────────────────────── Remove Staff ─────────────────────────
 export const removeStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const gaushalaId = req.headers['gaushala-id'] as string;
+        const gaushalaId = req.gaushala?.id as string;
         const userId = req.params.userId as string;
 
         const membership = await prisma.userGaushala.findUnique({
