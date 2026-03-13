@@ -22,10 +22,10 @@ import {
 const router = express.Router();
 
 // ───────────────────────── Master Lists ─────────────────────────
-router.get('/master/diseases', auth, getAllDiseases);
+router.get('/master/diseases', auth, gaushalaAuth(), getAllDiseases);
 router.post('/master/diseases', auth, gaushalaAuth(['OWNER', 'MANAGER']), masterValidation, addDisease);
 
-router.get('/master/vaccines', auth, getAllVaccines);
+router.get('/master/vaccines', auth, gaushalaAuth(), getAllVaccines);
 router.post('/master/vaccines', auth, gaushalaAuth(['OWNER', 'MANAGER']), masterValidation, addVaccine);
 
 

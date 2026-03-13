@@ -142,14 +142,18 @@
  * /api/health/master/diseases:
  *   get:
  *     summary: List all cataloged diseases
- *     description: Retrieves the global master list of diseases for selection in records.
+ *     description: Retrieves the gaushala-wise master list of diseases for selection in records.
  *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Disease array.
  *   post:
  *     summary: Add to disease catalog
- *     description: Creates a new disease master record for use across the platform.
+ *     description: Creates a new disease master record specifically for this gaushala.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -183,14 +187,18 @@
  * /api/health/master/vaccines:
  *   get:
  *     summary: List all vaccines
- *     description: Retrieves the global master list of available vaccinations.
+ *     description: Retrieves the gaushala-wise master list of available vaccinations.
  *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
  *         description: Vaccine array.
  *   post:
  *     summary: Add to vaccine catalog
- *     description: Creates a new vaccine master entry.
+ *     description: Creates a new vaccine master entry for this gaushala.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []

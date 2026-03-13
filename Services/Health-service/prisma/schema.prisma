@@ -40,21 +40,24 @@ enum AcquisitionType {
   DONATION
 }
 
-// ───────────────────────── Global Master Lists ─────────────────────────
-
+// ───────────────────────── Master Lists ─────────────────────────
 model DiseaseMaster {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @unique             // Global uniqueness
+  name        String
+  gaushalaId  String   @db.ObjectId
   createdAt   DateTime @default(now())
 
+  @@unique([name, gaushalaId])
   @@map("disease_masters")
 }
 
 model VaccineMaster {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @unique             // Global uniqueness
+  name        String
+  gaushalaId  String   @db.ObjectId
   createdAt   DateTime @default(now())
 
+  @@unique([name, gaushalaId])
   @@map("vaccine_masters")
 }
 

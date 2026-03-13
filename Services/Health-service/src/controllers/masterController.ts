@@ -4,11 +4,15 @@ import { AppError } from '@utils/AppError.js';
 import { AuthRequest } from '@appTypes/express.js';
 
 /**
- * Fetch all global diseases for dropdowns.
+ * Fetch all diseases for a specific gaushala.
  */
-export const getAllDiseases = async (_req: Request, res: Response, next: NextFunction) => {
+export const getAllDiseases = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
+
         const diseases = await prisma.diseaseMaster.findMany({
+            where: { gaushalaId },
             orderBy: { name: 'asc' }
         });
         res.status(200).json({
@@ -21,15 +25,18 @@ export const getAllDiseases = async (_req: Request, res: Response, next: NextFun
 };
 
 /**
- * Add a new global disease.
+ * Add a new disease for a specific gaushala.
  */
 export const addDisease = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
+
         const { name } = req.body;
         if (!name) throw new AppError('Disease name is required', 400);
 
         const disease = await prisma.diseaseMaster.create({
-            data: { name }
+            data: { name, gaushalaId }
         });
 
         res.status(201).json({
@@ -43,11 +50,15 @@ export const addDisease = async (req: AuthRequest, res: Response, next: NextFunc
 };
 
 /**
- * Fetch all global vaccines for dropdowns.
+ * Fetch all vaccines for a specific gaushala.
  */
-export const getAllVaccines = async (_req: Request, res: Response, next: NextFunction) => {
+export const getAllVaccines = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
+
         const vaccines = await prisma.vaccineMaster.findMany({
+            where: { gaushalaId },
             orderBy: { name: 'asc' }
         });
         res.status(200).json({
@@ -60,15 +71,18 @@ export const getAllVaccines = async (_req: Request, res: Response, next: NextFun
 };
 
 /**
- * Add a new global vaccine.
+ * Add a new vaccine for a specific gaushala.
  */
 export const addVaccine = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+        const gaushalaId = req.gaushala?.id as string;
+        if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
+
         const { name } = req.body;
         if (!name) throw new AppError('Vaccine name is required', 400);
 
         const vaccine = await prisma.vaccineMaster.create({
-            data: { name }
+            data: { name, gaushalaId }
         });
 
         res.status(201).json({
