@@ -32,7 +32,7 @@ export const recordMedicalValidation = [
     body('medicalStatus').isIn(['SICK', 'HEALTHY']).withMessage('Medical status must be SICK or HEALTHY'),
     body('visitNumber').optional().isString(),
     body('vetId').optional().isMongoId().withMessage('Invalid veterinarian ID'),
-    body('diseaseId').optional().isMongoId().withMessage('Invalid disease ID'),
+    body('diseaseId').isMongoId().withMessage('Disease ID is required'),
     body('symptoms').optional().isString(),
     body('treatment').optional().isString(),
     validate
@@ -57,7 +57,7 @@ export const recordVaccinationValidation = [
     body('animalId').isMongoId().withMessage('Invalid animal ID'),
     body('doseDate').isISO8601().withMessage('Valid dose date is required'),
     body('doseType').isIn(['FIRST', 'BOOSTER', 'REPEAT']).withMessage('Invalid dose type'),
-    body('vaccineId').isMongoId().withMessage('Invalid vaccine ID'),
+    body('vaccineId').isMongoId().withMessage('Vaccine ID is required'),
     body('remark').optional().isString(),
     validate
 ];
@@ -79,7 +79,7 @@ export const recordDewormingValidation = [
     body('doseType').isIn(['INJECTION', 'TABLET']).withMessage('Dose type must be INJECTION or TABLET'),
     body('companyName').optional().isString(),
     body('quantity').optional().isString(),
-    body('vetId').optional().isMongoId(),
+    body('vetId').isMongoId().withMessage('Veterinarian ID is required'),
     body('nextDoseDate').optional().isISO8601(),
     validate
 ];
@@ -91,7 +91,7 @@ export const recordBulkDewormingValidation = [
     body('doseType').isIn(['INJECTION', 'TABLET']),
     body('companyName').optional().isString(),
     body('quantity').optional().isString(),
-    body('vetId').optional().isMongoId(),
+    body('vetId').isMongoId().withMessage('Veterinarian ID is required'),
     body('nextDoseDate').optional().isISO8601(),
     validate
 ];
