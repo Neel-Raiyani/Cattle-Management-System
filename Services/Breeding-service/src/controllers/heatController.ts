@@ -77,6 +77,8 @@ export const getHeatRecords = async (req: AuthRequest, res: Response, next: Next
         const formattedRecords = records.map(r => {
             const animalData = animalMap.get(r.animalId);
             return {
+                id: r.id,
+                animalId: r.animalId,
                 animalName: animalData?.name || null,
                 tagNumber: animalData?.tagNumber || null,
                 parity: r.parity,

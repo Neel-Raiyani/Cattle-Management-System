@@ -111,6 +111,8 @@ export const getParityRecords = async (req: AuthRequest, res: Response, next: Ne
         // 4. Merge and format records
         const combinedData = [
             ...historicalRecords.map(r => ({
+                id: r.id,
+                animalId: animalId,
                 photo: animalPhoto,
                 name: animal.name,
                 tagno: animal.tagNumber,
@@ -128,6 +130,8 @@ export const getParityRecords = async (req: AuthRequest, res: Response, next: Ne
                 type: 'HISTORICAL'
             })),
             ...journeyRecords.map(j => ({
+                id: j.id,
+                animalId: animalId,
                 photo: animalPhoto,
                 name: animal.name,
                 tagno: animal.tagNumber,

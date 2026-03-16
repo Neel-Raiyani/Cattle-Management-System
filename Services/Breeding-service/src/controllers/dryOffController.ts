@@ -78,6 +78,8 @@ export const getDryOffRecords = async (req: AuthRequest, res: Response, next: Ne
         const formattedRegular = regularDryOffs.map(r => {
             const animal = animalMap.get(r.animalId);
             return {
+                id: r.id,
+                animalId: r.animalId,
                 animalName: animal?.name || null,
                 date: r.date,
                 tagNumber: animal?.tagNumber || null
@@ -87,6 +89,8 @@ export const getDryOffRecords = async (req: AuthRequest, res: Response, next: Ne
         const formattedPregnant = pregnantDryOffs.map(p => {
             const animal = animalMap.get(p.animalId);
             return {
+                id: p.id,
+                animalId: p.animalId,
                 animalName: animal?.name || null,
                 date: p.dryOffDate,
                 tagNumber: animal?.tagNumber || null

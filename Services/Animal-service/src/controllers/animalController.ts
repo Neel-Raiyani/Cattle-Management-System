@@ -322,11 +322,11 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
         }
 
         const {
-            name, tagNumber, animalNumber,
-            cowGroup, birthDate,
-            isPregnant, parity, isLactating, isDryOff, isHeifer, isRetired,
-            bullView, motherMilk, grandmotherMilk,
-            isHandicapped, handicapReason,
+            name, tagNumber, animalNumber, gender,
+            cowBreed, cowGroup, birthDate,
+            parity,
+            bullView, motherMilk, grandmotherMilk, isHandicapped, handicapReason,
+            acquisitionType, purchaseDate, purchasedFrom, purchasePrice, ownerName, ownerMobile,
             photoUrl,
             isUdderClosedFL, isUdderClosedFR, isUdderClosedBL, isUdderClosedBR,
             motherName, fatherName, motherId, fatherId
@@ -347,6 +347,8 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
         if (name !== undefined) updateData.name = name;
         if (tagNumber !== undefined) updateData.tagNumber = tagNumber;
         if (animalNumber !== undefined) updateData.animalNumber = animalNumber;
+        if (gender !== undefined) updateData.gender = gender;
+        if (cowBreed !== undefined) updateData.cowBreed = cowBreed;
         if (cowGroup !== undefined) updateData.cowGroup = cowGroup;
 
         // Automatic Logic for Dates and Statuses
@@ -377,20 +379,19 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
                 updateData.isHeifer = false;
                 updateData.isLactating = false;
             }
-        } else {
-            // Respect manual overrides if provided and logic wasn't triggered
-            if (isLactating !== undefined) updateData.isLactating = isLactating;
-            if (isHeifer !== undefined) updateData.isHeifer = isHeifer;
         }
 
-        if (isPregnant !== undefined) updateData.isPregnant = isPregnant;
-        if (isDryOff !== undefined) updateData.isDryOff = isDryOff;
-        if (isRetired !== undefined) updateData.isRetired = isRetired;
         if (bullView !== undefined) updateData.bullView = bullView;
         if (motherMilk !== undefined) updateData.motherMilk = motherMilk;
         if (grandmotherMilk !== undefined) updateData.grandmotherMilk = grandmotherMilk;
         if (isHandicapped !== undefined) updateData.isHandicapped = isHandicapped;
         if (handicapReason !== undefined) updateData.handicapReason = handicapReason;
+        if (acquisitionType !== undefined) updateData.acquisitionType = acquisitionType;
+        if (purchaseDate !== undefined) updateData.purchaseDate = purchaseDate ? new Date(purchaseDate) : null;
+        if (purchasedFrom !== undefined) updateData.purchasedFrom = purchasedFrom;
+        if (purchasePrice !== undefined) updateData.purchasePrice = purchasePrice;
+        if (ownerName !== undefined) updateData.ownerName = ownerName;
+        if (ownerMobile !== undefined) updateData.ownerMobile = ownerMobile;
         if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
         if (isUdderClosedFL !== undefined) updateData.isUdderClosedFL = isUdderClosedFL;
         if (isUdderClosedFR !== undefined) updateData.isUdderClosedFR = isUdderClosedFR;
