@@ -420,6 +420,7 @@ export const getDewormingAlerts = async (req: AuthRequest, res: Response, next: 
                 const daysUntilDue = record.nextDoseDate ? diffDays(now, record.nextDoseDate) : null;
 
                 return {
+                    id: record.id,
                     animal: animalMap.get(animalId),
                     lastDoseDate: record.doseDate,
                     nextDoseDate: record.nextDoseDate,

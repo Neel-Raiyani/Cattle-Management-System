@@ -66,6 +66,8 @@ export const getDewormingReport = async (req: AuthRequest, res: Response, next: 
             });
 
             data.push({
+                id: r.id,
+                animalId: r.animalId,
                 photo: animal?.photoUrl || null,
                 name: animal?.name || null,
                 tagno: animal?.tagNumber || null,
@@ -177,6 +179,8 @@ export const getMedicalReport = async (req: AuthRequest, res: Response, next: Ne
             const diseaseName = r.diseaseId ? diseaseMap.get(r.diseaseId) : 'N/A';
 
             return {
+                id: r.id,
+                animalId: r.animalId,
                 photo: animal?.photoUrl || null,
                 name: animal?.name || null,
                 tagno: animal?.tagNumber || null,
@@ -248,6 +252,8 @@ export const getVaccineReport = async (req: AuthRequest, res: Response, next: Ne
             const vaccineName = r.vaccineId ? vaccineMap.get(r.vaccineId) : 'N/A';
 
             return {
+                id: r.id,
+                animalId: r.animalId,
                 photo: animal?.photoUrl || null,
                 name: animal?.name || null,
                 tagno: animal?.tagNumber || null,
@@ -318,6 +324,8 @@ export const getLabReport = async (req: AuthRequest, res: Response, next: NextFu
             const labtestName = labtestMap.get(r.labtestId) || 'Unknown';
 
             return {
+                id: r.id,
+                animalId: r.animalId,
                 photo: animal?.photoUrl || null,
                 name: animal?.name || null,
                 tagno: animal?.tagNumber || null,

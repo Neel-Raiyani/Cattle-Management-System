@@ -41,6 +41,8 @@ export const getHeatReport = async (req: AuthRequest, res: Response, next: NextF
         const data = records.map(r => {
             const animal = animalMap.get(r.animalId);
             return {
+                id: r.id,
+                animalId: r.animalId,
                 photo: animal?.photoUrl || null,
                 name: animal?.name || null,
                 tagno: animal?.tagNumber || null,
@@ -96,6 +98,8 @@ export const getPregnancyReport = async (req: AuthRequest, res: Response, next: 
         const data = journeys.map(j => {
             const animal = animalMap.get(j.animalId);
             return {
+                id: j.id,
+                animalId: j.animalId,
                 photo: animal?.photoUrl || null,
                 name: animal?.name || null,
                 tagno: animal?.tagNumber || null,
@@ -154,6 +158,8 @@ export const getDeliveryReport = async (req: AuthRequest, res: Response, next: N
         const data = journeys.map(j => {
             const animal = animalMap.get(j.animalId);
             return {
+                id: j.id,
+                animalId: j.animalId,
                 photo: animal?.photoUrl || null,
                 name: animal?.name || null,
                 tagno: animal?.tagNumber || null,
