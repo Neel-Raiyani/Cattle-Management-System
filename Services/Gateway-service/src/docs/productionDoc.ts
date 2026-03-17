@@ -190,7 +190,14 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/FeedInventory'
+ *             type: object
+ *             required: [quantity]
+ *             properties:
+ *               quantity:
+ *                 type: number
+ *                 description: Amount (in Kg) to add (positive) or subtract (negative).
+ *               description:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Stock updated.
@@ -287,6 +294,15 @@
  *         name: id
  *         required: true
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               quantity: { type: number, minimum: 0 }
+ *               feedQuantity: { type: number, minimum: 0 }
  *     responses:
  *       200:
  *         description: Updated.
@@ -334,6 +350,12 @@
  *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: date
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: session
+ *         schema: { type: string, enum: [MORNING, EVENING] }
  *     responses:
  *       200:
  *         description: List retrieved.
@@ -445,6 +467,12 @@
  *         name: animalId
  *         required: true
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: year
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: month
+ *         schema: { type: integer, minimum: 1, maximum: 12 }
  *     responses:
  *       200:
  *         description: Animal-wise yield data.

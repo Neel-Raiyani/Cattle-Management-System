@@ -396,6 +396,12 @@
  *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
  *     responses:
  *       200:
  *         description: Global list.

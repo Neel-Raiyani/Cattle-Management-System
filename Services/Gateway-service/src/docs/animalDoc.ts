@@ -421,6 +421,12 @@
  *           enum: [all, 1, 2, 3, 4]
  *           default: all
  *         description: Number of closed quarters to filter by.
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
  *     responses:
  *       200:
  *         description: Filtered cow list.
@@ -610,6 +616,15 @@
  *         name: id
  *         required: true
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             oneOf:
+ *               - $ref: '#/components/schemas/SellRecord'
+ *               - $ref: '#/components/schemas/DeathRecord'
+ *               - $ref: '#/components/schemas/DonationRecord'
  *     responses:
  *       200:
  *         description: Record updated.
@@ -620,6 +635,26 @@
  *               properties:
  *                 success: { type: boolean, example: true }
  *                 message: { type: string, example: 'Record updated' }
+ *   delete:
+ *     summary: Remove disposal record
+ *     description: Performs a soft delete by setting isActive to false.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [sell, death, donation]
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: Record deleted.
  */
 
 // ───────────────────────── Animals ─────────────────────────
@@ -790,6 +825,20 @@
  *                 animal: { $ref: '#/components/schemas/Animal' }
  *       404:
  *         $ref: '#/components/schemas/ErrorResponse'
+ *   delete:
+ *     summary: Soft delete animal
+ *     description: Marks an animal as inactive and hard-deletes related service records.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: Deleted.
  */
 
 /**
