@@ -9,7 +9,7 @@ import { errorHandler } from '@middlewares/error.js';
 import { setupAlertCron } from '@utils/cron.js';
 
 const app = express();
-const port = process.env.PORT || 5007;
+const port = process.env.ALERT_PORT || 5007;
 
 // Connect Database
 connectDB();
@@ -19,6 +19,11 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
+
+// Health Check (Public)
+app.get('/health', (req, res) => {
+    res.json({ status: 'UP', service: 'alert-service' });
+});
 
 // Routes
 import alertRoutes from '@routes/alertRoutes.js';
