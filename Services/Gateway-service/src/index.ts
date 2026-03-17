@@ -33,47 +33,69 @@ app.get('/', (req, res) => {
     });
 });
 
+// Proxy Error Handler
+const onProxyError = (err: any, req: any, res: any) => {
+    console.error(`[gateway-error]: Proxy error for ${req.url}:`, err.message);
+    res.status(504).json({
+        error: 'Gateway Timeout',
+        message: 'The backend service is currently unreachable. Please try again later.',
+        detail: err.message
+    });
+};
+
 // Proxy Routes
 app.use('/api/auth', createProxyMiddleware({
     target: process.env.AUTH_SERVICE_URL || 'http://localhost:5001',
-    changeOrigin: true
+    changeOrigin: true,
+    on: { error: onProxyError }
 }));
 
 // Animal Service Proxy
 app.use('/api/animal', createProxyMiddleware({
     target: process.env.ANIMAL_SERVICE_URL || 'http://localhost:5002',
-    changeOrigin: true
+    changeOrigin: true,
+    on: { error: onProxyError }
 }));
 
 // Health Service Proxy
 app.use('/api/health', createProxyMiddleware({
     target: process.env.HEALTH_SERVICE_URL || 'http://localhost:5003',
-    changeOrigin: true
+    changeOrigin: true,
+    on: { error: onProxyError }
 }));
 
 // Production Service Proxy
 app.use('/api/production', createProxyMiddleware({
     target: process.env.PRODUCTION_SERVICE_URL || 'http://localhost:5004',
-    changeOrigin: true
+    changeOrigin: true,
+    on: { error: onProxyError }
 }));
 
 // Breeding Service Proxy
 app.use('/api/breeding', createProxyMiddleware({
     target: process.env.BREEDING_SERVICE_URL || 'http://localhost:5005',
-    changeOrigin: true
+    changeOrigin: true,
+    on: { error: onProxyError }
 }));
 
 // Media Service Proxy
 app.use('/api/media', createProxyMiddleware({
     target: process.env.MEDIA_SERVICE_URL || 'http://localhost:5006',
-    changeOrigin: true
+    changeOrigin: true,
+    on: { error: onProxyError }
 }));
 
 // Alert Service Proxy
 app.use('/api/alert', createProxyMiddleware({
     target: process.env.ALERT_SERVICE_URL || 'http://localhost:5007',
-    changeOrigin: true
+    changeOrigin: true,
+    on: { error: onProxyError }
 }));
+
+// 404 Handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not Found', message: 'The requested route does not exist on the Gateway.' });
+});
 
 app.listen(port, () => {
     console.log(`[gateway-service]: Gateway is running at http://localhost:${port}`);
