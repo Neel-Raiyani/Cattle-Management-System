@@ -33,6 +33,7 @@ model User {
   
   // Settings
   language        Language  @default(ENGLISH)
+  fcmToken        String?   // Store the Firebase registration token
   
   // Password Recovery / OTP
   otp             String?

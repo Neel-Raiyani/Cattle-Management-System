@@ -1,8 +1,8 @@
 import express from 'express';
-import { register, login, getProfile, sendOtp, verifyOtp, updateSettings, changePassword } from '@controllers/authController.js';
+import { register, login, getProfile, sendOtp, verifyOtp, updateSettings, changePassword, registerFcmToken } from '@controllers/authController.js';
 import { createGaushala, getMyGaushalas } from '@controllers/gaushalaController.js';
 import { addStaff, getStaffList, updateStaff, removeStaff } from '@controllers/staffController.js';
-import { registerValidation, loginValidation, sendOtpValidation, verifyOtpValidation, updateSettingsValidation, changePasswordValidation, createGaushalaValidation, addStaffValidation, updateStaffValidation } from '@validators/authValidators.js';
+import { registerValidation, loginValidation, sendOtpValidation, verifyOtpValidation, updateSettingsValidation, changePasswordValidation, createGaushalaValidation, addStaffValidation, updateStaffValidation, registerFcmTokenValidation } from '@validators/authValidators.js';
 import { auth } from '@middlewares/auth.js';
 import { gaushalaAuth } from '@middlewares/gaushalaAuth.js';
 import { otpLimit } from '@middlewares/rateLimiter.js';
@@ -30,5 +30,7 @@ router.post('/staff', auth, gaushalaAuth(['OWNER', 'MANAGER']), addStaffValidati
 router.get('/staff', auth, gaushalaAuth(['OWNER', 'MANAGER']), getStaffList);
 router.patch('/staff/:userId', auth, gaushalaAuth(['OWNER', 'MANAGER']), updateStaffValidation, updateStaff);
 router.delete('/staff/:userId', auth, gaushalaAuth(['OWNER', 'MANAGER']), removeStaff);
+
+router.post('/profile/fcm-token', auth, registerFcmTokenValidation, registerFcmToken);
 
 export default router;

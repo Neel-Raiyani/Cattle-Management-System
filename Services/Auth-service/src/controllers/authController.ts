@@ -298,3 +298,23 @@ export const changePassword = async (req: any, res: Response, next: NextFunction
         next(error);
     }
 };
+export const registerFcmToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user?.userId;
+        const { fcmToken } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { fcmToken }
+        });
+
+        logger.info(`FCM token registered for user ${userId}`);
+        res.status(200).json({ message: 'FCM token registered successfully' });
+    } catch (error) {
+        next(error);
+    }
+};

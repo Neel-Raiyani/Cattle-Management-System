@@ -271,6 +271,35 @@
 
 /**
  * @swagger
+ * /api/auth/profile/fcm-token:
+ *   post:
+ *     summary: Register device FCM token
+ *     description: Stores the Firebase Cloud Messaging token for the current user to enable push notifications.
+ *     tags: [Auth Service]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [fcmToken]
+ *             properties:
+ *               fcmToken:
+ *                 type: string
+ *                 example: 'fcm-registration-token-string'
+ *     responses:
+ *       200:
+ *         description: Token registered successfully.
+ *       400:
+ *         $ref: '#/components/schemas/ValidationErrorResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+
+/**
+ * @swagger
  * /api/auth/gaushala:
  *   post:
  *     summary: Create an additional Gaushala

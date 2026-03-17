@@ -269,10 +269,30 @@ model LabtestMaster {
 
 // ───────────────────────── Auth (Shadow) ─────────────────────────
 
+model User {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  fcmToken        String?
+  memberships     UserGaushala[]
+
+  @@map("users")
+}
+
+model Gaushala {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  members         UserGaushala[]
+
+  @@map("gaushalas")
+}
+
 model UserGaushala {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id])
+  
   gaushalaId      String   @db.ObjectId
+  gaushala        Gaushala @relation(fields: [gaushalaId], references: [id])
+  
   role            Role     @default(OWNER)
   isActive        Boolean  @default(true)
   joinedAt        DateTime @default(now())

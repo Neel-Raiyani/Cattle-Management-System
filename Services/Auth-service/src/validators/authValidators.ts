@@ -119,3 +119,7 @@ export const updateStaffValidation = [
         .withMessage('Invalid role'),
     validate
 ];
+export const registerFcmTokenValidation = [
+    body('fcmToken').notEmpty().withMessage('FCM token is required'),
+    validate
+];

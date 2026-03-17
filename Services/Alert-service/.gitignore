@@ -1,7 +1,6 @@
-node_modules
-dist
+node_modules/
+dist/
 .env
-src/generated/prisma
-logs/
-
-/src/generated/prisma
+*.env
+serviceAccountKey.json
+*.log

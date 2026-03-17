@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { connectDB } from './config/db.js';
 import { errorHandler } from '@middlewares/error.js';
+import { setupAlertCron } from '@utils/cron.js';
 
 const app = express();
 const port = process.env.PORT || 5007;
@@ -22,6 +23,9 @@ app.use(morgan('dev'));
 // Routes
 import alertRoutes from '@routes/alertRoutes.js';
 app.use('/', alertRoutes);
+
+// Background Jobs
+setupAlertCron();
 
 // Error Handler
 app.use(errorHandler);
