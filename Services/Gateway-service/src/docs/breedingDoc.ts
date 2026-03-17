@@ -355,7 +355,7 @@
  * /api/breeding/dry-off:
  *   post:
  *     summary: Mark animal as Dry
- *     description: Records a dry-off period for a cow. Updates 'isLactating' to false.
+ *     description: Records a dry-off period for a cow for non-pregnancy related reasons (illness, low yield, etc.).
  *     tags: [Breeding Service]
  *     security:
  *       - bearerAuth: []
@@ -375,18 +375,44 @@
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *   get:
- *     summary: Dry-off history
+ *     summary: List dry-off records
  *     tags: [Breeding Service]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *       - in: query
- *         name: animalId
- *         required: true
+ *         name: filter
+ *         schema:
+ *           type: string
+ *           enum: [all, pregnant, other]
+ *         description: Filter records by type. Defaults to 'all'.
  *     responses:
  *       200:
- *         description: History retrieved.
+ *         description: List of dry-off records retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       animalId:
+ *                         type: string
+ *                       animalName:
+ *                         type: string
+ *                       tagNumber:
+ *                         type: string
+ *                       date:
+ *                         type: string
+ *                         format: date
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
@@ -395,7 +421,7 @@
  * @swagger
  * /api/breeding/dry-off/eligible:
  *   get:
- *     summary: Eligible for Dry-off
+ *     summary: Get Cows Eligible for Regular Dry-off
  *     tags: [Breeding Service]
  *     security:
  *       - bearerAuth: []
@@ -403,7 +429,7 @@
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
  *     responses:
  *       200:
- *         description: Dropdown list.
+ *         description: List of eligible animals retrieved successfully.
  */
 
 /**
