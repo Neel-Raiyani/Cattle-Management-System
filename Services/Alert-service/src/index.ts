@@ -25,6 +25,10 @@ app.get('/health', (req, res) => {
     res.json({ status: 'UP', service: 'alert-service' });
 });
 
+app.get('/', (req, res) => {
+    res.json({ status: 'UP', service: 'alert-service' });
+});
+
 // Routes
 import alertRoutes from '@routes/alertRoutes.js';
 app.use('/', alertRoutes);
