@@ -14,9 +14,7 @@ const logger = winston.createLogger({
         winston.format.printf(info => `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`)
     ),
     transports: [
-        new winston.transports.Console({
-            stderrLevels: ['error']
-        }),
+        new winston.transports.Console(),
         new winston.transports.File({ filename: path.join(logDir, 'error.log'), level: 'error' }),
         new winston.transports.File({ filename: path.join(logDir, 'combined.log') }),
     ],
