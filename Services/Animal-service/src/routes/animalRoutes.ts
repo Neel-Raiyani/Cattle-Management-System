@@ -1,6 +1,6 @@
 import express from 'express';
 import { registerAnimal, getCows, getBulls, getAnimalById, updateAnimal, generateUploadUrl, deleteAnimal } from '@controllers/animalController.js';
-import { recordSell, recordDeath, recordDonation, updateDisposalRecord, deleteDisposalRecord } from '@controllers/disposalController.js';
+import { recordSell, recordDeath, recordDonation, updateDisposalRecord, deleteDisposalRecord, getDisposalRecords } from '@controllers/disposalController.js';
 import { getGroups, createGroup, updateGroup, deleteGroup } from '@controllers/groupController.js';
 import reportRoutes from './reportRoutes.js';
 import { registerAnimalValidation, updateAnimalValidation, sellRecordValidation, deathRecordValidation, donationRecordValidation } from '@validators/animalValidators.js';
@@ -24,6 +24,7 @@ router.post('/death', auth, gaushalaAuth(['OWNER', 'MANAGER']), deathRecordValid
 router.post('/donation', auth, gaushalaAuth(['OWNER', 'MANAGER']), donationRecordValidation, recordDonation);
 router.patch('/disposal/:type/:id', auth, gaushalaAuth(['OWNER', 'MANAGER']), updateDisposalRecord);
 router.delete('/disposal/:type/:id', auth, gaushalaAuth(['OWNER', 'MANAGER']), deleteDisposalRecord);
+router.get('/disposals', auth, gaushalaAuth(), getDisposalRecords);
 
 // ───────────────────────── Animals ─────────────────────────
 router.post('/add', auth, gaushalaAuth(['OWNER', 'MANAGER', 'STAFF']), registerAnimalValidation, registerAnimal);

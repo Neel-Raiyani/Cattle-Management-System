@@ -655,6 +655,57 @@
  *     responses:
  *       200:
  *         description: Record deleted.
+ *
+ * /**
+ * @swagger
+ * /api/animal/disposals:
+ *   get:
+ *     summary: List disposal history
+ *     description: Retrieves a paginated list of animals that were sold, died, or donated. Supports filtering by type and searching by name/tag.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [all, sell, death, donation]
+ *           default: all
+ *         description: Filter by specialized disposal event.
+ *       - in: query
+ *         name: search
+ *         description: Search by animal name or tag number.
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200:
+ *         description: List of disposal records.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 records:
+ *                   type: array
+ *                   items:
+ *                     oneOf:
+ *                       - $ref: '#/components/schemas/SellRecord'
+ *                       - $ref: '#/components/schemas/DeathRecord'
+ *                       - $ref: '#/components/schemas/DonationRecord'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page: { type: integer }
+ *                     limit: { type: integer }
+ *                     total: { type: integer }
+ *                     totalPages: { type: integer }
  */
 
 // ───────────────────────── Animals ─────────────────────────

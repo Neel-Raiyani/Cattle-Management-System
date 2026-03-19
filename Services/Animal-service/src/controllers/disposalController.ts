@@ -287,3 +287,131 @@ export const deleteDisposalRecord = async (req: AuthRequest, res: Response, next
         next(error);
     }
 };
+
+// ───────────────────────── Get Disposal Records ─────────────────────────
+export const getDisposalRecords = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.gaushala?.id as string;
+        const { type = 'all', search, page = '1', limit = '20' } = req.query;
+
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
+
+        const whereAnimal: any = { gaushalaId, isActive: true };
+        if (search) {
+            whereAnimal.OR = [
+                { name: { contains: search as string, mode: 'insensitive' } },
+                { tagNumber: { contains: search as string, mode: 'insensitive' } }
+            ];
+        }
+
+        const validTypes = ['sell', 'death', 'donation', 'all'];
+        const filterType = validTypes.includes(type as string) ? (type as string) : 'all';
+
+        const bucket = (process.env.S3_BUCKET_DISPOSAL_MEDIA || 'disposal-media') as string;
+        const animalBucket = (process.env.S3_BUCKET_CATTLE_PHOTOS || 'cattle-photos') as string;
+
+        let records: any[] = [];
+        let total = 0;
+
+        // Helper to enrich records with view URLs
+        const enrichRecords = async (list: any[], photoField: string) => {
+            return Promise.all(list.map(async (rec) => {
+                const enriched = { ...rec };
+                if (rec[photoField]) {
+                    try {
+                        enriched.viewUrl = await getPresignedViewUrl(bucket, rec[photoField]);
+                    } catch (err) {
+                        logger.error(`Error generating view URL for disposal ${rec.id}:`, err);
+                    }
+                }
+                if (rec.animal?.photoUrl) {
+                    try {
+                        enriched.animal.viewUrl = await getPresignedViewUrl(animalBucket, rec.animal.photoUrl);
+                    } catch (err) {
+                        logger.error(`Error generating animal view URL for ${rec.animal.id}:`, err);
+                    }
+                }
+                return enriched;
+            }));
+        };
+
+        if (filterType === 'sell' || filterType === 'all') {
+            const [list, count] = await Promise.all([
+                prisma.sellRecord.findMany({
+                    where: { animal: whereAnimal, isActive: true },
+                    include: { animal: true },
+                    skip: filterType === 'all' ? 0 : skip,
+                    take: filterType === 'all' ? 1000 : limitNum,
+                    orderBy: { soldAt: 'desc' }
+                }),
+                prisma.sellRecord.count({ where: { animal: whereAnimal, isActive: true } })
+            ]);
+            const enriched = await enrichRecords(list, 'photoUrl');
+            records.push(...enriched.map(r => ({ ...r, disposalType: 'sell' })));
+            total += count;
+        }
+
+        if (filterType === 'death' || filterType === 'all') {
+            const [list, count] = await Promise.all([
+                prisma.deathRecord.findMany({
+                    where: { animal: whereAnimal, isActive: true },
+                    include: { animal: true },
+                    skip: filterType === 'all' ? 0 : skip,
+                    take: filterType === 'all' ? 1000 : limitNum,
+                    orderBy: { dateOfDeath: 'desc' }
+                }),
+                prisma.deathRecord.count({ where: { animal: whereAnimal, isActive: true } })
+            ]);
+            const enriched = await enrichRecords(list, 'lastPhotoUrl');
+            records.push(...enriched.map(r => ({ ...r, disposalType: 'death' })));
+            total += count;
+        }
+
+        if (filterType === 'donation' || filterType === 'all') {
+            const [list, count] = await Promise.all([
+                prisma.donationRecord.findMany({
+                    where: { animal: whereAnimal, isActive: true },
+                    include: { animal: true },
+                    skip: filterType === 'all' ? 0 : skip,
+                    take: filterType === 'all' ? 1000 : limitNum,
+                    orderBy: { donatedAt: 'desc' }
+                }),
+                prisma.donationRecord.count({ where: { animal: whereAnimal, isActive: true } })
+            ]);
+            const enriched = await enrichRecords(list, 'photoUrl');
+            records.push(...enriched.map(r => ({ ...r, disposalType: 'donation' })));
+            total += count;
+        }
+
+        // Final sorting for 'all' type and unified pagination
+        if (filterType === 'all') {
+            records.sort((a, b) => {
+                const dateA = new Date(a.soldAt || a.dateOfDeath || a.donatedAt).getTime();
+                const dateB = new Date(b.soldAt || b.dateOfDeath || b.donatedAt).getTime();
+                return dateB - dateA;
+            });
+            records = records.slice(skip, skip + limitNum);
+        }
+
+        res.status(200).json({
+            success: true,
+            records,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: Math.ceil(total / limitNum)
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Internal utility since was not exported in original code or assumed available
+async function getPresignedViewUrl(bucket: string, key: string) {
+    const { getPresignedViewUrl: originalFn } = await import('@utils/s3.js');
+    return originalFn(bucket, key);
+}
