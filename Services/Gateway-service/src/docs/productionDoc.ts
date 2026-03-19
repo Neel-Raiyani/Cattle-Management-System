@@ -511,4 +511,30 @@
  *     responses:
  *       200:
  *         description: Parity performance metrics.
+ *
+ * /api/production/export/monthly:
+ *   get:
+ *     summary: Export Monthly Milk Report (Excel)
+ *     description: |
+ *       Generates an Excel file with a grid view of daily milk yields per cow for the entire month.
+ *       Includes: Cow Name, Tag No., Morning (M) and Evening (E) yields for each day (1-31), and Total Monthly Yield.
+ *     tags: [Production Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: month
+ *         required: true
+ *       - in: query
+ *         name: year
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Excel file.
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
  */

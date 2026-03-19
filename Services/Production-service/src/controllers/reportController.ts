@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import prisma from '@config/db.js';
 import { AuthRequest } from '@appTypes/express.js';
 import { AppError } from '@utils/AppError.js';
+import { generateMonthlyMilkReport, MilkExportData } from '@utils/excelHelper.js';
 
 /**
  * Daily Milk Report: detailed feed vs milk for all registered animals for a date.
@@ -107,6 +108,77 @@ export const getMonthlyMilkReport = async (req: any, res: Response, next: NextFu
             month,
             report: Object.values(dailyAgg).sort((a, b) => a.date.localeCompare(b.date))
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Export Monthly Milk Report as Excel.
+ */
+export const exportMonthlyMilkExcel = async (req: any, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.gaushala?.id as string;
+        const { year, month } = req.query;
+
+        if (!year || !month) {
+            throw new AppError('Year and month are required', 400, 'MISSING_PARAMS');
+        }
+
+        const startDate = new Date(Number(year), Number(month) - 1, 1);
+        const endDate = new Date(Number(year), Number(month), 0);
+
+        const records = await prisma.milkRecord.findMany({
+            where: {
+                gaushalaId,
+                date: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            },
+            include: {
+                animal: {
+                    select: {
+                        name: true,
+                        tagNumber: true
+                    }
+                }
+            }
+        });
+
+        const reportData: Record<string, MilkExportData> = {};
+
+        records.forEach(r => {
+            const animalId = r.animalId;
+            if (!reportData[animalId]) {
+                reportData[animalId] = {
+                    cowName: r.animal.name || 'Unknown',
+                    tagNumber: r.animal.tagNumber || '-',
+                    days: {},
+                    totalMonthly: 0
+                };
+            }
+
+            const day = r.date.getDate();
+            if (!reportData[animalId].days[day]) {
+                reportData[animalId].days[day] = {};
+            }
+
+            if (r.session === 'MORNING') {
+                reportData[animalId].days[day].MORNING = r.quantity;
+            } else {
+                reportData[animalId].days[day].EVENING = r.quantity;
+            }
+
+            reportData[animalId].totalMonthly += r.quantity;
+        });
+
+        await generateMonthlyMilkReport(
+            res, 
+            Object.values(reportData), 
+            Number(month), 
+            Number(year)
+        );
     } catch (error) {
         next(error);
     }

@@ -1,7 +1,10 @@
 import express from 'express';
 import { auth } from '@middlewares/auth.js';
 import { gaushalaAuth } from '@middlewares/gaushalaAuth.js';
-import { getAnimalSummary, getUdderCloseCows, retireAnimal, getEligibleForRetirement } from '@controllers/reportController.js';
+import { 
+    getAnimalSummary, getUdderCloseCows, retireAnimal, 
+    getEligibleForRetirement, exportCowsExcel, exportBullsExcel 
+} from '@controllers/reportController.js';
 
 const router = express.Router();
 
@@ -13,6 +16,12 @@ router.use(gaushalaAuth());
  * Summary reports
  */
 router.get('/summary', getAnimalSummary);
+
+/**
+ * Export reports
+ */
+router.get('/export/cows', exportCowsExcel);
+router.get('/export/bulls', exportBullsExcel);
 
 /**
  * Filtered cow lists

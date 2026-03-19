@@ -13,7 +13,7 @@ import {
 } from '@controllers/distributionController.js';
 import {
     getDailyMilkReport, getMonthlyMilkReport, getCowMonthlyReport,
-    getDistributionSummary, getParityReport
+    getDistributionSummary, getParityReport, exportMonthlyMilkExcel
 } from '@controllers/reportController.js';
 import {
     recordYieldValidation, updateYieldValidation,
@@ -54,6 +54,7 @@ router.delete('/distribution/:id', gaushalaAuth(['OWNER', 'MANAGER']), deleteDis
 // ───────────────────────── Reports ─────────────────────────
 router.get('/reports/daily', getDailyMilkReport);
 router.get('/reports/monthly', getMonthlyMilkReport);
+router.get('/export/monthly', exportMonthlyMilkExcel);
 router.get('/reports/cow/:animalId', getCowMonthlyReport);
 router.get('/reports/distribution', getDistributionSummary);
 router.get('/reports/parity', getParityReport);

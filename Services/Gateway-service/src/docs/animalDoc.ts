@@ -506,6 +506,61 @@
  *               properties:
  *                 success: { type: boolean, example: true }
  *                 message: { type: string, example: 'Animal status updated to retired' }
+ *
+ * /api/animal/reports/export/cows:
+ *   get:
+ *     summary: Export Cow Report (Excel)
+ *     description: |
+ *       Generates an Excel file containing Cow data with phase-wise information.
+ *       Included Fields: Cow Name, Tag No., Cow No., Breed, Category (Group), Phase (Lactating/Heifer/etc.), Age, 
+ *       Mother Milk, Grandmother Milk, Parity, Udder Status (Quarters), Acquisition Type, and Price/Owner info.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *           enum: [all, lactating, heifer, pregnant, dryoff, retired, handicapped, calves]
+ *       - in: query
+ *         name: search
+ *     responses:
+ *       200:
+ *         description: Excel file.
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *
+ * /api/animal/reports/export/bulls:
+ *   get:
+ *     summary: Export Bull Report (Excel)
+ *     description: |
+ *       Generates an Excel file containing Bull data.
+ *       Included Fields: Bull Name, Tag No., Breed, Age, Bull View (Breeding Class), Acquisition Type, and Price/Owner info.
+ *     tags: [Animal Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *           enum: [all, retired, calf]
+ *       - in: query
+ *         name: search
+ *     responses:
+ *       200:
+ *         description: Excel file.
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
  */
 
 // ───────────────────────── Disposal ─────────────────────────

@@ -4,6 +4,7 @@ import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
 import type { AuthRequest } from '@appTypes/express.js';
 import { getPresignedViewUrl } from '@utils/s3.js';
+import { generateCowReport, generateBullReport } from '@utils/excelHelper.js';
 
 // ───────────────────────── Get Animal Summary ─────────────────────────
 export const getAnimalSummary = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -225,6 +226,67 @@ export const getEligibleForRetirement = async (req: AuthRequest, res: Response, 
             success: true,
             animals
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── Export Cows Excel ─────────────────────────
+export const exportCowsExcel = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.gaushala?.id as string;
+        const { filter = 'all' } = req.query;
+
+        const now = new Date();
+        const twelveMonthsAgo = new Date(now);
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+        const where: any = { gaushalaId, gender: 'FEMALE', isActive: true };
+
+        switch (filter) {
+            case 'lactating': where.isLactating = true; break;
+            case 'heifer': where.isHeifer = true; break;
+            case 'pregnant': where.isPregnant = true; break;
+            case 'dryoff': where.isDryOff = true; break;
+            case 'retired': where.isRetired = true; break;
+            case 'handicapped': where.isHandicapped = true; break;
+            case 'calves': where.birthDate = { gt: twelveMonthsAgo }; break;
+        }
+
+        const cows = await prisma.animal.findMany({
+            where,
+            orderBy: { tagNumber: 'asc' }
+        });
+
+        await generateCowReport(res, cows as any, filter as string);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── Export Bulls Excel ─────────────────────────
+export const exportBullsExcel = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.gaushala?.id as string;
+        const { filter = 'all' } = req.query;
+
+        const now = new Date();
+        const twelveMonthsAgo = new Date(now);
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+        const where: any = { gaushalaId, gender: 'MALE', isActive: true };
+
+        switch (filter) {
+            case 'retired': where.isRetired = true; break;
+            case 'calf': where.birthDate = { gt: twelveMonthsAgo }; break;
+        }
+
+        const bulls = await prisma.animal.findMany({
+            where,
+            orderBy: { tagNumber: 'asc' }
+        });
+
+        await generateBullReport(res, bulls as any, filter as string);
     } catch (error) {
         next(error);
     }

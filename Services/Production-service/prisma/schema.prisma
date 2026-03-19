@@ -33,8 +33,11 @@ enum Session {
 
 model Animal {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String?
+  tagNumber       String?
   isActive        Boolean  @default(true)
   gaushalaId      String   @db.ObjectId
+  milkRecords     MilkRecord[]
   @@map("animals")
 }
 
@@ -60,6 +63,7 @@ model FeedInventory {
 model MilkRecord {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   animalId        String   @db.ObjectId
+  animal          Animal   @relation(fields: [animalId], references: [id])
   gaushalaId      String   @db.ObjectId
   date            DateTime
   session         Session

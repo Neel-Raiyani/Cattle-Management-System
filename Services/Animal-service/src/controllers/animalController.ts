@@ -104,6 +104,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
     }
 };
 
+
 // ───────────────────────── Get Cows (Paginated with Filters) ─────────────────────────
 export const getCows = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
