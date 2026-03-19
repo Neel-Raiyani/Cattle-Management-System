@@ -655,8 +655,9 @@
  *     responses:
  *       200:
  *         description: Record deleted.
- *
- * /**
+ */
+
+/**
  * @swagger
  * /api/animal/disposals:
  *   get:
