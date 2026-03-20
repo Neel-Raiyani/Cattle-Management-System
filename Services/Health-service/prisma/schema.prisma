@@ -40,6 +40,32 @@ enum AcquisitionType {
   DONATION
 }
 
+enum HealthVisitType {
+  ILLNESS
+  CHECKUP
+}
+
+enum MedicalStatus {
+  SICK
+  HEALTHY
+}
+
+enum VaccineDoseType {
+  FIRST
+  BOOSTER
+  REPEAT
+}
+
+enum DewormingDoseType {
+  INJECTION
+  TABLET
+}
+
+enum LabResult {
+  POSITIVE
+  NEGATIVE
+}
+
 // ───────────────────────── Master Lists ─────────────────────────
 model DiseaseMaster {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -74,49 +100,49 @@ model LabtestMaster {
 // ───────────────────────── Health Records ─────────────────────────
 
 model MedicalRecord {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  animalId        String   @db.ObjectId
-  gaushalaId      String   @db.ObjectId
-  visitType       String                  // e.g. "ILLNESS" | "CHECKUP"
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  animalId        String          @db.ObjectId
+  gaushalaId      String          @db.ObjectId
+  visitType       HealthVisitType // "ILLNESS" | "CHECKUP"
   visitDate       DateTime
   visitNumber     String?
-  vetId           String?  @db.ObjectId   // Reference to User.id (Veterinarian)
-  diseaseId       String?  @db.ObjectId   // Reference to DiseaseMaster.id
-  medicalStatus   String                  // e.g. "SICK" | "HEALTHY"
+  vetId           String?         @db.ObjectId   // Reference to User.id (Veterinarian)
+  diseaseId       String?         @db.ObjectId   // Reference to DiseaseMaster.id
+  medicalStatus   MedicalStatus   // "SICK" | "HEALTHY"
   symptoms        String?
   treatment       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@map("medical_records")
 }
 
 model VaccinationRecord {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  animalId    String   @db.ObjectId
-  gaushalaId  String   @db.ObjectId
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  animalId    String          @db.ObjectId
+  gaushalaId  String          @db.ObjectId
   doseDate    DateTime
-  doseType    String                  // e.g. "FIRST" | "BOOSTER" | "REPEAT"
-  vaccineId   String   @db.ObjectId   // Reference to VaccineMaster.id
+  doseType    VaccineDoseType // "FIRST" | "BOOSTER" | "REPEAT"
+  vaccineId   String          @db.ObjectId   // Reference to VaccineMaster.id
   remark      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@map("vaccination_records")
 }
 
 model DewormingRecord {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  animalId      String    @db.ObjectId
-  gaushalaId    String    @db.ObjectId
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  animalId      String            @db.ObjectId
+  gaushalaId    String            @db.ObjectId
   doseDate      DateTime
-  doseType      String                  // e.g. "INJECTION" | "TABLET"
+  doseType      DewormingDoseType // "INJECTION" | "TABLET"
   companyName   String?
   quantity      String?
-  vetId         String?   @db.ObjectId   // Reference to User.id
+  vetId         String?           @db.ObjectId   // Reference to User.id
   nextDoseDate  DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@map("deworming_records")
 }
@@ -128,7 +154,7 @@ model LabRecord {
   labtestId     String    @db.ObjectId   // Reference to LabtestMaster.id
   sampleDate    DateTime
   resultDate    DateTime?
-  result        String?                  // e.g. "POSITIVE" | "NEGATIVE"
+  result        LabResult?               // "POSITIVE" | "NEGATIVE"
   attachmentUrl String?
   remark        String?
   createdAt     DateTime  @default(now())

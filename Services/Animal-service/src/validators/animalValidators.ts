@@ -35,7 +35,13 @@ export const registerAnimalValidation = [
         .isIn(['BIRTH', 'PURCHASE', 'DONATION']).withMessage('Acquisition type must be BIRTH, PURCHASE, or DONATION'),
     body('cowBreed')
         .optional()
-        .isString().withMessage('Cow breed must be a string'),
+        .isIn([
+            'Gir', 'Sahiwal', 'Red_Sindhi', 'Tharparkar', 'Kankrej', 'Rathi', 'Punganur', 
+            'Badri', 'Hallikar', 'Kangayam', 'Hariana', 'Mewati', 'Nagori', 'Nimadi', 
+            'Malvi', 'Kherigarh', 'Amritmahal', 'Umblachery', 'Pulikulam', 'Bargur', 
+            'Ongole', 'Red_Kandhari', 'Gaolao', 'Gangatiri', 'Siri', 'Motu', 'Vechur', 
+            'Jersey', 'Holstein_Friesian', 'Brown_Swiss'
+        ]).withMessage('Invalid cow breed'),
     body('birthDate')
         .notEmpty().withMessage('Birth date is required')
         .isISO8601().withMessage('Birth date must be a valid ISO 8601 date'),
@@ -65,7 +71,13 @@ export const updateAnimalValidation = [
     body('tagNumber').optional().isString().withMessage('Tag number must be a string'),
     body('animalNumber').optional().isString().withMessage('Animal number must be a string'),
     body('gender').optional().isIn(['MALE', 'FEMALE']).withMessage('Gender must be MALE or FEMALE'),
-    body('cowBreed').optional().isString().withMessage('Cow breed must be a string'),
+    body('cowBreed').optional().isIn([
+        'Gir', 'Sahiwal', 'Red_Sindhi', 'Tharparkar', 'Kankrej', 'Rathi', 'Punganur', 
+        'Badri', 'Hallikar', 'Kangayam', 'Hariana', 'Mewati', 'Nagori', 'Nimadi', 
+        'Malvi', 'Kherigarh', 'Amritmahal', 'Umblachery', 'Pulikulam', 'Bargur', 
+        'Ongole', 'Red_Kandhari', 'Gaolao', 'Gangatiri', 'Siri', 'Motu', 'Vechur', 
+        'Jersey', 'Holstein_Friesian', 'Brown_Swiss'
+    ]).withMessage('Invalid cow breed'),
     body('bullView').optional().isString().withMessage('Bull view must be a string'),
     body('acquisitionType').optional().isIn(['BIRTH', 'PURCHASE', 'DONATION']).withMessage('Acquisition type must be BIRTH, PURCHASE, or DONATION'),
     body('purchaseDate').optional().isISO8601().withMessage('Purchase date must be a valid ISO 8601 date'),

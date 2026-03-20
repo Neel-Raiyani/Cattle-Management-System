@@ -98,7 +98,13 @@ export const recordDeliveryValidation = [
     body('calfGender').isIn(['MALE', 'FEMALE']).withMessage('Calf gender must be MALE or FEMALE'),
     body('calfName').if(body('calfStatus').equals('ALIVE')).notEmpty().withMessage('Calf name is required for alive calves'),
     body('calfTagNumber').if(body('calfStatus').equals('ALIVE')).notEmpty().withMessage('Calf tag number is required for alive calves'),
-    body('calfBreed').optional().isString().withMessage('Calf breed must be a string'),
+    body('calfBreed').optional().isIn([
+        'Gir', 'Sahiwal', 'Red_Sindhi', 'Tharparkar', 'Kankrej', 'Rathi', 'Punganur', 
+        'Badri', 'Hallikar', 'Kangayam', 'Hariana', 'Mewati', 'Nagori', 'Nimadi', 
+        'Malvi', 'Kherigarh', 'Amritmahal', 'Umblachery', 'Pulikulam', 'Bargur', 
+        'Ongole', 'Red_Kandhari', 'Gaolao', 'Gangatiri', 'Siri', 'Motu', 'Vechur', 
+        'Jersey', 'Holstein_Friesian', 'Brown_Swiss'
+    ]).withMessage('Invalid cow breed'),
     body('calfGroup').optional().isString().withMessage('Calf group must be a string'),
     body('calfAppearance').optional().isString().withMessage('Calf appearance must be a string'),
     body('calfWeight').optional().isFloat({ min: 0 }).withMessage('Calf weight must be a positive number'),

@@ -249,15 +249,22 @@
  *         name: { type: string, minLength: 1 }
  *         tagNumber: { type: string }
  *         animalNumber: { type: string }
+ *         gender: { type: string, enum: [MALE, FEMALE] }
+ *         cowBreed: { type: string, enum: [Gir, Sahiwal, Red_Sindhi, Tharparkar, Kankrej, Rathi, Punganur, Badri, Hallikar, Kangayam, Hariana, Mewati, Nagori, Nimadi, Malvi, Kherigarh, Amritmahal, Umblachery, Pulikulam, Bargur, Ongole, Red_Kandhari, Gaolao, Gangatiri, Siri, Motu, Vechur, Jersey, Holstein_Friesian, Brown_Swiss] }
  *         cowGroup: { type: string }
  *         birthDate: { type: string, format: date }
- *         isPregnant: { type: boolean }
  *         parity: { type: integer, minimum: 0 }
  *         bullView: { type: string }
  *         motherMilk: { type: number, minimum: 0 }
  *         grandmotherMilk: { type: number, minimum: 0 }
  *         isHandicapped: { type: boolean }
  *         handicapReason: { type: string }
+ *         acquisitionType: { type: string, enum: [BIRTH, PURCHASE, DONATION] }
+ *         purchaseDate: { type: string, format: date }
+ *         purchasedFrom: { type: string }
+ *         purchasePrice: { type: number, minimum: 0 }
+ *         ownerName: { type: string }
+ *         ownerMobile: { type: string }
  *         photoUrl: { type: string }
  *         isUdderClosedFL: { type: boolean }
  *         isUdderClosedFR: { type: boolean }
