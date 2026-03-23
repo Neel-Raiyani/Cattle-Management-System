@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { AppError } from '@utils/AppError.js';
 import logger from '@utils/logger.js';
 import type { AuthRequest } from '@appTypes/express.js';
+import { deleteRelatedRecords } from '@utils/cleanupHelper.js';
 
 // ───────────────────────── Record Sale ─────────────────────────
 export const recordSell = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -47,6 +48,9 @@ export const recordSell = async (req: AuthRequest, res: Response, next: NextFunc
                 where: { id: animalId as string },
                 data: { status: 'SOLD' }
             });
+
+            // Cascade delete related records
+            await deleteRelatedRecords(tx, animalId as string);
 
             return sellRecord;
         });
@@ -97,6 +101,9 @@ export const recordDeath = async (req: AuthRequest, res: Response, next: NextFun
                 where: { id: animalId as string },
                 data: { status: 'DEAD' }
             });
+
+            // Cascade delete related records
+            await deleteRelatedRecords(tx, animalId as string);
 
             return deathRecord;
         });
@@ -152,6 +159,9 @@ export const recordDonation = async (req: AuthRequest, res: Response, next: Next
                 where: { id: animalId as string },
                 data: { status: 'DONATED' }
             });
+
+            // Cascade delete related records
+            await deleteRelatedRecords(tx, animalId as string);
 
             return donationRecord;
         });

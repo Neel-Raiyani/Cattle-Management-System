@@ -5,6 +5,7 @@ import logger from '@utils/logger.js';
 import { AppError } from '@utils/AppError.js';
 import { getPresignedUploadUrl, getPresignedViewUrl } from '@utils/s3.js';
 import type { AuthRequest } from '@appTypes/express.js';
+import { deleteRelatedRecords } from '@utils/cleanupHelper.js';
 
 // ───────────────────────── Register Animal ─────────────────────────
 export const registerAnimal = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -119,7 +120,7 @@ export const getCows = async (req: AuthRequest, res: Response, next: NextFunctio
         const twelveMonthsAgo = new Date(now);
         twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
-        const where: any = { gaushalaId, gender: 'FEMALE', isActive: true };
+        const where: any = { gaushalaId, gender: 'FEMALE', isActive: true, status: 'ACTIVE' };
 
         switch (filter) {
             case 'lactating': where.isLactating = true; break;
@@ -204,7 +205,7 @@ export const getBulls = async (req: AuthRequest, res: Response, next: NextFuncti
         const twelveMonthsAgo = new Date(now);
         twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
-        const where: any = { gaushalaId, gender: 'MALE', isActive: true };
+        const where: any = { gaushalaId, gender: 'MALE', isActive: true, status: 'ACTIVE' };
 
         switch (filter) {
             case 'retired': where.isRetired = true; break;
@@ -488,20 +489,8 @@ export const deleteAnimal = async (req: AuthRequest, res: Response, next: NextFu
                 data: { isActive: false }
             });
 
-            // 3. Hard delete Health-service records (Shadow models)
-            await tx.medicalRecord.deleteMany({ where: { animalId: id as string } });
-            await tx.vaccinationRecord.deleteMany({ where: { animalId: id as string } });
-            await tx.dewormingRecord.deleteMany({ where: { animalId: id as string } });
-            await tx.labRecord.deleteMany({ where: { animalId: id as string } });
-
-            // 4. Hard delete Production-service records (Shadow models)
-            await tx.milkRecord.deleteMany({ where: { animalId: id as string } });
-
-            // 5. Hard delete Breeding-service records (Shadow models)
-            await tx.parityRecord.deleteMany({ where: { animalId: id as string } });
-            await tx.heatRecord.deleteMany({ where: { animalId: id as string } });
-            await tx.dryOffRecord.deleteMany({ where: { animalId: id as string } });
-            await tx.conceptionJourney.deleteMany({ where: { animalId: id as string } });
+            // 3. Hard delete all related service records
+            await deleteRelatedRecords(tx, id as string);
         });
 
         logger.info(`Animal soft-deleted and history cleared: ${id} in Gaushala ${gaushalaId}`);
