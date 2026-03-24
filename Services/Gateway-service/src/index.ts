@@ -19,6 +19,10 @@ app.use(morgan('dev'));
 
 // Swagger Documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/docs-json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+});
 
 // Health Check
 app.get('/health', (req, res) => {

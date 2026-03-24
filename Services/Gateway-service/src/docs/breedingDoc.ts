@@ -731,7 +731,7 @@
  * /api/breeding/journey/{id}/deliver:
  *   patch:
  *     summary: Record birth and close journey
- *     description: "CRITICAL: This atomic operation records the delivery outcome, increments the cow's parity, updates isPregnant/isLactating, and automatically registers the new calf in the Animal service."
+ *     description: "CRITICAL: This atomic operation records the delivery outcome, increments the cow's parity, updates isPregnant/isLactating, and automatically registers the new calf. If calfStatus is ALIVE, calfName and calfTagNumber are required."
  *     tags: [Breeding Service]
  *     security:
  *       - bearerAuth: []

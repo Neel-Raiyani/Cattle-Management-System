@@ -32,7 +32,12 @@ export const recordMedicalValidation = [
     body('medicalStatus').isIn(['SICK', 'HEALTHY']).withMessage('Medical status must be SICK or HEALTHY'),
     body('visitNumber').optional().isString(),
     body('vetId').optional().isMongoId().withMessage('Invalid veterinarian ID'),
-    body('diseaseId').isMongoId().withMessage('Disease ID is required'),
+    body('diseaseId')
+        .optional({ checkFalsy: true })
+        .isMongoId().withMessage('Disease ID must be a valid Mongo ID'),
+    body('diseaseId')
+        .if(body('visitType').equals('ILLNESS'))
+        .notEmpty().withMessage('Disease ID is required for illness visits'),
     body('symptoms').optional().isString(),
     body('treatment').optional().isString(),
     validate

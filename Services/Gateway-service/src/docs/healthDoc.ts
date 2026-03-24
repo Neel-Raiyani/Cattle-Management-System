@@ -106,7 +106,7 @@
  *     DewormingRecord:
  *       type: object
  *       description: Tracking for internal parasite treatments.
- *       required: [animalId, doseDate, doseType]
+ *       required: [animalId, doseDate, doseType, vetId]
  *       properties:
  *         id:
  *           type: string

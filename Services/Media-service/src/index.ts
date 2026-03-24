@@ -19,6 +19,15 @@ app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 
+// Health Check (Public)
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'UP', service: 'media-service' });
+});
+
+app.get('/', (req, res) => {
+    res.status(200).json({ status: 'UP', service: 'media-service' });
+});
+
 // Routes
 import mediaRoutes from '@routes/mediaRoutes.js';
 app.use('/', mediaRoutes);

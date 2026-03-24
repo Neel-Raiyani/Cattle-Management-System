@@ -122,7 +122,7 @@
  *     Staff:
  *       type: object
  *       description: Details for adding/updating gaushala staff.
- *       required: [mobileNumber, name, city, role]
+ *       required: [mobileNumber, name, role]
  *       properties:
  *         mobileNumber:
  *           type: string
@@ -583,6 +583,10 @@
  *           schema:
  *             type: object
  *             properties:
+ *               name:
+ *                 type: string
+ *               city:
+ *                 type: string
  *               role:
  *                 type: string
  *                 enum: [MANAGER, STAFF, VETERINARIAN]
