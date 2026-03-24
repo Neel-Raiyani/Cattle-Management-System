@@ -78,10 +78,11 @@ model DiseaseMaster {
 }
 
 model VaccineMaster {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  gaushalaId  String   @db.ObjectId
-  createdAt   DateTime @default(now())
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  gaushalaId      String   @db.ObjectId
+  frequencyMonths Int      @default(0)
+  createdAt       DateTime @default(now())
 
   @@unique([name, gaushalaId])
   @@map("vaccine_masters")

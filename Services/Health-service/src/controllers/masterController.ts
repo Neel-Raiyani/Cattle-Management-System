@@ -78,11 +78,11 @@ export const addVaccine = async (req: AuthRequest, res: Response, next: NextFunc
         const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
 
-        const { name } = req.body;
+        const { name, frequencyMonths } = req.body;
         if (!name) throw new AppError('Vaccine name is required', 400);
 
         const vaccine = await prisma.vaccineMaster.create({
-            data: { name, gaushalaId }
+            data: { name, gaushalaId, frequencyMonths: frequencyMonths ?? 0 }
         });
 
         res.status(201).json({

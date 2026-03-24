@@ -7,22 +7,6 @@
 
 /**
  * @swagger
- * /api/alert/ear-tag:
- *   get:
- *     summary: Ear Tag alerts
- *     description: Active animals missing a tag number.
- *     tags: [Alert Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/GaushalaIdHeader'
- *     responses:
- *       200:
- *         description: List of animals without ear tags.
- */
-
-/**
- * @swagger
  * /api/alert/heat:
  *   get:
  *     summary: Heat alerts
@@ -131,6 +115,23 @@
  *     responses:
  *       200:
  *         description: List of lab records with missing results.
+ */
+/**
+ * @swagger
+ * /api/alert/vaccination:
+ *   get:
+ *     summary: Vaccination alerts
+ *     description: |
+ *       Animals due for vaccination based on the frequency set in the Vaccine Master list.
+ *       Alerts appear 7 days before due date, when overdue, or when an animal has never received a required vaccine.
+ *     tags: [Alert Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: List of animals due for vaccination.
  */
 
 export { };

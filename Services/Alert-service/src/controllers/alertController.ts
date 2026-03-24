@@ -42,41 +42,6 @@ const diffDays = (from: Date, to: Date): number => {
     return Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
 };
 
-// ───────────────────────── 1. Ear Tag Alert ─────────────────────────
-
-export const getEarTagAlerts = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-        const gaushalaId = req.gaushala?.id as string;
-
-        const animals = await prisma.animal.findMany({
-            where: {
-                gaushalaId,
-                status: 'ACTIVE',
-                isActive: true,
-                OR: [
-                    { tagNumber: null },
-                    { tagNumber: '' }
-                ]
-            },
-            select: {
-                id: true,
-                name: true,
-                animalNumber: true,
-                gender: true,
-                cowBreed: true,
-                photoUrl: true,
-                createdAt: true
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-
-        logger.info(`Fetched ${animals.length} ear tag alerts for Gaushala ${gaushalaId}`);
-        res.json({ success: true, count: animals.length, data: animals });
-    } catch (error) {
-        next(error);
-    }
-};
-
 // ───────────────────────── 2. Heat Alert ─────────────────────────
 
 export const getHeatAlerts = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -524,6 +489,106 @@ export const getLabAlerts = async (req: AuthRequest, res: Response, next: NextFu
         }));
 
         logger.info(`Fetched ${data.length} lab alerts for Gaushala ${gaushalaId}`);
+        res.json({ success: true, count: data.length, data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───────────────────────── 9. Vaccination Alert ─────────────────────────
+
+export const getVaccinationAlerts = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const gaushalaId = req.gaushala?.id as string;
+        const VACCINATION_ALERT_DAYS = 7;
+
+        // 1. Get all vaccines that have a repeat frequency
+        const vaccines = await prisma.vaccineMaster.findMany({
+            where: { frequencyMonths: { gt: 0 } }
+        });
+
+        if (vaccines.length === 0) {
+            return res.json({ success: true, count: 0, data: [] });
+        }
+
+        // 2. Get all active animals in this gaushala
+        const animals = await prisma.animal.findMany({
+            where: { gaushalaId, status: 'ACTIVE', isActive: true },
+            select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
+        });
+
+        if (animals.length === 0) {
+            return res.json({ success: true, count: 0, data: [] });
+        }
+
+        const animalIds = animals.map(a => a.id);
+        const animalMap = new Map(animals.map(a => [a.id, a]));
+        const vaccineMap = new Map(vaccines.map(v => [v.id, v]));
+        const vaccineIds = vaccines.map(v => v.id);
+
+        // 3. Get all vaccination records for these animals and vaccines
+        const vaccinationRecords = await prisma.vaccinationRecord.findMany({
+            where: {
+                gaushalaId,
+                animalId: { in: animalIds },
+                vaccineId: { in: vaccineIds }
+            },
+            orderBy: { doseDate: 'desc' }
+        });
+
+        // 4. Build map: animalId_vaccineId -> latest doseDate
+        const latestDoseMap = new Map<string, Date>();
+        for (const record of vaccinationRecords) {
+            const key = `${record.animalId}_${record.vaccineId}`;
+            if (!latestDoseMap.has(key)) {
+                latestDoseMap.set(key, record.doseDate);
+            }
+        }
+
+        // 5. Calculate alerts
+        const now = new Date();
+        const alertWindow = daysFromNow(VACCINATION_ALERT_DAYS);
+
+        type AlertItem = {
+            animal: typeof animals[0];
+            vaccineName: string;
+            vaccineId: string;
+            lastDoseDate: Date | null;
+            nextDueDate: Date | null;
+            daysUntilDue: number | null;
+            isOverdue: boolean;
+            isNeverVaccinated: boolean;
+        };
+
+        const data: AlertItem[] = [];
+
+        for (const animal of animals) {
+            for (const vaccine of vaccines) {
+                const key = `${animal.id}_${vaccine.id}`;
+                const lastDose = latestDoseMap.get(key);
+
+                if (!lastDose) continue;
+
+                // Calculate next due date
+                const nextDue = new Date(lastDose);
+                nextDue.setMonth(nextDue.getMonth() + vaccine.frequencyMonths);
+
+                if (nextDue <= alertWindow) {
+                    data.push({
+                        animal,
+                        vaccineName: vaccine.name,
+                        vaccineId: vaccine.id,
+                        lastDoseDate: lastDose,
+                        nextDueDate: nextDue,
+                        daysUntilDue: diffDays(now, nextDue),
+                        isOverdue: nextDue < now,
+                        isNeverVaccinated: false
+                    });
+                }
+            }
+        }
+
+        logger.info(`Fetched ${data.length} vaccination alerts for Gaushala ${gaushalaId}`);
         res.json({ success: true, count: data.length, data });
     } catch (error) {
         next(error);
