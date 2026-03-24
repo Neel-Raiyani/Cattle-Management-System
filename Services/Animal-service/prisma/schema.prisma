@@ -152,6 +152,8 @@ model Animal {
   updatedAt       DateTime @updatedAt
 
   @@unique([tagNumber, gaushalaId])
+  @@index([gaushalaId, gender, isActive, status])
+  @@index([gaushalaId, birthDate])
   @@map("animals")
 }
 

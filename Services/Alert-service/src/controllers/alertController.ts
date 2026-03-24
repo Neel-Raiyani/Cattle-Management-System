@@ -468,16 +468,19 @@ export const getLabAlerts = async (req: AuthRequest, res: Response, next: NextFu
         }
 
         const animalIds = labRecords.map(r => r.animalId);
-        const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds }, isActive: true },
-            select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
-        });
-        const animalMap = new Map(animals.map(a => [a.id, a]));
-
         const labtestIds = labRecords.map(r => r.labtestId);
-        const labtestMasters = await prisma.labtestMaster.findMany({
-            where: { id: { in: labtestIds } }
-        });
+
+        // FIX: Run both lookups in parallel
+        const [animals, labtestMasters] = await Promise.all([
+            prisma.animal.findMany({
+                where: { id: { in: animalIds }, isActive: true },
+                select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
+            }),
+            prisma.labtestMaster.findMany({
+                where: { id: { in: labtestIds } }
+            })
+        ]);
+        const animalMap = new Map(animals.map(a => [a.id, a]));
         const labtestMap = new Map(labtestMasters.map(m => [m.id, m.name]));
 
         const data = labRecords.map(record => ({
@@ -502,20 +505,22 @@ export const getVaccinationAlerts = async (req: AuthRequest, res: Response, next
         const gaushalaId = req.gaushala?.id as string;
         const VACCINATION_ALERT_DAYS = 7;
 
-        // 1. Get all vaccines that have a repeat frequency
-        const vaccines = await prisma.vaccineMaster.findMany({
-            where: { frequencyMonths: { gt: 0 } }
-        });
+        // FIX: Fetch vaccines and animals in parallel first
+        const [vaccines, animals] = await Promise.all([
+            // 1. Get all vaccines that have a repeat frequency
+            prisma.vaccineMaster.findMany({
+                where: { frequencyMonths: { gt: 0 } }
+            }),
+            // 2. Get all active animals in this gaushala
+            prisma.animal.findMany({
+                where: { gaushalaId, status: 'ACTIVE', isActive: true },
+                select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
+            })
+        ]);
 
         if (vaccines.length === 0) {
             return res.json({ success: true, count: 0, data: [] });
         }
-
-        // 2. Get all active animals in this gaushala
-        const animals = await prisma.animal.findMany({
-            where: { gaushalaId, status: 'ACTIVE', isActive: true },
-            select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
-        });
 
         if (animals.length === 0) {
             return res.json({ success: true, count: 0, data: [] });

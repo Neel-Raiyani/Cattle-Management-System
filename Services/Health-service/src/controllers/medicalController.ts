@@ -127,24 +127,29 @@ export const getSickAnimals = async (req: AuthRequest, res: Response, next: Next
     try {
         const gaushalaId = req.gaushala?.id as string;
 
-        // 1. Fetch all medical records for this gaushala, ordered by visitDate descending
-        const allRecords = await prisma.medicalRecord.findMany({
+        // 1. Get the latest visitDate for each animal in this gaushala
+        const latestVisits = await prisma.medicalRecord.groupBy({
+            by: ['animalId'],
             where: { gaushalaId },
-            orderBy: { visitDate: 'desc' }
+            _max: { visitDate: true }
         });
 
-        // 2. Identifying the latest record for each animal
-        const latestRecordsMap = new Map<string, typeof allRecords[0]>();
-        for (const record of allRecords) {
-            if (!latestRecordsMap.has(record.animalId)) {
-                latestRecordsMap.set(record.animalId, record);
-            }
+        if (latestVisits.length === 0) {
+            return res.status(200).json({ success: true, count: 0, data: [] });
         }
 
-        // 3. Filter for those whose latest status is 'SICK'
-        const sickLatestRecords = Array.from(latestRecordsMap.values()).filter(
-            r => r.medicalStatus === 'SICK'
-        );
+        // 2. Fetch the full medical records for these latest visits
+        // We use OR because we need to match both animalId and visitDate for each pair
+        const sickLatestRecords = await prisma.medicalRecord.findMany({
+            where: {
+                gaushalaId,
+                medicalStatus: 'SICK',
+                OR: latestVisits.map(v => ({
+                    animalId: v.animalId,
+                    visitDate: v._max.visitDate!
+                }))
+            }
+        });
 
         if (sickLatestRecords.length === 0) {
             return res.status(200).json({

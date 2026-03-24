@@ -24,48 +24,62 @@ export const getDewormingReport = async (req: AuthRequest, res: Response, next: 
             if (to) (where.doseDate as Prisma.DateTimeFilter).lte = new Date(to);
         }
 
-        const records = await prisma.dewormingRecord.findMany({
-            where,
-            orderBy: { doseDate: 'desc' }
-        });
+        // FIX #1: Fetch records + all deworming history for last-dose calculation in parallel
+        const [records, allDewormingRecords] = await Promise.all([
+            prisma.dewormingRecord.findMany({
+                where,
+                orderBy: { doseDate: 'desc' }
+            }),
+            // Fetch all records for the gaushala (optionally filtered by animalId) to calculate lastDoseDate in-memory
+            prisma.dewormingRecord.findMany({
+                where: { gaushalaId, ...(animalId ? { animalId } : {}) },
+                select: { id: true, animalId: true, doseDate: true },
+                orderBy: { doseDate: 'asc' }
+            })
+        ]);
 
         const animalIds = [...new Set(records.map(r => r.animalId))];
         const vetIds = [...new Set(records.map(r => r.vetId).filter(v => v !== null))] as string[];
 
-        const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds } },
-            select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
-        });
+        // FIX #2: Run animal and vet queries in parallel
+        const [animals, vets] = await Promise.all([
+            prisma.animal.findMany({
+                where: { id: { in: animalIds } },
+                select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
+            }),
+            prisma.user.findMany({
+                where: { id: { in: vetIds } },
+                select: { id: true, name: true }
+            })
+        ]);
 
-        const vets = await prisma.user.findMany({
-            where: { id: { in: vetIds } },
-            select: { id: true, name: true }
-        });
-
-        const animalMap = new Map();
-        for (const a of animals) {
-            const photoUrl = a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null;
-            animalMap.set(a.id, { ...a, photoUrl });
-        }
-
+        // FIX #3: Generate all pre-signed URLs in parallel instead of sequentially
+        const enrichedAnimals = await Promise.all(
+            animals.map(async (a) => ({
+                ...a,
+                photoUrl: a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null
+            }))
+        );
+        const animalMap = new Map(enrichedAnimals.map(a => [a.id, a]));
         const vetMap = new Map(vets.map(v => [v.id, v.name]));
 
-        const data = [];
-        for (const r of records) {
+        // FIX #4: Build lastDoseDate map in-memory — no more N+1 queries
+        // allDewormingRecords is sorted ascending by doseDate
+        const prevDoseMap = new Map<string, Date>();
+        const seenDoseMap = new Map<string, Date>();
+        for (const r of allDewormingRecords) {
+            if (seenDoseMap.has(r.animalId)) {
+                prevDoseMap.set(`${r.animalId}_${r.doseDate.toISOString()}`, seenDoseMap.get(r.animalId)!);
+            }
+            seenDoseMap.set(r.animalId, r.doseDate);
+        }
+
+        const data = records.map(r => {
             const animal = animalMap.get(r.animalId);
             const doctorName = r.vetId ? vetMap.get(r.vetId) : '-';
+            const lastDoseDate = prevDoseMap.get(`${r.animalId}_${r.doseDate.toISOString()}`) || null;
 
-            // Calculate last dose date for this specific animal
-            const lastDose = await prisma.dewormingRecord.findFirst({
-                where: {
-                    animalId: r.animalId,
-                    doseDate: { lt: r.doseDate }
-                },
-                orderBy: { doseDate: 'desc' },
-                select: { doseDate: true }
-            });
-
-            data.push({
+            return {
                 id: r.id,
                 animalId: r.animalId,
                 photo: animal?.photoUrl || null,
@@ -75,12 +89,12 @@ export const getDewormingReport = async (req: AuthRequest, res: Response, next: 
                 doseDate: r.doseDate,
                 companyName: r.companyName || '-',
                 doctorName: doctorName || '-',
-                lastDoseDate: lastDose?.doseDate || null,
+                lastDoseDate,
                 nextDoseDate: r.nextDoseDate || null,
                 quantity: r.quantity || '-',
                 doseType: r.doseType
-            });
-        }
+            };
+        });
 
         res.json({ success: true, totalCount: records.length, data });
     } catch (error) {
@@ -149,27 +163,30 @@ export const getMedicalReport = async (req: AuthRequest, res: Response, next: Ne
         const vetIds = [...new Set(records.map(r => r.vetId).filter(v => v !== null))] as string[];
         const dIds = [...new Set(records.map(r => r.diseaseId).filter(d => d !== null))] as string[];
 
-        const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds } },
-            select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
-        });
+        // FIX: Run all 3 lookup queries in parallel
+        const [animals, vets, diseases] = await Promise.all([
+            prisma.animal.findMany({
+                where: { id: { in: animalIds } },
+                select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
+            }),
+            prisma.user.findMany({
+                where: { id: { in: vetIds } },
+                select: { id: true, name: true }
+            }),
+            prisma.diseaseMaster.findMany({
+                where: { id: { in: dIds } },
+                select: { id: true, name: true }
+            })
+        ]);
 
-        const vets = await prisma.user.findMany({
-            where: { id: { in: vetIds } },
-            select: { id: true, name: true }
-        });
-
-        const diseases = await prisma.diseaseMaster.findMany({
-            where: { id: { in: dIds } },
-            select: { id: true, name: true }
-        });
-
-        const animalMap = new Map();
-        for (const a of animals) {
-            const photoUrl = a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null;
-            animalMap.set(a.id, { ...a, photoUrl });
-        }
-
+        // FIX: Generate all pre-signed URLs in parallel
+        const enrichedAnimals = await Promise.all(
+            animals.map(async (a) => ({
+                ...a,
+                photoUrl: a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null
+            }))
+        );
+        const animalMap = new Map(enrichedAnimals.map(a => [a.id, a]));
         const vetMap = new Map(vets.map(v => [v.id, v.name]));
         const diseaseMap = new Map(diseases.map(d => [d.id, d.name]));
 
@@ -229,22 +246,26 @@ export const getVaccineReport = async (req: AuthRequest, res: Response, next: Ne
         const animalIds = [...new Set(records.map(r => r.animalId))];
         const vIds = [...new Set(records.map(r => r.vaccineId).filter(v => v !== null))] as string[];
 
-        const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds } },
-            select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
-        });
+        // FIX: Run both lookup queries in parallel
+        const [animals, vaccineMasters] = await Promise.all([
+            prisma.animal.findMany({
+                where: { id: { in: animalIds } },
+                select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
+            }),
+            prisma.vaccineMaster.findMany({
+                where: { id: { in: vIds } },
+                select: { id: true, name: true }
+            })
+        ]);
 
-        const vaccineMasters = await prisma.vaccineMaster.findMany({
-            where: { id: { in: vIds } },
-            select: { id: true, name: true }
-        });
-
-        const animalMap = new Map();
-        for (const a of animals) {
-            const photoUrl = a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null;
-            animalMap.set(a.id, { ...a, photoUrl });
-        }
-
+        // FIX: Generate all pre-signed URLs in parallel
+        const enrichedAnimals = await Promise.all(
+            animals.map(async (a) => ({
+                ...a,
+                photoUrl: a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null
+            }))
+        );
+        const animalMap = new Map(enrichedAnimals.map(a => [a.id, a]));
         const vaccineMap = new Map(vaccineMasters.map(v => [v.id, v.name]));
 
         const data = records.map(r => {
@@ -301,22 +322,26 @@ export const getLabReport = async (req: AuthRequest, res: Response, next: NextFu
         const animalIds = [...new Set(records.map((r: any) => r.animalId))] as string[];
         const lIds = [...new Set(records.map((r: any) => r.labtestId))] as string[];
 
-        const animals = await prisma.animal.findMany({
-            where: { id: { in: animalIds } },
-            select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
-        });
+        // FIX: Run both lookup queries in parallel
+        const [animals, labtestMasters] = await Promise.all([
+            prisma.animal.findMany({
+                where: { id: { in: animalIds } },
+                select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
+            }),
+            (prisma as any).labtestMaster.findMany({
+                where: { id: { in: lIds } },
+                select: { id: true, name: true }
+            })
+        ]);
 
-        const labtestMasters = await (prisma as any).labtestMaster.findMany({
-            where: { id: { in: lIds } },
-            select: { id: true, name: true }
-        });
-
-        const animalMap = new Map();
-        for (const a of animals) {
-            const photoUrl = a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null;
-            animalMap.set(a.id, { ...a, photoUrl });
-        }
-
+        // FIX: Generate all pre-signed URLs in parallel
+        const enrichedAnimals = await Promise.all(
+            animals.map(async (a: typeof animals[0]) => ({
+                ...a,
+                photoUrl: a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null
+            }))
+        );
+        const animalMap = new Map(enrichedAnimals.map((a: typeof enrichedAnimals[0]) => [a.id, a]));
         const labtestMap = new Map(labtestMasters.map((l: any) => [l.id, l.name]));
 
         const data = records.map((r: any) => {
@@ -326,10 +351,10 @@ export const getLabReport = async (req: AuthRequest, res: Response, next: NextFu
             return {
                 id: r.id,
                 animalId: r.animalId,
-                photo: animal?.photoUrl || null,
-                name: animal?.name || null,
-                tagno: animal?.tagNumber || null,
-                animalNo: animal?.animalNumber || null,
+                photo: (animal as any)?.photoUrl || null,
+                name: (animal as any)?.name || null,
+                tagno: (animal as any)?.tagNumber || null,
+                animalNo: (animal as any)?.animalNumber || null,
                 labtestName,
                 sampleDate: r.sampleDate,
                 resultDate: r.resultDate,

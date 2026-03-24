@@ -115,6 +115,7 @@ model MedicalRecord {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
+  @@index([gaushalaId, animalId, visitDate])
   @@map("medical_records")
 }
 
@@ -129,6 +130,7 @@ model VaccinationRecord {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
+  @@index([gaushalaId, animalId, vaccineId])
   @@map("vaccination_records")
 }
 
@@ -145,6 +147,8 @@ model DewormingRecord {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
+  @@index([gaushalaId, nextDoseDate])
+  @@index([gaushalaId, animalId, doseDate])
   @@map("deworming_records")
 }
 

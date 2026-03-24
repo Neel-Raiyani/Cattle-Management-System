@@ -32,11 +32,13 @@ export const getHeatReport = async (req: AuthRequest, res: Response, next: NextF
         });
 
         const bucket = process.env.S3_BUCKET_NAME || 'breeding-media';
-        const animalMap = new Map();
-        for (const a of animals) {
-            const photoUrl = a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null;
-            animalMap.set(a.id, { ...a, photoUrl });
-        }
+        const enrichedAnimals = await Promise.all(
+            animals.map(async (a) => ({
+                ...a,
+                photoUrl: a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null
+            }))
+        );
+        const animalMap = new Map(enrichedAnimals.map(a => [a.id, a]));
 
         const data = records.map(r => {
             const animal = animalMap.get(r.animalId);
@@ -89,11 +91,13 @@ export const getPregnancyReport = async (req: AuthRequest, res: Response, next: 
             select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
         });
 
-        const animalMap = new Map();
-        for (const a of animals) {
-            const photoUrl = a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null;
-            animalMap.set(a.id, { ...a, photoUrl });
-        }
+        const enrichedAnimals = await Promise.all(
+            animals.map(async (a) => ({
+                ...a,
+                photoUrl: a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null
+            }))
+        );
+        const animalMap = new Map(enrichedAnimals.map(a => [a.id, a]));
 
         const data = journeys.map(j => {
             const animal = animalMap.get(j.animalId);
@@ -149,11 +153,13 @@ export const getDeliveryReport = async (req: AuthRequest, res: Response, next: N
             select: { id: true, name: true, tagNumber: true, animalNumber: true, photoUrl: true }
         });
 
-        const animalMap = new Map();
-        for (const a of animals) {
-            const photoUrl = a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null;
-            animalMap.set(a.id, { ...a, photoUrl });
-        }
+        const enrichedAnimals = await Promise.all(
+            animals.map(async (a) => ({
+                ...a,
+                photoUrl: a.photoUrl ? await getPresignedViewUrl('gaushala-media', a.photoUrl) : null
+            }))
+        );
+        const animalMap = new Map(enrichedAnimals.map(a => [a.id, a]));
 
         const data = journeys.map(j => {
             const animal = animalMap.get(j.animalId);

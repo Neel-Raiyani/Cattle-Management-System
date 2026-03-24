@@ -253,19 +253,15 @@ export const getDistributionSummary = async (req: AuthRequest, res: Response, ne
             };
         }
 
-        const distributions = await prisma.milkDistribution.findMany({
-            where
-        });
+        const [distributions, categories] = await Promise.all([
+            prisma.milkDistribution.findMany({ where }),
+            prisma.milkDistributionCategory.findMany({ where: { gaushalaId } })
+        ]);
 
         // Group by category
         const summary: Record<string, number> = {};
         distributions.forEach(d => {
             summary[d.categoryId] = (summary[d.categoryId] || 0) + d.quantity;
-        });
-
-        // Fetch category names
-        const categories = await prisma.milkDistributionCategory.findMany({
-            where: { gaushalaId }
         });
 
         const result = categories.map(c => ({
