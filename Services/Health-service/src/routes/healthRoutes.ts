@@ -4,7 +4,7 @@ import { gaushalaAuth } from '@middlewares/gaushalaAuth.js';
 
 // Controllers
 import { getAllDiseases, addDisease, getAllVaccines, addVaccine } from '@controllers/masterController.js';
-import { recordMedicalVisit, updateMedicalRecord, getMedicalHistoryByAnimal } from '@controllers/medicalController.js';
+import { recordMedicalVisit, updateMedicalRecord, getMedicalHistoryByAnimal, getSickAnimals } from '@controllers/medicalController.js';
 import { recordVaccination, updateVaccination, getVaccinationHistoryByAnimal } from '@controllers/vaccinationController.js';
 import { recordDeworming, recordBulkDeworming, updateDeworming, getDewormingHistoryByAnimal, listDewormingRecords } from '@controllers/dewormingController.js';
 import { getHealthTimeline } from '@controllers/timelineController.js';
@@ -30,6 +30,7 @@ router.post('/master/vaccines', auth, gaushalaAuth(['OWNER', 'MANAGER']), master
 
 
 // ───────────────────────── Medical Records ─────────────────────────
+router.get('/medical/sick', auth, gaushalaAuth(), getSickAnimals);
 router.post('/medical', auth, gaushalaAuth(['OWNER', 'MANAGER', 'VETERINARIAN']), recordMedicalValidation, recordMedicalVisit);
 router.patch('/medical/:id', auth, gaushalaAuth(['OWNER', 'MANAGER', 'VETERINARIAN']), updateMedicalValidation, updateMedicalRecord);
 router.get('/medical/animal/:animalId', auth, gaushalaAuth(), getMedicalHistoryByAnimal);

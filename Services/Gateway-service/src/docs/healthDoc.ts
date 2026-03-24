@@ -303,6 +303,43 @@
  *     responses:
  *       200:
  *         description: History retrieved.
+ *
+ * /api/health/medical/sick:
+ *   get:
+ *     summary: List currently sick animals
+ *     description: Retrieves all animals whose most recent medical record indicates a 'SICK' status.
+ *     tags: [Health Service]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *     responses:
+ *       200:
+ *         description: List of sick animals retrieved.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 count: { type: integer }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       animal:
+ *                         type: object
+ *                         properties:
+ *                           id: { type: string }
+ *                           name: { type: string }
+ *                           tagNumber: { type: string }
+ *                           photoUrl: { type: string }
+ *                       visitDate: { type: string, format: date-time }
+ *                       disease: { type: string }
+ *                       symptoms: { type: string }
+ *                       medicalStatus: { type: string, enum: [SICK] }
  */
 
 // ───────────────────────── Vaccination ─────────────────────────

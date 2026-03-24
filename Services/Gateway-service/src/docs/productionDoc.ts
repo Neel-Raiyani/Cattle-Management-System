@@ -79,8 +79,6 @@
  *           type: number
  *           minimum: 0
  *           description: Amount allocated in Liters.
- *         remarks:
- *           type: string
  */
 
 // ───────────────────────── Categories ─────────────────────────
@@ -113,7 +111,7 @@
  *             $ref: '#/components/schemas/MilkDistributionCategory'
  *     responses:
  *       201:
- *         description: Category added.
+ *         description: Category added. Returns the created category object.
  */
 
 /**
@@ -179,7 +177,7 @@
  * /api/production/inventory/update:
  *   post:
  *     summary: Add/Update feed stock
- *     description: Upserts feed inventory based on name.
+ *     description: Updates the total feed inventory for the Gaushala.
  *     tags: [Production Service]
  *     security:
  *       - bearerAuth: []
@@ -278,7 +276,7 @@
  *                       description: Feed consumed in Kg.
  *     responses:
  *       201:
- *         description: Records saved.
+ *         description: Records saved. Returns a count of successfully created records.
  */
 
 /**
