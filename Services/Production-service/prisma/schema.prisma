@@ -38,6 +38,7 @@ model Animal {
   isActive        Boolean  @default(true)
   gaushalaId      String   @db.ObjectId
   milkRecords     MilkRecord[]
+  @@unique([tagNumber, gaushalaId])
   @@map("animals")
 }
 
