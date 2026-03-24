@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/services/app_feedback_service.dart';
+import '../../../../core/di/injection_container.dart';
 
 class DistributeMilkScreen extends StatefulWidget {
   const DistributeMilkScreen({super.key});
@@ -13,35 +17,245 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
   DateTime _selectedDate = DateTime.now();
   String _selectedShift = 'Morning'; // Morning, Evening
   bool _isLoading = true;
+  bool _isSubmitting = false;
 
-  // Mock list of distributors - simulation of data from Distribution Title Screen
-  List<String> _distributorNames = [];
-
-  // Map to store entered milk values: { 'Bhupat': 2.0 }
+  List<Map<String, dynamic>> _categories = [];
   final Map<String, double> _distributionValues = {};
-
-  final double _totalMilkProduced = 4.0; // Dummy daily production from API
+  double _totalMilkProduced = 0.0;
+  double _alreadyDistributed = 0.0;
+  String? _error;
+  final TextEditingController _remarksController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _fetchDistributors();
+    _fetchData();
   }
 
-  Future<void> _fetchDistributors() async {
-    // Simulate API call
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1)); // Mock network delay
+  @override
+  void dispose() {
+    _remarksController.dispose();
+    super.dispose();
+  }
 
-    // Simulate data response (Toggle comment to test empty state)
-    // List<String> apiResponse = []; // Test empty
-    List<String> apiResponse = ['Bhupat', 'Local Dairy', 'Temple'];
+  String get _apiSession => _selectedShift.toUpperCase();
 
-    if (mounted) {
-      setState(() {
-        _distributorNames = apiResponse;
-        _isLoading = false;
-      });
+  double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  bool _isSameDate(dynamic rawDate, String expectedDate) {
+    final value = rawDate?.toString() ?? '';
+    if (value.isEmpty) return false;
+    return value == expectedDate || value.startsWith('${expectedDate}T');
+  }
+
+  double _extractProductionTotal(dynamic productionData) {
+    final root = productionData is Map<String, dynamic>
+        ? productionData
+        : <String, dynamic>{};
+    final data = root['data'] is Map<String, dynamic>
+        ? root['data'] as Map<String, dynamic>
+        : root;
+
+    final sessionTotal = _selectedShift == 'Morning'
+        ? _asDouble(data['morning'])
+        : _asDouble(data['evening']);
+    if (sessionTotal > 0) return sessionTotal;
+
+    final directTotal = _asDouble(data['total']);
+    if (directTotal > 0) return directTotal;
+
+    final items = (data['items'] as List?) ?? const [];
+    double computed = 0.0;
+    for (final item in items.whereType<Map>()) {
+      final map = Map<String, dynamic>.from(item);
+      final itemSessionTotal = _selectedShift == 'Morning'
+          ? _asDouble(map['morning'])
+          : _asDouble(map['evening']);
+      computed += itemSessionTotal > 0 ? itemSessionTotal : _asDouble(map['total']);
+    }
+    if (computed > 0) return computed;
+
+    final report = (data['report'] ?? root['report']) as List?;
+    if (report != null && report.isNotEmpty) {
+      double reportTotal = 0.0;
+      for (final item in report.whereType<Map>()) {
+        final map = Map<String, dynamic>.from(item);
+        double val = _selectedShift == 'Morning'
+            ? _asDouble(map['morning'])
+            : _asDouble(map['evening']);
+        
+        // Fallback for simple list of entries that might use 'quantity' or 'total'
+        if (val == 0) {
+          val = _asDouble(map['quantity'] ?? map['amount'] ?? map['total'] ?? map['liters']);
+        }
+        reportTotal += val;
+      }
+      if (reportTotal > 0) return reportTotal;
+    }
+
+    final records = (data['records'] ?? root['records']) as List?;
+    if (records != null && records.isNotEmpty) {
+      double recordTotal = 0.0;
+      for (final item in records.whereType<Map>()) {
+        final map = Map<String, dynamic>.from(item);
+        double val = _selectedShift == 'Morning'
+            ? _asDouble(map['morning'])
+            : _asDouble(map['evening']);
+        if (val == 0) {
+          val = _asDouble(map['quantity'] ?? map['amount'] ?? map['total'] ?? map['liters']);
+        }
+        recordTotal += val;
+      }
+      if (recordTotal > 0) return recordTotal;
+    }
+
+    return computed;
+  }
+
+  Future<void> _fetchData() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final String dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+
+      double totalProd = 0.0;
+      try {
+        final productionData = await sl<ApiService>().getDailyProductionReport(
+          date: dateStr,
+        );
+        totalProd = _extractProductionTotal(productionData);
+
+        if (totalProd <= 0) {
+          final yields = await sl<ApiService>().getMilkYields();
+          for (final item in yields.whereType<Map>()) {
+            if (!_isSameDate(item['date'], dateStr)) continue;
+            final sessionYield = _selectedShift == 'Morning'
+                ? _asDouble(item['morning'])
+                : _asDouble(item['evening']);
+            totalProd += sessionYield > 0 ? sessionYield : _asDouble(item['total']);
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to fetch production total: $e');
+      }
+
+      final categories = await sl<ApiService>().getMilkCategories();
+
+      double alreadyDist = 0.0;
+      try {
+        final distributions = await sl<ApiService>().getMilkDistributions(date: dateStr);
+        for (var d in distributions) {
+          final session = d['session']?.toString().toUpperCase();
+          if (session != null && session.isNotEmpty && session != _apiSession) {
+            continue;
+          }
+          alreadyDist += double.tryParse(d['amount']?.toString() ?? '0') ?? 0.0;
+        }
+      } catch (e) {
+        debugPrint('Failed to fetch distribution history: $e');
+      }
+
+      if (mounted) {
+        setState(() {
+          _totalMilkProduced = totalProd;
+          _alreadyDistributed = alreadyDist;
+          _categories = List<Map<String, dynamic>>.from(categories);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Service not available';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submitDistribution() async {
+    if (_isSubmitting) return;
+
+    if (_distributionValues.isEmpty) {
+      AppFeedbackService.showPopup(
+        message: 'Please enter distribution values',
+        type: AppFeedbackType.warning,
+      );
+      return;
+    }
+
+    if (_totalMilkProduced <= 0) {
+      AppFeedbackService.showPopup(
+        message: 'No milk production found for the selected date and shift',
+        type: AppFeedbackType.warning,
+      );
+      return;
+    }
+
+    // Validate if exceeding remaining
+    double currentInputTotal = _distributionValues.values.fold(0, (sum, val) => sum + val);
+    if ((_alreadyDistributed + currentInputTotal) > _totalMilkProduced) {
+      AppFeedbackService.showPopup(
+        message: 'Distribution exceeds total produced milk',
+        type: AppFeedbackType.error,
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final String dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+
+      // Submit each distribution item
+      for (var entry in _distributionValues.entries) {
+        final category = _categories.firstWhere(
+          (c) => c['name'] == entry.key,
+          orElse: () => {},
+        );
+        if (category.isNotEmpty) {
+          await sl<ApiService>().allocateMilk(
+            categoryId: category['id'] ?? category['_id'],
+            date: dateStr,
+            session: _apiSession,
+            quantity: entry.value,
+            remarks: _remarksController.text,
+          );
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _alreadyDistributed += currentInputTotal;
+          _distributionValues.clear();
+          _remarksController.clear();
+        });
+        AppFeedbackService.showPopup(
+          message: 'Milk distributed successfully',
+          type: AppFeedbackType.success,
+        );
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedbackService.showPopup(
+          message: 'Failed to distribute milk: $e',
+          type: AppFeedbackType.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -67,9 +281,9 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        // Re-fetch data for new date if needed
-        _fetchDistributors();
+        _distributionValues.clear(); // Reset inputs on date change
       });
+      _fetchData();
     }
   }
 
@@ -97,7 +311,8 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
       0,
       (sum, val) => sum + val,
     );
-    double remaining = _totalMilkProduced - totalDistributed;
+    double displayDistribution = _alreadyDistributed + totalDistributed;
+    double remaining = _totalMilkProduced - displayDistribution;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -215,7 +430,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _distributorNames.isEmpty
+                : _error != null
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -227,7 +442,40 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No Data Found',
+                          _error!,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _fetchData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor,
+                          ),
+                          child: Text(
+                            'Retry',
+                            style: GoogleFonts.poppins(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : _categories.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/icons/no_data_found.png',
+                          width: 150,
+                          height: 150,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No Categories Found',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -258,7 +506,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                             Expanded(
                               child: _buildSummaryCard(
                                 'Distribution',
-                                totalDistributed.toStringAsFixed(2),
+                                displayDistribution.toStringAsFixed(2),
                                 const Color(0xFFE8F5E9),
                                 Colors.green.shade800,
                               ),
@@ -330,10 +578,10 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                         ),
 
                         // Table Rows
-                        ..._distributorNames.asMap().entries.map((entry) {
+                        ..._categories.asMap().entries.map((entry) {
                           int index = entry.key;
-                          String name = entry.value;
-                          bool isLast = index == _distributorNames.length - 1;
+                          String name = entry.value['name'] ?? '-';
+                          bool isLast = index == _categories.length - 1;
 
                           return Container(
                             padding: const EdgeInsets.symmetric(
@@ -419,16 +667,14 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
           ),
 
           // Submit Button
-          if (!_isLoading && _distributorNames.isNotEmpty)
+          if (!_isLoading && _categories.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
+                  onPressed: _isSubmitting ? null : _submitDistribution,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     shape: RoundedRectangleBorder(
@@ -436,14 +682,23 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                     ),
                     elevation: 2,
                   ),
-                  child: Text(
-                    'Submit',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Submit',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -455,7 +710,14 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
   Widget _buildRadioOption(String value) {
     bool isSelected = _selectedShift == value;
     return GestureDetector(
-      onTap: () => setState(() => _selectedShift = value),
+      onTap: () {
+        if (_selectedShift == value) return;
+        setState(() {
+          _selectedShift = value;
+          _distributionValues.clear();
+        });
+        _fetchData();
+      },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

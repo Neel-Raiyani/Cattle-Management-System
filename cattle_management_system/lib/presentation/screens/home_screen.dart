@@ -6,7 +6,7 @@ import '../../features/dashboard/presentation/widgets/gaushala_tab.dart';
 import '../../features/gaugram/presentation/widgets/gaugram_tab.dart';
 import '../../features/notification/presentation/screens/notification_screen.dart';
 import '../../core/di/injection_container.dart';
-import '../../features/auth/data/datasources/auth_local_data_source.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,12 +27,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUser() async {
-    final data = await sl<AuthLocalDataSource>().getCurrentUserData();
-    if (data != null && mounted) {
-      setState(() {
-        _userName = data['name'] ?? 'User';
-      });
-    }
+    final result = await sl<AuthRepository>().getUserName();
+    result.fold((failure) => null, (name) {
+      if (mounted) {
+        setState(() {
+          _userName = name;
+        });
+      }
+    });
   }
 
   @override
@@ -47,9 +49,13 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildCustomAppBar(),
             _buildToggle(),
             Expanded(
-              child: _selectedIndex == 0
-                  ? const GaushalaTab()
-                  : const GauGramTab(),
+              child: IndexedStack(
+                index: _selectedIndex,
+                children: const [
+                  GaushalaTab(),
+                  GauGramTab(),
+                ],
+              ),
             ),
           ],
         ),

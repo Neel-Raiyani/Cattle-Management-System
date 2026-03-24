@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../data/datasources/feed_local_data_source.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/error/exceptions.dart';
+import '../../../cow_group/presentation/bloc/cow_group_bloc.dart';
+import '../../../cow_group/presentation/bloc/cow_group_state.dart';
+import '../../../cow_group/presentation/bloc/cow_group_event.dart';
+import '../../../cattle/presentation/bloc/cattle_bloc.dart';
+import '../../../cattle/presentation/bloc/cattle_state.dart';
+import '../../../milk_production/presentation/bloc/milk_production_bloc.dart';
+import '../../../milk_production/presentation/bloc/milk_production_event.dart';
 
 class AddMilkEntryScreen extends StatefulWidget {
   const AddMilkEntryScreen({super.key});
@@ -12,15 +25,68 @@ class AddMilkEntryScreen extends StatefulWidget {
 class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
   DateTime _selectedDate = DateTime.now();
   String? _selectedGroup;
-  final List<String> _groups = ['Gir', 'HF', 'Jersey'];
   bool _isMorning = true; // Toggle state
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
-  // Dummy list of cows for entry
-  final List<Map<String, dynamic>> _cowEntries = [
-    {'id': '01', 'name': 'Shiv', 'milk': '7', 'feed': ''},
-    {'id': '02', 'name': 'Gauri', 'milk': '10', 'feed': ''},
-    {'id': '03', 'name': 'Nandini', 'milk': '09', 'feed': ''},
-  ];
+  List<Map<String, dynamic>> _cowEntries = [];
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<CowGroupBloc>().add(LoadCowGroups());
+    // Normalize date to midnight to match production list fetching
+    _selectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+
+    final state = context.read<CattleBloc>().state;
+    if (state is CattleListLoaded) {
+      _cowEntries = state.cattleList
+          .where(
+            (c) =>
+        c.gender.toUpperCase().startsWith('F') &&
+            c.status.toUpperCase() == 'ACTIVE',
+      )
+          .map(
+            (c) => {
+          'id': c.tagNumber,
+          'animalId': c.id,
+          'name': c.name,
+          'milk': '',
+          'feed': '',
+        },
+      )
+          .toList();
+    }
+  }
+
+  // Helper method to pick date
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryColor,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = DateTime(picked.year, picked.month, picked.day);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +107,26 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
             padding: EdgeInsets.zero,
           ),
         ),
-        title: Text(
+        title: _isSearching
+            ? TextField(
+          controller: _searchController,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Search cow name...',
+            hintStyle: GoogleFonts.inter(
+              color: Colors.grey,
+              fontSize: 14,
+            ),
+            border: InputBorder.none,
+          ),
+          style: GoogleFonts.poppins(fontSize: 16),
+          onChanged: (val) {
+            setState(() {
+              _searchQuery = val.toLowerCase();
+            });
+          },
+        )
+            : Text(
           'Add Milk Entry',
           style: GoogleFonts.poppins(
             color: Colors.black87,
@@ -51,14 +136,29 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
         ),
         centerTitle: false,
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: AppTheme.primaryColor,
-              shape: BoxShape.circle,
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchQuery = '';
+                  _searchController.clear();
+                }
+              });
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: AppTheme.primaryColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isSearching ? Icons.close : Icons.search,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
-            child: const Icon(Icons.search, color: Colors.white, size: 20),
           ),
         ],
       ),
@@ -70,11 +170,10 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Date Picker
+                  // ─── Date Picker ───
                   InkWell(
-                    onTap: () {
-                      // Show date picker
-                    },
+                    onTap: _selectDate,
+                    borderRadius: BorderRadius.circular(12),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -88,7 +187,7 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '${_selectedDate.day} ${_selectedDate.month == 12 ? 'Dec' : 'Jan'}, ${_selectedDate.year}',
+                            DateFormat('dd MMM, yyyy').format(_selectedDate),
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
@@ -114,32 +213,43 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _selectedGroup,
-                    hint: Text(
-                      'Select cow group',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    icon: const Icon(Icons.keyboard_arrow_down),
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                    ),
-                    items: _groups
-                        .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                        .toList(),
-                    onChanged: (val) => setState(() => _selectedGroup = val),
+                  BlocBuilder<CowGroupBloc, CowGroupState>(
+                    builder: (context, state) {
+                      List<String> groupNames = [];
+                      if (state is CowGroupLoaded) {
+                        groupNames = state.groups.map((g) => g.name).toList();
+                      }
+                      return DropdownButtonFormField<String>(
+                        value: _selectedGroup,
+                        hint: Text(
+                          'Select cow group',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        icon: const Icon(Icons.keyboard_arrow_down),
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                        ),
+                        items: groupNames
+                            .map(
+                              (g) => DropdownMenuItem(value: g, child: Text(g)),
+                        )
+                            .toList(),
+                        onChanged: (val) =>
+                            setState(() => _selectedGroup = val),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
@@ -168,9 +278,8 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                                 children: [
                                   Icon(
                                     Icons.wb_sunny,
-                                    color: _isMorning
-                                        ? Colors.white
-                                        : Colors.grey,
+                                    color:
+                                    _isMorning ? Colors.white : Colors.grey,
                                     size: 18,
                                   ),
                                   const SizedBox(width: 8),
@@ -196,12 +305,12 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                               decoration: BoxDecoration(
                                 color: !_isMorning
                                     ? AppTheme.primaryColor
-                                    : Colors
-                                          .transparent, // Or different color for evening? Image uses same logic likely. Or grey.
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(24),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
+
                                 children: [
                                   Icon(
                                     Icons.nightlight_round,
@@ -263,25 +372,30 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        SizedBox(
-                          width: 40,
-                          child: Icon(
-                            Icons.water_drop,
-                            size: 16,
-                            color: Colors.blue,
+                        const SizedBox(
+                          width: 60,
+                          child: Center(
+                            child: Icon(
+                              Icons.water_drop,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
                           ),
-                        ), // Milk
+                        ),
                         const SizedBox(width: 16),
-                        SizedBox(
-                          width: 40,
-                          child: Icon(
-                            Icons.grass,
-                            size: 16,
-                            color: Colors.green,
+                        const SizedBox(
+                          width: 60,
+                          child: Center(
+                            child: Icon(
+                              Icons.grass,
+                              size: 16,
+                              color: Colors.green,
+                            ),
                           ),
-                        ), // Feed
+                        ),
                       ],
                     ),
                   ),
@@ -290,10 +404,10 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _cowEntries.length,
+                    itemCount: _getFilteredEntries().length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, index) {
-                      final item = _cowEntries[index];
+                      final item = _getFilteredEntries()[index];
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           vertical: 12,
@@ -307,12 +421,6 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                                 ? BorderSide(color: Colors.grey.shade200)
                                 : BorderSide.none,
                           ),
-                          borderRadius: index == _cowEntries.length - 1
-                              ? const BorderRadius.only(
-                                  bottomLeft: Radius.circular(12),
-                                  bottomRight: Radius.circular(12),
-                                )
-                              : null,
                         ),
                         child: Row(
                           children: [
@@ -333,13 +441,15 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    'Nov 3',
+                                    DateFormat('MMM d').format(_selectedDate),
                                     style: GoogleFonts.inter(
                                       fontSize: 10,
                                       color: Colors.grey,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
@@ -350,6 +460,7 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                               child: TextFormField(
                                 initialValue: item['milk'],
                                 textAlign: TextAlign.center,
+                                keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.all(8),
                                   border: OutlineInputBorder(
@@ -360,6 +471,11 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                                   fillColor: Colors.grey[100],
                                 ),
                                 style: GoogleFonts.inter(fontSize: 14),
+                                onChanged: (val) {
+                                  setState(() {
+                                    item['milk'] = val;
+                                  });
+                                },
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -369,6 +485,7 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                               child: TextFormField(
                                 initialValue: item['feed'],
                                 textAlign: TextAlign.center,
+                                keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.all(8),
                                   border: OutlineInputBorder(
@@ -383,6 +500,11 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                                     color: Colors.grey,
                                   ),
                                 ),
+                                onChanged: (val) {
+                                  setState(() {
+                                    item['feed'] = val;
+                                  });
+                                },
                               ),
                             ),
                           ],
@@ -390,7 +512,7 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 80), // Specs for scroll
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -403,9 +525,123 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () {
-                  // Submit logic
-                  Navigator.pop(context);
+                onPressed: _isSubmitting
+                    ? null
+                    : () async {
+                  setState(() => _isSubmitting = true);
+                  try {
+                    double totalFeedUsed = 0;
+                    final List<Map<String, dynamic>> entries = [];
+
+                    for (var entry in _cowEntries) {
+                      final feedVal =
+                          double.tryParse(entry['feed'] ?? '0') ?? 0;
+                      totalFeedUsed += feedVal;
+                    }
+
+                    double currentStock = 0;
+                    try {
+                      final response = await sl<ApiService>().getFeedInventory();
+                      
+                      if (response is Map<String, dynamic>) {
+                        dynamic dataObj = response.containsKey('data') ? response['data'] : response;
+                        if (dataObj is Map<String, dynamic>) {
+                          if (dataObj.containsKey('inventory')) {
+                            final inv = dataObj['inventory'] as Map<String, dynamic>;
+                            currentStock = (inv['totalQuantity'] as num? ?? inv['quantity'] as num?)?.toDouble() ?? 0.0;
+                          } else {
+                            currentStock = (dataObj['totalQuantity'] as num? ?? dataObj['quantity'] as num?)?.toDouble() ?? 0.0;
+                          }
+                        } else if (dataObj is List) {
+                          for (var item in dataObj) {
+                            if (item is Map) {
+                              currentStock += (item['totalQuantity'] as num? ?? item['quantity'] as num?)?.toDouble() ?? 0.0;
+                            }
+                          }
+                        }
+                      } else if (response is List) {
+                        for (var item in response) {
+                          if (item is Map) {
+                            currentStock += (item['totalQuantity'] as num? ?? item['quantity'] as num?)?.toDouble() ?? 0.0;
+                          }
+                        }
+                      }
+                      
+                      await sl<FeedLocalDataSource>().updateFeedStock(currentStock);
+                    } catch (e) {
+                      currentStock = await sl<FeedLocalDataSource>().getFeedStock();
+                    }
+                    if (totalFeedUsed > currentStock) {
+                      throw Exception(
+                          'Insufficient feed inventory. Required: ${totalFeedUsed.toInt()} Kg, Available: ${currentStock.toInt()} Kg');
+                    }
+
+                    for (var entry in _cowEntries) {
+                      final milkVal =
+                          double.tryParse(entry['milk'] ?? '0') ?? 0;
+                      final feedVal =
+                          double.tryParse(entry['feed'] ?? '0') ?? 0;
+
+                      if ((milkVal > 0 || feedVal > 0) &&
+                          entry['animalId'] != null) {
+                        entries.add({
+                          'animalId': entry['animalId'],
+                          'quantity': milkVal.toDouble(),
+                          'feedQuantity': feedVal.toDouble(),
+                        });
+                      }
+                    }
+
+                    if (entries.isNotEmpty) {
+                      await sl<ApiService>().logBulkMilkYields(
+                        date:
+                        _selectedDate.toIso8601String().split('T')[0],
+                        session: _isMorning ? 'MORNING' : 'EVENING',
+                        entries: entries,
+                      );
+
+                      await sl<FeedLocalDataSource>()
+                          .deductFeedStock(totalFeedUsed);
+
+                      // CRITICAL: Refresh the MilkProductionBloc with the normalized date
+                      if (context.mounted) {
+                        context.read<MilkProductionBloc>().add(
+                            LoadMilkProductionList(date: _selectedDate, cattleList: [])
+                        );
+                      }
+                    }
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Entries submitted. ${totalFeedUsed.toInt()} Kg feed deducted.',
+                          ),
+                          backgroundColor: AppTheme.primaryColor,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    }
+                  } on ServerException catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.message)),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(e
+                              .toString()
+                              .replaceAll('Exception:', '')),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isSubmitting = false);
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
@@ -413,7 +649,16 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
-                child: Text(
+                child: _isSubmitting
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+                    : Text(
                   'Submit',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
@@ -427,5 +672,14 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
         ],
       ),
     );
+  }
+
+  List<Map<String, dynamic>> _getFilteredEntries() {
+    if (_searchQuery.isEmpty) return _cowEntries;
+    return _cowEntries.where((item) {
+      final name = (item['name'] as String).toLowerCase();
+      final id = (item['id'] as String).toLowerCase();
+      return name.contains(_searchQuery) || id.contains(_searchQuery);
+    }).toList();
   }
 }

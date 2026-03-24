@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import '../screens/upload_post_screen.dart';
 
 class GauGramTab extends StatelessWidget {
   const GauGramTab({super.key});
@@ -33,7 +33,12 @@ class GauGramTab extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const UploadPostScreen()),
+          );
+        },
         backgroundColor: const Color(0xFFA4C639), // Light Olive Green
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
@@ -96,9 +101,14 @@ class GauGramTab extends StatelessWidget {
               children: [
                 CircleAvatar(
                   backgroundColor: Colors.grey[200],
-                  backgroundImage: AssetImage(avatar), // Will fail if asset missing, handle gracefully?
+                  backgroundImage: AssetImage(
+                    avatar,
+                  ), // Will fail if asset missing, handle gracefully?
                   radius: 20,
-                  child: const Icon(Icons.person, color: Colors.grey), // Fallback
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.grey,
+                  ), // Fallback
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -132,22 +142,24 @@ class GauGramTab extends StatelessWidget {
 
           // Content
           if (imageUrl != null)
-             Container(
-               height: 200,
-               width: double.infinity,
-               margin: const EdgeInsets.symmetric(horizontal: 12),
-               decoration: BoxDecoration(
-                 color: Colors.grey[300],
-                 borderRadius: BorderRadius.circular(12),
-                 image: DecorationImage(
-                   image: AssetImage(imageUrl), // Will fail if not present
-                   fit: BoxFit.cover,
-                   onError: (_, __) {}, // Handle error
-                 ),
-               ),
-               child: const Center(child: Icon(Icons.image, size: 50, color: Colors.white54)),
-             ),
-          
+            Container(
+              height: 200,
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(12),
+                image: DecorationImage(
+                  image: AssetImage(imageUrl), // Will fail if not present
+                  fit: BoxFit.cover,
+                  onError: (_, __) {}, // Handle error
+                ),
+              ),
+              child: const Center(
+                child: Icon(Icons.image, size: 50, color: Colors.white54),
+              ),
+            ),
+
           if (isDocument)
             Container(
               height: 100,
@@ -158,22 +170,24 @@ class GauGramTab extends StatelessWidget {
                 color: Colors.blue[50],
                 borderRadius: BorderRadius.circular(12),
               ),
-               child: const Row(
-                 children: [
-                   Icon(Icons.description, color: Colors.blue, size: 40),
-                   SizedBox(width: 12),
-                   Expanded(child: Text("Document.pdf", style: TextStyle(color: Colors.blue))),
-                 ],
-               ),
+              child: const Row(
+                children: [
+                  Icon(Icons.description, color: Colors.blue, size: 40),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "Document.pdf",
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            
+
           if (caption != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(
-                caption,
-                 style: GoogleFonts.inter(fontSize: 14),
-              ),
+              child: Text(caption, style: GoogleFonts.inter(fontSize: 14)),
             ),
 
           const SizedBox(height: 8),
@@ -184,27 +198,48 @@ class GauGramTab extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                const Icon(Icons.favorite, color: Color(0xFFA4C639), size: 20), // Light Green Like
+                const Icon(
+                  Icons.favorite,
+                  color: Color(0xFFA4C639),
+                  size: 20,
+                ), // Light Green Like
                 const SizedBox(width: 4),
-                Text('$likes', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
-                
-                const SizedBox(width: 16),
-                
-                const Icon(Icons.comment_outlined, color: Colors.black54, size: 20),
-                const SizedBox(width: 4),
-                Text('$comments', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
-                
-                const SizedBox(width: 16),
-                
-                const Icon(Icons.send_outlined, color: Colors.black54, size: 20),
-                const Spacer(),
-                
                 Text(
-                  timeAgo,
+                  '$likes',
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
+
+                const SizedBox(width: 16),
+
+                const Icon(
+                  Icons.comment_outlined,
+                  color: Colors.black54,
+                  size: 20,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$comments',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                const Icon(
+                  Icons.send_outlined,
+                  color: Colors.black54,
+                  size: 20,
+                ),
+                const Spacer(),
+
+                Text(
+                  timeAgo,
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
                 ),
               ],
             ),
@@ -244,7 +279,10 @@ class GauGramTab extends StatelessWidget {
               CircleAvatar(
                 backgroundColor: Colors.pink.shade50,
                 radius: 24,
-                child: const Icon(Icons.person, color: Colors.pink), // Placeholder for Ravi logic
+                child: const Icon(
+                  Icons.person,
+                  color: Colors.pink,
+                ), // Placeholder for Ravi logic
                 // For real usage: backgroundImage: AssetImage(avatar),
               ),
               const SizedBox(width: 12),
@@ -276,7 +314,10 @@ class GauGramTab extends StatelessWidget {
           // Content
           Text(
             'https://www.facebook.com/share/v/1AGCDD6tFT/',
-            style: GoogleFonts.inter(color: Colors.blue, decoration: TextDecoration.underline),
+            style: GoogleFonts.inter(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -300,9 +341,9 @@ class GauGramTab extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const Divider(height: 24),
-          
+
           // Footer
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -311,11 +352,23 @@ class GauGramTab extends StatelessWidget {
                 children: [
                   const Icon(Icons.favorite, color: Colors.black87, size: 20),
                   const SizedBox(width: 4),
-                  Text('1', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(
+                    '1',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(width: 16),
                   const Icon(Icons.chat_bubble_outline, size: 20),
                   const SizedBox(width: 4),
-                  Text('0', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(
+                    '0',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(width: 16),
                   const Icon(Icons.send_outlined, size: 20),
                 ],

@@ -76,6 +76,16 @@ class CattleError extends CattleState {
   List<Object?> get props => [message];
 }
 
+/// Specialized state for individual actions that should not replace the main list
+class CattleActionError extends CattleState {
+  final String message;
+  
+  const CattleActionError(this.message);
+  
+  @override
+  List<Object?> get props => [message];
+}
+
 /// Empty State
 class CattleEmpty extends CattleState {
   final String message;

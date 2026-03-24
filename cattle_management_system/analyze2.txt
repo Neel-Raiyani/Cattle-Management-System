@@ -1,0 +1,398 @@
+﻿Analyzing lib...                                                
+
+   info - Parameters ''message' and 'code'' could be super parameters - lib\core\error\failures.dart:16:9 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\core\error\failures.dart:21:9 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\core\error\failures.dart:26:9 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\core\error\failures.dart:31:9 - use_super_parameters
+   info - Parameters ''message' and 'code'' could be super parameters - lib\core\error\failures.dart:36:9 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\core\error\failures.dart:41:9 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\core\error\failures.dart:46:9 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\core\error\failures.dart:51:9 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\core\error\failures.dart:56:9 - use_super_parameters
+   info - The prefix 'getIt' isn't a lower_case_with_underscores identifier - lib\core\network\api_client.dart:3:40 - library_prefixes
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\about_us\presentation\screens\contact_us_screen.dart:214:32 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\features\about_us\presentation\screens\guidance_screen.dart:152:16 - unnecessary_to_list_in_spreads
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\add_bulk_deworming_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of 'toList' in a spread - lib\features\animal_health\presentation\screens\add_bulk_deworming_screen.dart:152:63 - unnecessary_to_list_in_spreads
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\add_deworming_entry_screen.dart:3:8 - depend_on_referenced_packages
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\add_lab_test_screen.dart:3:8 - depend_on_referenced_packages
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\add_medical_record_screen.dart:3:8 - depend_on_referenced_packages
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\add_vaccination_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of multiple underscores - lib\features\animal_health\presentation\screens\add_vaccination_screen.dart:425:37 - unnecessary_underscores
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\animal_health_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of multiple underscores - lib\features\animal_health\presentation\screens\animal_health_screen.dart:412:31 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_health\presentation\screens\animal_health_screen.dart:412:35 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\animal_health_screen.dart:475:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\animal_health_screen.dart:478:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\animal_health_screen.dart:580:29 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\deworming_information_screen.dart:3:8 - depend_on_referenced_packages
+   info - Statements in an if should be enclosed in a block - lib\features\animal_health\presentation\screens\deworming_information_screen.dart:191:25 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\deworming_information_screen.dart:260:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\deworming_information_screen.dart:367:33 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\lab_testing_information_screen.dart:3:8 - depend_on_referenced_packages
+   info - Statements in an if should be enclosed in a block - lib\features\animal_health\presentation\screens\lab_testing_information_screen.dart:190:25 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\lab_testing_information_screen.dart:317:33 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\medical_details_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\medical_details_screen.dart:60:41 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_health\presentation\screens\medical_details_screen.dart:83:47 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_health\presentation\screens\medical_details_screen.dart:83:51 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\medical_details_screen.dart:324:33 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\medical_information_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\medical_information_screen.dart:319:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\medical_information_screen.dart:418:35 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_health\presentation\screens\medical_information_screen.dart:441:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_health\presentation\screens\medical_information_screen.dart:441:45 - unnecessary_underscores
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_health\presentation\screens\vaccination_information_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\vaccination_information_screen.dart:274:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_health\presentation\screens\vaccination_information_screen.dart:356:33 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_health\presentation\screens\vaccination_information_screen.dart:380:39 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_health\presentation\screens\vaccination_information_screen.dart:380:43 - unnecessary_underscores
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_left\presentation\screens\add_death_record_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\add_death_record_screen.dart:291:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\add_death_record_screen.dart:303:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\add_death_record_screen.dart:354:51 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\add_donation_record_screen.dart:223:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\add_donation_record_screen.dart:235:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\add_donation_record_screen.dart:286:51 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\add_sell_record_screen.dart:276:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\add_sell_record_screen.dart:288:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\add_sell_record_screen.dart:339:51 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\animal_donation_details_screen.dart:51:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\animal_donation_details_screen.dart:51:41 - unnecessary_underscores
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_left\presentation\screens\animal_left_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\animal_left_screen.dart:311:31 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\animal_left_screen.dart:311:35 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\animal_left_screen.dart:373:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\animal_left_screen.dart:376:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\animal_left_screen.dart:389:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\animal_left_screen.dart:488:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\animal_left_screen.dart:497:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\animal_left_screen.dart:507:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\animal_left_summary_screen.dart:174:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\animal_left_summary_screen.dart:231:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\animal_left_summary_screen.dart:300:64 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\death_report_screen.dart:61:39 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\death_report_screen.dart:61:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\death_report_screen.dart:82:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\death_report_screen.dart:110:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\death_report_screen.dart:151:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\death_report_screen.dart:156:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\death_report_screen.dart:170:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\death_report_screen.dart:170:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\donation_report_screen.dart:113:39 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\donation_report_screen.dart:113:43 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\donation_report_screen.dart:192:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\donation_report_screen.dart:234:33 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\donation_report_screen.dart:259:39 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\donation_report_screen.dart:259:43 - unnecessary_underscores
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\animal_left\presentation\screens\sell_report_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\sell_report_screen.dart:208:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\sell_report_screen.dart:208:49 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\sell_report_screen.dart:229:43 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\sell_report_screen.dart:260:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\sell_report_screen.dart:301:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\animal_left\presentation\screens\sell_report_screen.dart:306:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\sell_report_screen.dart:320:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\animal_left\presentation\screens\sell_report_screen.dart:320:41 - unnecessary_underscores
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\presentation\screens\change_password_screen.dart:188:48 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\presentation\screens\change_password_screen.dart:199:48 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\presentation\screens\change_password_screen.dart:202:41 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\presentation\screens\change_password_screen.dart:204:48 - use_build_context_synchronously
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\auth\presentation\screens\register_screen.dart:161:19 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\features\auth\presentation\screens\register_screen.dart:243:23 - curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\presentation\screens\reset_password_screen.dart:134:48 - use_build_context_synchronously
+warning - Unused import: 'package:dio/dio.dart' - lib\features\cattle\data\datasources\cattle_remote_data_source.dart:1:8 - unused_import
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\add_bull_screen.dart:4:8 - depend_on_referenced_packages
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\add_cattle_screen.dart:4:8 - depend_on_referenced_packages
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\cattle\presentation\screens\add_cattle_screen.dart:227:21 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\add_cattle_screen.dart:668:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\ai_bull_list_screen.dart:204:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\ai_bull_list_screen.dart:207:32 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\bull_details_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\bull_details_screen.dart:209:37 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\bull_list_screen.dart:4:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\bull_list_screen.dart:378:35 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\cattle_details\cow_child_list_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_details\cow_child_list_screen.dart:69:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_details\cow_milk_production_screen.dart:50:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_details\cow_milk_production_screen.dart:225:41 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\cattle_details\cow_parity_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of 'toList' in a spread - lib\features\cattle\presentation\screens\cattle_details\cow_parity_screen.dart:133:71 - unnecessary_to_list_in_spreads
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_details\cow_parity_screen.dart:190:33 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\cattle\presentation\screens\cattle_details\cow_parity_screen.dart:631:17 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\features\cattle\presentation\screens\cattle_details\cow_parity_screen.dart:858:15 - curly_braces_in_flow_control_structures
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\cattle\presentation\screens\cattle_details\cow_parity_screen.dart:872:11 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\cattle_details\cow_record_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_details\cow_record_screen.dart:400:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_details\cow_record_screen.dart:870:33 - deprecated_member_use
+warning - Dead code - lib\features\cattle\presentation\screens\cattle_details\cow_record_screen.dart:986:37 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\features\cattle\presentation\screens\cattle_details\cow_record_screen.dart:986:40 - dead_null_aware_expression
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\cattle\presentation\screens\cattle_details\edit_cow_details_screen.dart:327:21 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_details\edit_cow_details_screen.dart:579:40 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\cattle_list_screen.dart:4:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_list_screen.dart:390:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_list_screen.dart:393:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cattle_list_screen.dart:443:51 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\cow_details_screen.dart:4:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cow_details_screen.dart:491:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cattle\presentation\screens\cow_details_screen.dart:504:34 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\cattle\presentation\screens\edit_bull_details_screen.dart:4:8 - depend_on_referenced_packages
+   info - The private field _acquisitionSource could be 'final' - lib\features\cattle\presentation\screens\edit_bull_details_screen.dart:44:10 - prefer_final_fields
+   info - Empty catch block - lib\features\cattle\presentation\screens\edit_bull_details_screen.dart:530:16 - empty_catches
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\conception\presentation\screens\add_pregnancy_screen.dart:3:8 - depend_on_referenced_packages
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\conception\presentation\screens\conception_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\conception\presentation\screens\conception_screen.dart:234:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\conception\presentation\screens\conception_screen.dart:237:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\conception\presentation\screens\conception_screen.dart:367:31 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\conception\presentation\screens\conception_screen.dart:367:35 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\conception\presentation\screens\conception_screen.dart:440:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\conception\presentation\screens\conception_screen.dart:443:34 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\conception\presentation\screens\conception_screen.dart:829:11 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cow_group\presentation\screens\cow_group_screen.dart:96:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cow_group\presentation\screens\cow_group_screen.dart:127:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\widgets\gaushala_tab.dart:495:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\widgets\gaushala_tab.dart:805:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\widgets\gaushala_tab.dart:889:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\widgets\gaushala_tab.dart:938:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\widgets\gaushala_tab.dart:979:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\widgets\gaushala_tab.dart:1009:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\widgets\gaushala_tab.dart:1063:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\widgets\gaushala_tab.dart:1112:28 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\dry_off\presentation\screens\dry_off_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of multiple underscores - lib\features\dry_off\presentation\screens\dry_off_screen.dart:539:31 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\dry_off\presentation\screens\dry_off_screen.dart:539:35 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dry_off\presentation\screens\dry_off_screen.dart:612:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dry_off\presentation\screens\dry_off_screen.dart:615:32 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\gaugram\presentation\screens\upload_post_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gaugram\presentation\screens\upload_post_screen.dart:145:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gaugram\presentation\screens\upload_post_screen.dart:355:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gaugram\presentation\screens\upload_post_screen.dart:385:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gaugram\presentation\widgets\gaugram_tab.dart:88:33 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\gaugram\presentation\widgets\gaugram_tab.dart:155:32 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gaugram\presentation\widgets\gaugram_tab.dart:267:33 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\heat_record\presentation\screens\add_heat_record_screen.dart:3:8 - depend_on_referenced_packages
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\heat_record\presentation\screens\edit_heat_record_screen.dart:3:8 - depend_on_referenced_packages
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\heat_record\presentation\screens\heat_record_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of multiple underscores - lib\features\heat_record\presentation\screens\heat_record_screen.dart:355:31 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\heat_record\presentation\screens\heat_record_screen.dart:355:35 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\heat_record\presentation\screens\heat_record_screen.dart:429:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\heat_record\presentation\screens\heat_record_screen.dart:432:32 - deprecated_member_use
+warning - Unused import: '../../../../core/theme/app_theme.dart' - lib\features\intro\presentation\screens\splash_screen.dart:2:8 - unused_import
+   info - Missing type annotation - lib\features\intro\presentation\screens\splash_screen.dart:23:3 - strict_top_level_inference
+   info - Don't use 'BuildContext's across async gaps - lib\features\intro\presentation\screens\splash_screen.dart:29:11 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\intro\presentation\screens\splash_screen.dart:34:11 - use_build_context_synchronously
+   info - Unnecessary use of 'toList' in a spread - lib\features\milk_distribution\presentation\screens\distribute_milk_screen.dart:414:28 - unnecessary_to_list_in_spreads
+   info - Unnecessary use of multiple underscores - lib\features\milk_distribution\presentation\screens\distribution_title_screen.dart:96:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\milk_distribution\presentation\screens\distribution_title_screen.dart:105:52 - deprecated_member_use
+warning - Unused import: '../../../../core/theme/app_theme.dart' - lib\features\milk_distribution\presentation\widgets\add_distribution_title_bottom_sheet.dart:3:8 - unused_import
+   info - The private field _selectedDate could be 'final' - lib\features\milk_production\presentation\screens\add_milk_entry_screen.dart:18:12 - prefer_final_fields
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\milk_production\presentation\screens\add_milk_entry_screen.dart:165:25 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\milk_production\presentation\screens\add_milk_entry_screen.dart:351:43 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\milk_production\presentation\screens\feed_inventory_screen.dart:145:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\milk_production\presentation\screens\feed_inventory_screen.dart:150:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\milk_production\presentation\screens\feed_inventory_screen.dart:161:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\milk_production\presentation\screens\feed_inventory_screen.dart:174:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\milk_production\presentation\screens\feed_inventory_screen.dart:260:44 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\features\milk_production\presentation\screens\milk_production_screen.dart:492:14 - unnecessary_to_list_in_spreads
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\notification\presentation\screens\notification_screen.dart:97:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\photo_gallery\presentation\screens\photo_folder_detail_screen.dart:161:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\photo_gallery\presentation\screens\photo_gallery_screen.dart:243:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\photo_gallery\presentation\screens\video_gallery_screen.dart:303:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\photo_gallery\presentation\screens\video_gallery_screen.dart:356:63 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\adult_alert_screen.dart:98:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\adult_alert_screen.dart:112:87 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\adult_alert_screen.dart:112:91 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\adult_alert_screen.dart:141:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\adult_alert_screen.dart:146:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\adult_alert_screen.dart:157:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\adult_alert_screen.dart:157:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\adult_alert_screen.dart:225:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\alert_hub_screen.dart:160:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\alert_hub_screen.dart:165:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\alert_hub_screen.dart:173:30 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\bull_report_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:103:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:106:36 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:124:35 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:124:39 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:507:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:510:34 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:533:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:533:47 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:548:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:639:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:642:34 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:666:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:666:47 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:808:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:811:34 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:825:35 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:825:39 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:847:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\bull_report_screen.dart:971:44 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:1330:31 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\bull_report_screen.dart:1330:35 - unnecessary_underscores
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\cow_report_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\cow_report_screen.dart:131:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\cow_report_screen.dart:134:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\cow_report_screen.dart:316:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\cow_report_screen.dart:396:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\cow_report_screen.dart:399:36 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\cow_report_screen.dart:415:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\cow_report_screen.dart:415:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\cow_report_screen.dart:701:31 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\cow_report_screen.dart:701:35 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\cow_report_screen.dart:746:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\cow_report_screen.dart:749:34 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\cow_report_screen.dart:773:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\cow_report_screen.dart:773:47 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\cow_report_screen.dart:1120:44 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\deworming_report_screen.dart:3:8 - depend_on_referenced_packages
+warning - A value for optional parameter 'age' isn't ever given - lib\features\reports\presentation\screens\deworming_report_screen.dart:53:10 - unused_element_parameter
+warning - A value for optional parameter 'lastDose' isn't ever given - lib\features\reports\presentation\screens\deworming_report_screen.dart:54:10 - unused_element_parameter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\deworming_report_screen.dart:167:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\deworming_report_screen.dart:172:41 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\deworming_report_screen.dart:219:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\deworming_report_screen.dart:219:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\deworming_report_screen.dart:502:40 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\deworming_report_screen.dart:564:43 - unnecessary_underscores
+   info - Statements in an if should be enclosed in a block - lib\features\reports\presentation\screens\deworming_report_screen.dart:661:31 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\deworming_report_screen.dart:769:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\deworming_report_screen.dart:806:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\deworming_report_screen.dart:806:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\ear_tag_alert_screen.dart:97:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\ear_tag_alert_screen.dart:111:87 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\ear_tag_alert_screen.dart:111:91 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\ear_tag_alert_screen.dart:140:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\ear_tag_alert_screen.dart:145:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\ear_tag_alert_screen.dart:156:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\ear_tag_alert_screen.dart:156:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\ear_tag_alert_screen.dart:212:46 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\generic_alert_screen.dart:42:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\generic_alert_screen.dart:42:37 - unnecessary_underscores
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\heat_alert_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_alert_screen.dart:102:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_alert_screen.dart:119:87 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_alert_screen.dart:119:91 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\heat_alert_screen.dart:151:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\heat_alert_screen.dart:156:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_alert_screen.dart:169:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_alert_screen.dart:169:41 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\heat_alert_screen.dart:230:38 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\heat_report_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\heat_report_screen.dart:160:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\heat_report_screen.dart:165:45 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_report_screen.dart:210:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_report_screen.dart:210:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\heat_report_screen.dart:380:46 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_report_screen.dart:519:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_report_screen.dart:519:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\heat_report_screen.dart:668:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\heat_report_screen.dart:728:51 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_report_screen.dart:899:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_report_screen.dart:946:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\heat_report_screen.dart:946:41 - unnecessary_underscores
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\lab_test_report_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\lab_test_report_screen.dart:132:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\lab_test_report_screen.dart:137:41 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\lab_test_report_screen.dart:184:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\lab_test_report_screen.dart:184:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\lab_test_report_screen.dart:401:41 - unnecessary_underscores
+   info - Statements in an if should be enclosed in a block - lib\features\reports\presentation\screens\lab_test_report_screen.dart:496:31 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\lab_test_report_screen.dart:600:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\lab_test_report_screen.dart:735:45 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\lab_test_report_screen.dart:785:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\lab_test_report_screen.dart:839:40 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\lab_test_report_screen.dart:901:43 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\lab_test_report_screen.dart:967:40 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\medical_report_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\medical_report_screen.dart:77:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\medical_report_screen.dart:82:41 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\medical_report_screen.dart:129:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\medical_report_screen.dart:129:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\medical_report_screen.dart:561:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\medical_report_screen.dart:668:45 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\medical_report_screen.dart:712:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\medical_report_screen.dart:766:40 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\medical_report_screen.dart:828:43 - unnecessary_underscores
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\milk_report_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\milk_report_screen.dart:102:31 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\milk_report_screen.dart:117:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\milk_report_screen.dart:120:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\milk_report_screen.dart:131:37 - deprecated_member_use
+   info - 'MaterialStateProperty' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\features\reports\presentation\screens\milk_report_screen.dart:467:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\milk_report_screen.dart:635:44 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\milk_report_screen.dart:728:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\milk_report_screen.dart:728:47 - unnecessary_underscores
+   info - 'MaterialStateProperty' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\features\reports\presentation\screens\milk_report_screen.dart:751:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\milk_report_screen.dart:957:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\milk_report_screen.dart:1770:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\milk_report_screen.dart:1773:32 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\pregnancy_checking_alert_screen.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_checking_alert_screen.dart:109:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_checking_alert_screen.dart:127:87 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_checking_alert_screen.dart:127:91 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_checking_alert_screen.dart:160:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_checking_alert_screen.dart:165:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_checking_alert_screen.dart:178:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_checking_alert_screen.dart:178:41 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_checking_alert_screen.dart:239:39 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:102:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:107:45 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:152:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:152:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:179:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:179:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:379:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:537:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:602:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:602:45 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:916:46 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1052:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1052:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1203:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1203:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1355:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1355:45 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1414:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1417:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1604:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\pregnancy_report_screen.dart:1606:41 - deprecated_member_use
+warning - The declaration '_comingSoon' isn't referenced - lib\features\reports\presentation\screens\reports_screen.dart:132:8 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\reports_screen.dart:164:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\reports_screen.dart:168:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_alert_screen.dart:104:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_alert_screen.dart:121:87 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_alert_screen.dart:121:91 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\vaccination_alert_screen.dart:151:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\vaccination_alert_screen.dart:156:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_alert_screen.dart:167:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_alert_screen.dart:167:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\vaccination_alert_screen.dart:233:34 - deprecated_member_use
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\reports\presentation\screens\vaccination_report_screen.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\vaccination_report_screen.dart:157:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\vaccination_report_screen.dart:162:41 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_report_screen.dart:209:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_report_screen.dart:209:37 - unnecessary_underscores
+   info - Statements in an if should be enclosed in a block - lib\features\reports\presentation\screens\vaccination_report_screen.dart:513:31 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_report_screen.dart:639:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_report_screen.dart:780:51 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\vaccination_report_screen.dart:829:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\screens\vaccination_report_screen.dart:883:40 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\screens\vaccination_report_screen.dart:945:43 - unnecessary_underscores
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\user_management\presentation\screens\user_list_screen.dart:446:29 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\widgets\input_fields.dart:142:7 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\widgets\side_menu_drawer.dart:378:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\widgets\state_widgets.dart:163:38 - deprecated_member_use
+
+flutter : 385 issues found. (ran in 2.9s)
+At line:1 char:1
++ flutter analyze lib 2>&1 | Out-File -Encoding 
+utf8 analyze2.txt
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (385 i 
+   ssues found. (ran in 2.9s):String) [], RemoteE  
+  xception
+    + FullyQualifiedErrorId : NativeCommandError
+ 

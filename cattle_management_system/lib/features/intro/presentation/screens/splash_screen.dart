@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../features/auth/data/datasources/auth_local_data_source.dart';
+import '../../../../features/auth/domain/repositories/auth_repository.dart';
+import '../../../../features/auth/presentation/screens/login_screen.dart';
 import '../../../../presentation/screens/home_screen.dart';
 import 'language_selection_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,19 +23,34 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   _navigateToNext() async {
-    await Future.delayed(const Duration(seconds: 2));
+    final prefs = sl<SharedPreferences>();
+    final hadStoredToken =
+        (prefs.getString('auth_token') ?? '').trim().isNotEmpty;
+
+    final isLoggedIn = await sl<AuthRepository>().isLoggedIn();
+
     if (mounted) {
-      final isLoggedIn = await sl<AuthLocalDataSource>().isLoggedIn();
       if (isLoggedIn) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
-      } else {
+      } else if (hadStoredToken) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LanguageSelectionScreen()),
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
+      } else {
+        // For non-logged in users, give them 2 seconds total splash time
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LanguageSelectionScreen(),
+            ),
+          );
+        }
       }
     }
   }
@@ -60,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen> {
               style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins', 
+                fontFamily: 'Poppins',
                 color: Color(0xFF212121),
               ),
             ),

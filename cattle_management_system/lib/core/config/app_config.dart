@@ -4,20 +4,22 @@ class AppConfig {
   static const String appName = 'Cattle Management System';
   static const String appVersion = '1.0.0';
   static const String packageName = 'com.gaushala.cattle_management';
-  
+
   // API Configuration
-  static const String baseUrl = 'https://api.cattlemanagement.com/v1';
+  static const String baseUrl =
+      'https://cattle-management-system-1.onrender.com';
   static const String apiKey = 'YOUR_API_KEY_HERE';
-  static const int connectionTimeout = 30000; // 30 seconds
-  static const int receiveTimeout = 30000;
-  
+  static const int connectionTimeout =
+      30000; // 30 seconds (Reduced from 60s for faster failure)
+  static const int receiveTimeout = 30000; // 30 seconds
+
   // Local Storage Keys
   static const String userTokenKey = 'user_token';
   static const String userDataKey = 'user_data';
   static const String languageKey = 'app_language';
   static const String themeKey = 'app_theme';
   static const String isFirstLaunchKey = 'is_first_launch';
-  
+
   // Hive Box Names
   static const String cattleBoxName = 'cattle_box';
   static const String healthRecordsBoxName = 'health_records_box';
@@ -25,19 +27,19 @@ class AppConfig {
   static const String breedingBoxName = 'breeding_box';
   static const String feedBoxName = 'feed_box';
   static const String expenseBoxName = 'expense_box';
-  
+
   // Pagination
   static const int defaultPageSize = 20;
   static const int maxPageSize = 100;
-  
+
   // Image Configuration
   static const int maxImageSizeMB = 5;
   static const int imageQuality = 85;
-  
+
   // Supported Languages
   static const List<String> supportedLanguages = ['en', 'hi', 'gu'];
   static const String defaultLanguage = 'en';
-  
+
   // Feature Flags
   static const bool enableOfflineMode = true;
   static const bool enablePushNotifications = true;

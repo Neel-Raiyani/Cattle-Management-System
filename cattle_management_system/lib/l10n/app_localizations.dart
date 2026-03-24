@@ -471,6 +471,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your password has been updated. You can now sign in with your new password.'**
   String get passwordUpdated;
+
+  /// No description provided for @menuHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get menuHome;
+
+  /// No description provided for @menuChangePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get menuChangePassword;
+
+  /// No description provided for @menuChangeLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Language'**
+  String get menuChangeLanguage;
+
+  /// No description provided for @menuPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get menuPrivacyPolicy;
+
+  /// No description provided for @menuShareApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Share App'**
+  String get menuShareApp;
+
+  /// No description provided for @menuLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get menuLogout;
+
+  /// No description provided for @menuUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get menuUser;
+
+  /// No description provided for @menuCowGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Cow Group'**
+  String get menuCowGroup;
+
+  /// No description provided for @menuAIBull.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Bull'**
+  String get menuAIBull;
+
+  /// No description provided for @menuAnimalLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Animal Left From Gaushala'**
+  String get menuAnimalLeft;
+
+  /// No description provided for @menuDistribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Distribution Title'**
+  String get menuDistribution;
+
+  /// No description provided for @menuMyPost.
+  ///
+  /// In en, this message translates to:
+  /// **'My Post'**
+  String get menuMyPost;
+
+  /// No description provided for @menuAboutDevelopers.
+  ///
+  /// In en, this message translates to:
+  /// **'About Developers'**
+  String get menuAboutDevelopers;
+
+  /// No description provided for @menuAboutGaushala.
+  ///
+  /// In en, this message translates to:
+  /// **'About Gaushala'**
+  String get menuAboutGaushala;
+
+  /// No description provided for @menuGuidance.
+  ///
+  /// In en, this message translates to:
+  /// **'Guidance'**
+  String get menuGuidance;
+
+  /// No description provided for @menuFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get menuFeedback;
+
+  /// No description provided for @menuContactUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Us'**
+  String get menuContactUs;
+
+  /// No description provided for @sectionAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get sectionAccount;
+
+  /// No description provided for @sectionSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get sectionSettings;
+
+  /// No description provided for @sectionAboutUs.
+  ///
+  /// In en, this message translates to:
+  /// **'About Us'**
+  String get sectionAboutUs;
+
+  /// No description provided for @titleUserList.
+  ///
+  /// In en, this message translates to:
+  /// **'User List'**
+  String get titleUserList;
+
+  /// No description provided for @titleAddUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Add User'**
+  String get titleAddUser;
+
+  /// No description provided for @titleEditUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit User'**
+  String get titleEditUser;
+
+  /// No description provided for @labelEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get labelEmail;
+
+  /// No description provided for @hintEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter email'**
+  String get hintEmail;
+
+  /// No description provided for @noDataFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No Data Found'**
+  String get noDataFound;
+
+  /// No description provided for @btnSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get btnSave;
+
+  /// No description provided for @titleCowList.
+  ///
+  /// In en, this message translates to:
+  /// **'Cow'**
+  String get titleCowList;
+
+  /// No description provided for @lblAllCows.
+  ///
+  /// In en, this message translates to:
+  /// **'All Cows'**
+  String get lblAllCows;
+
+  /// No description provided for @lblLactating.
+  ///
+  /// In en, this message translates to:
+  /// **'Lactating'**
+  String get lblLactating;
+
+  /// No description provided for @lblHeifer.
+  ///
+  /// In en, this message translates to:
+  /// **'Heifer'**
+  String get lblHeifer;
+
+  /// No description provided for @lblPregnant.
+  ///
+  /// In en, this message translates to:
+  /// **'Pregnant'**
+  String get lblPregnant;
+
+  /// No description provided for @lblDryOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Dry Off'**
+  String get lblDryOff;
+
+  /// No description provided for @lblRetiredCow.
+  ///
+  /// In en, this message translates to:
+  /// **'Retired Cow'**
+  String get lblRetiredCow;
+
+  /// No description provided for @lblTotalCow.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {count} Cow'**
+  String lblTotalCow(Object count);
+
+  /// No description provided for @lblTagNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag No.'**
+  String get lblTagNo;
+
+  /// No description provided for @lblNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No.'**
+  String get lblNo;
+
+  /// No description provided for @lblBirthday.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthday'**
+  String get lblBirthday;
+
+  /// No description provided for @lblAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get lblAge;
+
+  /// No description provided for @lblParity.
+  ///
+  /// In en, this message translates to:
+  /// **'Parity'**
+  String get lblParity;
+
+  /// No description provided for @lblParityMilk.
+  ///
+  /// In en, this message translates to:
+  /// **'Parity Milk'**
+  String get lblParityMilk;
+
+  /// No description provided for @lblLastDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Delivery'**
+  String get lblLastDelivery;
+
+  /// No description provided for @btnAddNewCow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add New Cow'**
+  String get btnAddNewCow;
+
+  /// No description provided for @menuOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get menuOpen;
+
+  /// No description provided for @menuShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get menuShare;
+
+  /// No description provided for @lblDetailNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Detail not available'**
+  String get lblDetailNotAvailable;
+
+  /// No description provided for @unitLPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'L/day'**
+  String get unitLPerDay;
 }
 
 class _AppLocalizationsDelegate

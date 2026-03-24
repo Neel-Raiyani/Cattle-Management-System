@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/di/injection_container.dart';
 import '../widgets/add_distribution_title_bottom_sheet.dart';
 
 class DistributionTitleScreen extends StatefulWidget {
@@ -11,13 +13,37 @@ class DistributionTitleScreen extends StatefulWidget {
 }
 
 class _DistributionTitleScreenState extends State<DistributionTitleScreen> {
-  // Dummy list of distribution titles
-  final List<String> _distributionTitles = []; // Empty initially as per 'No data found' requirement
+  List<Map<String, dynamic>> _distributionTitles = []; 
+  bool _isLoading = true;
+  String? _error;
 
-  void _addTitle(String title) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories();
+  }
+
+  Future<void> _fetchCategories() async {
     setState(() {
-      _distributionTitles.add(title);
+      _isLoading = true;
+      _error = null;
     });
+    try {
+      final categories = await sl<ApiService>().getMilkCategories();
+      setState(() {
+        _distributionTitles = List<Map<String, dynamic>>.from(categories);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Service not available';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onCategoryAdded() {
+    _fetchCategories();
   }
 
   @override
@@ -49,7 +75,51 @@ class _DistributionTitleScreenState extends State<DistributionTitleScreen> {
         ),
         centerTitle: false,
       ),
-      body: _distributionTitles.isEmpty
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/icons/no_data_found.png',
+                        width: 150,
+                        height: 150,
+                        color: Colors.grey.withOpacity(0.5),
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.error_outline,
+                          size: 100,
+                          color: Colors.grey.withOpacity(0.5),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _error!,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _fetchCategories,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: Text(
+                          'Retry',
+                          style: GoogleFonts.poppins(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : _distributionTitles.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -106,7 +176,7 @@ class _DistributionTitleScreenState extends State<DistributionTitleScreen> {
                     ],
                   ),
                   child: Text(
-                    _distributionTitles[index],
+                    _distributionTitles[index]['name'] ?? '-',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 16),
                   ),
                 );
@@ -119,7 +189,7 @@ class _DistributionTitleScreenState extends State<DistributionTitleScreen> {
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
             builder: (context) => AddDistributionTitleBottomSheet(
-              onAdd: _addTitle,
+              onAdd: (name) => _onCategoryAdded(),
             ),
           );
         },

@@ -203,4 +203,147 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get passwordUpdated =>
       'તમારો પાસવર્ડ અપડેટ કરવામાં આવ્યો છે. હવે તમે તમારા નવા પાસવર્ડ સાથે સાઇન ઇન કરી શકો છો.';
+
+  @override
+  String get menuHome => 'હોમ';
+
+  @override
+  String get menuChangePassword => 'પાસવર્ડ બદલો';
+
+  @override
+  String get menuChangeLanguage => 'ભાષા બદલો';
+
+  @override
+  String get menuPrivacyPolicy => 'ગોપનીયતા નીતિ';
+
+  @override
+  String get menuShareApp => 'એપ્લિકેશન શેર કરો';
+
+  @override
+  String get menuLogout => 'લોગ આઉટ';
+
+  @override
+  String get menuUser => 'વપરાશકર્તા';
+
+  @override
+  String get menuCowGroup => 'ગાય જૂથ';
+
+  @override
+  String get menuAIBull => 'AI Bull';
+
+  @override
+  String get menuAnimalLeft => 'ગૌશાળા છોડેલા પ્રાણીઓ';
+
+  @override
+  String get menuDistribution => 'વિતરણ શીર્ષક';
+
+  @override
+  String get menuMyPost => 'મારી પોસ્ટ';
+
+  @override
+  String get menuAboutDevelopers => 'ડેવલપર્સ વિશે';
+
+  @override
+  String get menuAboutGaushala => 'ગૌશાળા વિશે';
+
+  @override
+  String get menuGuidance => 'માર્ગદર્શન';
+
+  @override
+  String get menuFeedback => 'પ્રતિસાદ';
+
+  @override
+  String get menuContactUs => 'અમારો સંપર્ક કરો';
+
+  @override
+  String get sectionAccount => 'એકાઉન્ટ';
+
+  @override
+  String get sectionSettings => 'સેટિંગ્સ';
+
+  @override
+  String get sectionAboutUs => 'અમારા વિશે';
+
+  @override
+  String get titleUserList => 'વપરાશકર્તા સૂચિ';
+
+  @override
+  String get titleAddUser => 'વપરાશકર્તા ઉમેરો';
+
+  @override
+  String get titleEditUser => 'વપરાશકર્તા સંપાદિત કરો';
+
+  @override
+  String get labelEmail => 'ઇમેઇલ';
+
+  @override
+  String get hintEmail => 'તમારું ઇમેઇલ દાખલ કરો';
+
+  @override
+  String get noDataFound => 'કોઈ ડેટા મળ્યો નથી';
+
+  @override
+  String get btnSave => 'સાચવો';
+
+  @override
+  String get titleCowList => 'ગાય';
+
+  @override
+  String get lblAllCows => 'બધી ગાયો';
+
+  @override
+  String get lblLactating => 'દૂધ આપતી';
+
+  @override
+  String get lblHeifer => 'પાડી';
+
+  @override
+  String get lblPregnant => 'ગાભણ';
+
+  @override
+  String get lblDryOff => 'વસૂકી ગયેલી';
+
+  @override
+  String get lblRetiredCow => 'નિવૃત્ત ગાય';
+
+  @override
+  String lblTotalCow(Object count) {
+    return 'કુલ $count ગાય';
+  }
+
+  @override
+  String get lblTagNo => 'ટેગ નં.';
+
+  @override
+  String get lblNo => 'નં.';
+
+  @override
+  String get lblBirthday => 'જન્મ તારીખ';
+
+  @override
+  String get lblAge => 'ઉંમર';
+
+  @override
+  String get lblParity => 'વ્યાતર';
+
+  @override
+  String get lblParityMilk => 'દૈનિક દૂધ';
+
+  @override
+  String get lblLastDelivery => 'છેલ્લી ડિલિવરી';
+
+  @override
+  String get btnAddNewCow => 'નવી ગાય ઉમેરો';
+
+  @override
+  String get menuOpen => 'ખોલો';
+
+  @override
+  String get menuShare => 'શેર કરો';
+
+  @override
+  String get lblDetailNotAvailable => 'વિગત ઉપલબ્ધ નથી';
+
+  @override
+  String get unitLPerDay => 'લિટર/દિવસ';
 }

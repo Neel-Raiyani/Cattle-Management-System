@@ -20,7 +20,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<bool> registerUser(Map<String, dynamic> userData) async {
     final mobile = userData['mobile'];
-    
+
     // Check if user exists
     if (sharedPreferences.containsKey('user_$mobile')) {
       return false; // User exists
@@ -32,7 +32,10 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>?> loginUser(String mobile, String password) async {
+  Future<Map<String, dynamic>?> loginUser(
+    String mobile,
+    String password,
+  ) async {
     final userJson = sharedPreferences.getString('user_$mobile');
     if (userJson != null) {
       final userData = jsonDecode(userJson);
@@ -45,12 +48,12 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     }
     return null; // Invalid user or password
   }
-  
+
   @override
   Future<bool> isLoggedIn() async {
     return sharedPreferences.containsKey('current_user');
   }
-  
+
   @override
   Future<void> logout() async {
     await sharedPreferences.remove('current_user');
@@ -83,7 +86,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   Future<Map<String, dynamic>?> getCurrentUserData() async {
     final mobile = sharedPreferences.getString('current_user');
     if (mobile != null) {
-      final userJson = sharedPreferences.getString('user_\$mobile');
+      final userJson = sharedPreferences.getString('user_$mobile');
       if (userJson != null) {
         return jsonDecode(userJson) as Map<String, dynamic>;
       }

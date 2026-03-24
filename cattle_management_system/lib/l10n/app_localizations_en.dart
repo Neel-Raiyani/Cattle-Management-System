@@ -203,4 +203,147 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get passwordUpdated =>
       'Your password has been updated. You can now sign in with your new password.';
+
+  @override
+  String get menuHome => 'Home';
+
+  @override
+  String get menuChangePassword => 'Change Password';
+
+  @override
+  String get menuChangeLanguage => 'Change Language';
+
+  @override
+  String get menuPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get menuShareApp => 'Share App';
+
+  @override
+  String get menuLogout => 'Logout';
+
+  @override
+  String get menuUser => 'User';
+
+  @override
+  String get menuCowGroup => 'Cow Group';
+
+  @override
+  String get menuAIBull => 'AI Bull';
+
+  @override
+  String get menuAnimalLeft => 'Animal Left From Gaushala';
+
+  @override
+  String get menuDistribution => 'Distribution Title';
+
+  @override
+  String get menuMyPost => 'My Post';
+
+  @override
+  String get menuAboutDevelopers => 'About Developers';
+
+  @override
+  String get menuAboutGaushala => 'About Gaushala';
+
+  @override
+  String get menuGuidance => 'Guidance';
+
+  @override
+  String get menuFeedback => 'Feedback';
+
+  @override
+  String get menuContactUs => 'Contact Us';
+
+  @override
+  String get sectionAccount => 'Account';
+
+  @override
+  String get sectionSettings => 'Settings';
+
+  @override
+  String get sectionAboutUs => 'About Us';
+
+  @override
+  String get titleUserList => 'User List';
+
+  @override
+  String get titleAddUser => 'Add User';
+
+  @override
+  String get titleEditUser => 'Edit User';
+
+  @override
+  String get labelEmail => 'Email';
+
+  @override
+  String get hintEmail => 'Enter email';
+
+  @override
+  String get noDataFound => 'No Data Found';
+
+  @override
+  String get btnSave => 'Save';
+
+  @override
+  String get titleCowList => 'Cow';
+
+  @override
+  String get lblAllCows => 'All Cows';
+
+  @override
+  String get lblLactating => 'Lactating';
+
+  @override
+  String get lblHeifer => 'Heifer';
+
+  @override
+  String get lblPregnant => 'Pregnant';
+
+  @override
+  String get lblDryOff => 'Dry Off';
+
+  @override
+  String get lblRetiredCow => 'Retired Cow';
+
+  @override
+  String lblTotalCow(Object count) {
+    return 'Total $count Cow';
+  }
+
+  @override
+  String get lblTagNo => 'Tag No.';
+
+  @override
+  String get lblNo => 'No.';
+
+  @override
+  String get lblBirthday => 'Birthday';
+
+  @override
+  String get lblAge => 'Age';
+
+  @override
+  String get lblParity => 'Parity';
+
+  @override
+  String get lblParityMilk => 'Parity Milk';
+
+  @override
+  String get lblLastDelivery => 'Last Delivery';
+
+  @override
+  String get btnAddNewCow => 'Add New Cow';
+
+  @override
+  String get menuOpen => 'Open';
+
+  @override
+  String get menuShare => 'Share';
+
+  @override
+  String get lblDetailNotAvailable => 'Detail not available';
+
+  @override
+  String get unitLPerDay => 'L/day';
 }

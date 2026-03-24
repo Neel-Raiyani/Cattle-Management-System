@@ -4,7 +4,7 @@ import '../../domain/entities/cattle.dart';
 /// Cattle Events
 abstract class CattleEvent extends Equatable {
   const CattleEvent();
-  
+
   @override
   List<Object?> get props => [];
 }
@@ -12,9 +12,9 @@ abstract class CattleEvent extends Equatable {
 /// Load All Cattle
 class LoadCattleList extends CattleEvent {
   final bool forceRefresh;
-  
+
   const LoadCattleList({this.forceRefresh = false});
-  
+
   @override
   List<Object?> get props => [forceRefresh];
 }
@@ -22,9 +22,9 @@ class LoadCattleList extends CattleEvent {
 /// Load Cattle by ID
 class LoadCattleById extends CattleEvent {
   final String id;
-  
+
   const LoadCattleById(this.id);
-  
+
   @override
   List<Object?> get props => [id];
 }
@@ -32,9 +32,9 @@ class LoadCattleById extends CattleEvent {
 /// Add New Cattle
 class AddCattle extends CattleEvent {
   final Cattle cattle;
-  
+
   const AddCattle(this.cattle);
-  
+
   @override
   List<Object?> get props => [cattle];
 }
@@ -42,9 +42,19 @@ class AddCattle extends CattleEvent {
 /// Update Cattle
 class UpdateCattle extends CattleEvent {
   final Cattle cattle;
-  
+
   const UpdateCattle(this.cattle);
-  
+
+  @override
+  List<Object?> get props => [cattle];
+}
+
+/// Update local cattle cache/state without forcing a network refresh
+class UpsertLocalCattle extends CattleEvent {
+  final Cattle cattle;
+
+  const UpsertLocalCattle(this.cattle);
+
   @override
   List<Object?> get props => [cattle];
 }
@@ -52,9 +62,9 @@ class UpdateCattle extends CattleEvent {
 /// Delete Cattle
 class DeleteCattle extends CattleEvent {
   final String id;
-  
+
   const DeleteCattle(this.id);
-  
+
   @override
   List<Object?> get props => [id];
 }
@@ -62,9 +72,9 @@ class DeleteCattle extends CattleEvent {
 /// Search Cattle
 class SearchCattle extends CattleEvent {
   final String query;
-  
+
   const SearchCattle(this.query);
-  
+
   @override
   List<Object?> get props => [query];
 }
@@ -72,9 +82,27 @@ class SearchCattle extends CattleEvent {
 /// Filter Cattle by Status
 class FilterCattleByStatus extends CattleEvent {
   final String status;
-  
+
   const FilterCattleByStatus(this.status);
-  
+
   @override
   List<Object?> get props => [status];
+}
+
+/// Load Cows only
+class LoadCowsList extends CattleEvent {
+  final bool forceRefresh;
+  const LoadCowsList({this.forceRefresh = false});
+
+  @override
+  List<Object?> get props => [forceRefresh];
+}
+
+/// Load Bulls only
+class LoadBullsList extends CattleEvent {
+  final bool forceRefresh;
+  const LoadBullsList({this.forceRefresh = false});
+
+  @override
+  List<Object?> get props => [forceRefresh];
 }

@@ -1,457 +1,1126 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../features/milk_production/presentation/screens/milk_production_screen.dart';
-import '../../../milk_distribution/presentation/screens/distribute_milk_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class GaushalaTab extends StatelessWidget {
+import '../../../../features/cattle/presentation/screens/cattle_list_screen.dart';
+import '../../../../features/cattle/presentation/screens/bull_list_screen.dart';
+import '../../../../features/milk_production/presentation/screens/milk_production_screen.dart';
+import '../../../../features/milk_distribution/presentation/screens/distribute_milk_screen.dart';
+import '../../../../features/heat_record/presentation/screens/heat_record_screen.dart';
+import '../../../../features/conception/presentation/screens/conception_screen.dart';
+import '../../../../features/dry_off/presentation/screens/dry_off_screen.dart';
+import '../../../../features/animal_health/presentation/screens/medical_information_screen.dart';
+import '../../../../features/animal_health/presentation/screens/vaccination_information_screen.dart';
+import '../../../../features/reports/presentation/screens/reports_screen.dart';
+import '../../../../features/reports/presentation/screens/alert_hub_screen.dart';
+import '../../../../features/animal_left/presentation/screens/sell_report_screen.dart';
+import '../../../../features/animal_left/presentation/screens/death_report_screen.dart';
+import '../../../../features/animal_left/presentation/screens/donation_report_screen.dart';
+import '../../../../features/animal_health/presentation/screens/deworming_information_screen.dart';
+import '../../../../features/animal_health/presentation/screens/lab_testing_information_screen.dart';
+import '../../../../features/photo_gallery/presentation/screens/photo_gallery_screen.dart';
+import '../../../../features/photo_gallery/presentation/screens/video_gallery_screen.dart';
+import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
+import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
+import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
+import '../../../../features/cattle/domain/entities/cattle.dart';
+import '../../../../features/cattle/data/models/cattle_model.dart';
+import '../../../../features/milk_production/presentation/bloc/milk_production_bloc.dart';
+import '../../../../features/milk_production/presentation/bloc/milk_production_state.dart';
+import '../../../../features/milk_production/presentation/bloc/milk_production_event.dart';
+import '../../../../features/milk_production/domain/entities/milk_production_entry.dart';
+import '../../../../features/animal_health/domain/entities/health_event.dart';
+
+import '../../../../core/services/api_service.dart';
+import '../../../../core/di/injection_container.dart';
+
+class GaushalaTab extends StatefulWidget {
   const GaushalaTab({super.key});
 
-  final Color _oliveGreen = const Color(0xFF8DA94D); // Adjusted to image
+  @override
+  State<GaushalaTab> createState() => _GaushalaTabState();
+}
+
+class _GaushalaTabState extends State<GaushalaTab> {
+  final Color _oliveGreen = const Color(0xFF8DA94D);
+  static const String _summaryCacheKey = 'CACHED_ANIMAL_SUMMARY';
+  static const String _cattleCacheKey = 'CACHED_CATTLE_LIST';
+  Map<String, dynamic>? _summary;
+  List<Cattle> _cachedCattle = [];
+  int? _derivedSickAnimalCount;
+  int? _heatRecordCount;
+  int? _conceptionCount;
+  int? _dryOffRecordCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedSummary();
+    _loadCachedCattle();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    _triggerBlocLoads();
+    _fetchSummary();
+  }
+
+  Future<void> _loadCachedSummary() async {
+    try {
+      final prefs = sl<SharedPreferences>();
+      final cached = prefs.getString(_summaryCacheKey);
+      if (cached == null || cached.isEmpty) return;
+      final value = Map<String, dynamic>.from(jsonDecode(cached) as Map);
+      if (value.isNotEmpty && mounted) {
+        setState(() {
+          _summary = value;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadCachedCattle() async {
+    try {
+      final prefs = sl<SharedPreferences>();
+      final cached = prefs.getString(_cattleCacheKey);
+      if (cached == null || cached.isEmpty) return;
+      final decoded = jsonDecode(cached) as List<dynamic>;
+      final cattle = decoded
+          .map((item) => CattleModel.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+      if (mounted) {
+        setState(() {
+          _cachedCattle = cattle;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _triggerBlocLoads() async {
+    final cattleBloc = context.read<CattleBloc>();
+    final milkBloc = context.read<MilkProductionBloc>();
+
+    cattleBloc.add(const LoadCattleList());
+
+    List<Cattle> cattleList = [];
+    final currentState = cattleBloc.state;
+    if (currentState is CattleListLoaded) {
+      cattleList = currentState.cattleList;
+    } else {
+      final loadedState = await cattleBloc.stream.firstWhere(
+        (state) =>
+            state is CattleListLoaded ||
+            state is CattleEmpty ||
+            state is CattleError,
+      );
+
+      if (loadedState is CattleListLoaded) {
+        cattleList = loadedState.cattleList;
+      }
+    }
+
+    milkBloc.add(
+      LoadMilkProductionList(date: DateTime.now(), cattleList: cattleList),
+    );
+  }
+
+  Future<void> _fetchSummary() async {
+    try {
+      final summary = await sl<ApiService>().getAnimalSummary();
+      final data = Map<String, dynamic>.from(summary['data'] ?? summary);
+      final prefs = sl<SharedPreferences>();
+      await prefs.setString(_summaryCacheKey, jsonEncode(data));
+      if (mounted) {
+        setState(() {
+          _summary = data;
+        });
+      }
+    } catch (e) {
+      debugPrint("Summary Error: $e");
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
+  Future<void> _fetchDerivedSickAnimalCount() async {
+    if (_hasUsableSummaryValue(['sickAnimalCount', 'sickCount'])) {
+      return;
+    }
+    try {
+      final items = await sl<ApiService>().getMedicalHistory();
+      final records = items
+          .whereType<Map>()
+          .map((e) => HealthEvent.fromJson(Map<String, dynamic>.from(e), 'Medical'))
+          .toList()
+        ..sort((a, b) => b.eventDate.compareTo(a.eventDate));
+
+      final latestByAnimal = <String, HealthEvent>{};
+      for (final record in records) {
+        final key = [
+          record.id,
+          record.cowTagNumber,
+          record.cowSerialNumber,
+          record.cowName,
+        ].firstWhere((value) => value.trim().isNotEmpty && value.trim() != '-', orElse: () => '');
+        if (key.isEmpty || latestByAnimal.containsKey(key)) continue;
+        latestByAnimal[key] = record;
+      }
+
+      final sickCount = latestByAnimal.values.where((record) {
+        final status = (record.medicalStatus ?? record.status).toUpperCase();
+        return status == 'SICK';
+      }).length;
+
+      if (mounted) {
+        setState(() {
+          _derivedSickAnimalCount = sickCount;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _fetchHealthAndReproductionCounts() async {
+    final shouldFetchHeat = _heatRecordCount == null &&
+        !_hasUsableSummaryValue(['activeHeatCount']);
+    final shouldFetchConception = _conceptionCount == null &&
+        !_hasUsableSummaryValue(['pregnantCount']);
+    final shouldFetchDryOff = _dryOffRecordCount == null &&
+        !_hasUsableSummaryValue(['dryOffCount']);
+
+    if (!shouldFetchHeat && !shouldFetchConception && !shouldFetchDryOff) {
+      return;
+    }
+
+    int? heatCount;
+    int? conceptionCount;
+    int? dryOffCount;
+
+    final futures = <Future<void>>[];
+    if (shouldFetchHeat) {
+      futures.add(
+        sl<ApiService>().getHeatReport(
+          from: DateTime.now().subtract(const Duration(days: 30)),
+          to: DateTime.now().add(const Duration(days: 1)),
+        ).then((v) => heatCount = v.length).catchError((_) => 0),
+      );
+    }
+    if (shouldFetchConception) {
+      futures.add(
+        sl<ApiService>().getActiveJourneys()
+            .then((v) => conceptionCount = v.length)
+            .catchError((_) => 0),
+      );
+    }
+    if (shouldFetchDryOff) {
+      futures.add(
+        _fetchDryOffCount()
+            .then((v) => dryOffCount = v)
+            .catchError((_) => 0),
+      );
+    }
+
+    await Future.wait(futures);
+
+    if (mounted) {
+      setState(() {
+        _heatRecordCount = heatCount ?? _heatRecordCount;
+        _conceptionCount = conceptionCount ?? _conceptionCount;
+        _dryOffRecordCount = dryOffCount ?? _dryOffRecordCount;
+      });
+    }
+  }
+
+  Future<int> _fetchDryOffCount() async {
+    final cattleState = context.read<CattleBloc>().state;
+    final cattleList = cattleState is CattleListLoaded
+        ? cattleState.cattleList
+        : _cachedCattle;
+
+    final cows = cattleList.where((c) {
+      return c.gender.toUpperCase().startsWith('F');
+    }).toList();
+
+    if (cows.isEmpty) return 0;
+
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final endDate = now.add(const Duration(days: 30));
+    final end = DateTime(
+      endDate.year,
+      endDate.month,
+      endDate.day,
+      23,
+      59,
+      59,
+    );
+    final uniqueIds = <String>{};
+
+    for (final cow in cows) {
+      try {
+        final records = await sl<ApiService>().getDryOffReport(animalId: cow.id);
+        for (final raw in records.whereType<Map>()) {
+          final id =
+              raw['id']?.toString() ??
+              raw['_id']?.toString() ??
+              '';
+          final dateRaw = raw['date']?.toString();
+          final date = dateRaw != null ? DateTime.tryParse(dateRaw) : null;
+
+          if (id.isEmpty || date == null) continue;
+          if (date.isBefore(start) || date.isAfter(end)) continue;
+
+          uniqueIds.add(id);
+        }
+      } catch (_) {
+        // Ignore per-animal failures so one bad record doesn't zero the dashboard.
+      }
+    }
+
+    return uniqueIds.length;
+  }
+
+  int _summaryCount(List<String> keys, {int fallback = 0}) {
+    for (final key in keys) {
+      final raw = _summary?[key];
+      final parsed = int.tryParse(raw?.toString() ?? '');
+      if (parsed != null) return parsed;
+    }
+    return fallback;
+  }
+
+  int _nestedSummaryCount(
+    String parent,
+    String child, {
+    int fallback = 0,
+  }) {
+    final section = _summary?[parent];
+    if (section is Map) {
+      final parsed = int.tryParse(section[child]?.toString() ?? '');
+      if (parsed != null) return parsed;
+    }
+    return fallback;
+  }
+
+  Future<void> _refreshDashboard() async {
+    await _triggerBlocLoads();
+    await _fetchSummary();
+    await _fetchDerivedSickAnimalCount();
+    await _fetchHealthAndReproductionCounts();
+  }
+
+  Future<void> _refreshDeferredDashboardMetrics() async {
+    await _fetchDerivedSickAnimalCount();
+    await _fetchHealthAndReproductionCounts();
+  }
+
+  bool _hasUsableSummaryValue(List<String> keys) {
+    for (final key in keys) {
+      final raw = _summary?[key];
+      if (raw == null) continue;
+      if (int.tryParse(raw.toString()) != null) return true;
+    }
+    return false;
+  }
+
+  bool _isFilteredGenderOnlyList(List<Cattle> list) {
+    if (list.isEmpty) return false;
+    final hasFemale = list.any((c) => c.gender.toUpperCase().startsWith('F'));
+    final hasMale = list.any((c) => c.gender.toUpperCase().startsWith('M'));
+    return hasFemale != hasMale;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Summary Cards
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  'All Cow',
-                  '08',
-                  'assets/icons/all_cow_icon.png',
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildSummaryCard(
-                  'All Bull',
-                  '10',
-                  'assets/icons/all_bull_icon.png',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
+    return BlocBuilder<CattleBloc, CattleState>(
+      builder: (context, cattleState) {
+        return BlocBuilder<MilkProductionBloc, MilkProductionState>(
+          builder: (context, milkState) {
+            List<Cattle> cattleList = _cachedCattle;
+            if (cattleState is CattleListLoaded) {
+              final loadedList = cattleState.cattleList;
+              final shouldUseCachedFullList =
+                  _cachedCattle.isNotEmpty &&
+                  _isFilteredGenderOnlyList(loadedList) &&
+                  _cachedCattle.length > loadedList.length;
 
-          // Cattle Status
-          _buildSectionHeader('Cattle Status', action: 'See All'),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 140,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildStatusCircle('03', 'Lactating', Colors.green),
-                _buildStatusCircle('03', 'Heifer', Colors.teal),
-                _buildStatusCircle('03', 'Calving', Colors.orange),
-                _buildStatusCircle('03', 'Dry', Colors.brown),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
+              cattleList = shouldUseCachedFullList ? _cachedCattle : loadedList;
+            }
+            // Removed direct Event triggers from Build to prevent UI lag/loops
 
-          // Today's Production
-          // Today's Production
-          Container(
-            decoration: BoxDecoration(
-              color: _oliveGreen,
-              borderRadius: BorderRadius.circular(16),
-              image: const DecorationImage(
-                image: AssetImage(
-                  'assets/images/pattern_bg.png',
-                ), // Subtle pattern
-                fit: BoxFit.cover,
-                opacity: 0.1,
+            List<MilkProductionEntry> milkEntries = [];
+            if (milkState is MilkProductionLoaded) {
+              milkEntries = milkState.entries;
+            }
+
+            // Calculate cattle counts
+            final List<Cattle> activeCattle = cattleList
+                .where(
+                  (c) =>
+              (c.status.toUpperCase() == 'ACTIVE' ||
+                  c.status.toLowerCase() == 'bull') &&
+                  c.isRetired != true,
+            )
+                .toList();
+
+            final int allCowCount = _summaryCount(
+              ['allCowCount'],
+              fallback: _nestedSummaryCount(
+                'cows',
+                'total',
+                fallback: activeCattle
+                    .where((c) => c.gender.toUpperCase().startsWith('F'))
+                    .length,
               ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MilkProductionScreen(),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            );
+
+            final int allBullCount = _summaryCount(
+              ['allBullCount'],
+              fallback: _nestedSummaryCount(
+                'bulls',
+                'total',
+                fallback: activeCattle
+                    .where((c) => c.gender.toUpperCase().startsWith('M'))
+                    .length,
+              ),
+            );
+
+            final int lactatingCount = _summaryCount(
+              ['lactatingCount'],
+              fallback: _nestedSummaryCount(
+                'cows',
+                'lactating',
+                fallback: activeCattle.where((c) => c.isLactating == true).length,
+              ),
+            );
+
+            final int heiferCount = _summaryCount(
+              ['heiferCount'],
+              fallback: _nestedSummaryCount(
+                'cows',
+                'heifer',
+                fallback: activeCattle.where((c) => c.isHeifer == true).length,
+              ),
+            );
+
+            final int calvingCount = _summaryCount(
+              ['pregnantCount'],
+              fallback: _nestedSummaryCount(
+                'cows',
+                'pregnant',
+                fallback: activeCattle.where((c) => c.isPregnant == true).length,
+              ),
+            );
+
+            final int dryCount = _summaryCount(
+              ['dryOffCount'],
+              fallback: _nestedSummaryCount(
+                'cows',
+                'dryOff',
+                fallback: activeCattle.where((c) => c.isDryOff == true).length,
+              ),
+            );
+
+            final String sickAnimalCount = _summaryCount(
+              ['sickAnimalCount', 'sickCount'],
+              fallback: _derivedSickAnimalCount ?? 0,
+            ).toString();
+            final String heatRecordCount = (_heatRecordCount ??
+                    int.tryParse(_summary?['activeHeatCount']?.toString() ?? '') ??
+                    0)
+                .toString();
+            final String pregnancyStatusCount = (_conceptionCount ??
+                    int.tryParse(_summary?['pregnantCount']?.toString() ?? '') ??
+                    calvingCount)
+                .toString();
+            final String dryOffTargetCount = (_dryOffRecordCount ??
+                    int.tryParse(_summary?['dryOffCount']?.toString() ?? '') ??
+                    dryCount)
+                .toString();
+
+            final double totalMorningMilk = milkEntries.fold<double>(
+              0.0,
+                  (sum, entry) => sum + entry.morningMilk,
+            );
+            final double totalEveningMilk = milkEntries.fold<double>(
+              0.0,
+                  (sum, entry) => sum + entry.eveningMilk,
+            );
+            final double totalTodayMilk = totalMorningMilk + totalEveningMilk;
+
+            String formatCount(int count) {
+              return count.toString().padLeft(2, '0');
+            }
+            String formatAmount(double amount) => amount.toStringAsFixed(1);
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.water_drop,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Today\'s Production',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '52.0',
-                              style: GoogleFonts.poppins(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                      Expanded(
+                        child: _buildSummaryCard(
+                          'All Cow',
+                          formatCount(allCowCount),
+                          'assets/icons/all_cow_icon.png',
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CattleListScreen(),
                               ),
-                            ),
-                            TextSpan(
-                              text: 'Ltr',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
+                            );
+                            if (mounted) _refreshDashboard();
+                          },
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildProductionSubCard(
-                              'Morning',
-                              '26.0 Ltr',
-                              Icons.wb_sunny_rounded,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildProductionSubCard(
-                              'Evening',
-                              '26.0 Ltr',
-                              Icons.nightlight_round,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildSummaryCard(
+                          'All Bull',
+                          formatCount(allBullCount),
+                          'assets/icons/all_bull_icon.png',
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const BullListScreen(),
+                              ),
+                            );
+                            if (mounted) _refreshDashboard();
+                          },
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Health & Reproduction
-          _buildSectionHeader('Health & Reproduction'),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                _buildListRow(
-                  Icons.favorite,
-                  Colors.pink,
-                  'Heat Record',
-                  'Total Active',
-                  '-',
-                ),
-                const Divider(height: 24),
-                _buildListRow(
-                  Icons.pregnant_woman,
-                  Colors.purple,
-                  'Conception',
-                  'Pregnancy Status',
-                  '-',
-                ),
-                const Divider(height: 24),
-                _buildListRow(
-                  Icons.block,
-                  Colors.grey,
-                  'Dry Off Cow',
-                  'Target Date',
-                  '-',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Distribute Milk
-          // Distribute Milk
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F8E9), // Light Green bg
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.green.shade100),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DistributeMilkScreen(),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
+                  const SizedBox(height: 24),
+                  _buildSectionHeader('Cattle Status', action: ''),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 140,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        _buildStatusCircle(
+                          formatCount(lactatingCount),
+                          'Lactating',
+                          Colors.green,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CattleListScreen(
+                                  initialFilter: 'Lactating',
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                        child: const Icon(
-                          Icons.local_shipping,
-                          color: Colors.orange,
+                        _buildStatusCircle(
+                          formatCount(heiferCount),
+                          'Heifer',
+                          Colors.teal,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CattleListScreen(
+                                  initialFilter: 'Heifer',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildStatusCircle(
+                          formatCount(calvingCount),
+                          'Calving',
+                          Colors.orange,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CattleListScreen(
+                                  initialFilter: 'Calving',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildStatusCircle(
+                          formatCount(dryCount),
+                          'Dry',
+                          Colors.brown,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CattleListScreen(
+                                  initialFilter: 'Dry',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: _oliveGreen,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                              const MilkProductionScreen(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.water_drop,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Today\'s Production',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: formatAmount(totalTodayMilk),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: ' Ltr',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildProductionSubCard(
+                                      'Morning',
+                                      '${formatAmount(totalMorningMilk)} Ltr',
+                                      Icons.wb_sunny_rounded,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildProductionSubCard(
+                                      'Evening',
+                                      '${formatAmount(totalEveningMilk)} Ltr',
+                                      Icons.nightlight_round,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Distribute Milk',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSectionHeader('Health & Reproduction'),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const HeatRecordScreen(),
                               ),
+                            );
+                            if (mounted) _fetchHealthAndReproductionCounts();
+                          },
+                          child: _buildListRow(
+                            Icons.favorite,
+                            Colors.pink,
+                            'Heat Record',
+                            'Total Active',
+                            heatRecordCount,
+                          ),
+                        ),
+                        const Divider(height: 24),
+                        GestureDetector(
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ConceptionScreen(),
+                              ),
+                            );
+                            if (mounted) _fetchHealthAndReproductionCounts();
+                          },
+                          child: _buildListRow(
+                            Icons.pregnant_woman,
+                            Colors.purple,
+                            'Conception',
+                            'Pregnancy Status',
+                            pregnancyStatusCount,
+                          ),
+                        ),
+                        const Divider(height: 24),
+                        GestureDetector(
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DryOffScreen(),
+                              ),
+                            );
+                            if (mounted) _fetchHealthAndReproductionCounts();
+                          },
+                          child: _buildListRow(
+                            Icons.block,
+                            Colors.grey,
+                            'Dry Off Cow',
+                            'Target Date',
+                            dryOffTargetCount,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F8E9),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.green.shade100),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                              const DistributeMilkScreen(),
                             ),
-                            Text(
-                              'Track daily delivery',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.local_shipping,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Distribute Milk',
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Track daily delivery',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
                                 color: Colors.grey,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                      const Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Reports & Alerts Grid
-          Row(
-            children: [
-              Expanded(
-                child: _buildGridCard(
-                  Icons.article,
-                  Colors.blue,
-                  'Reports',
-                  'View Analytics',
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildGridCard(
-                  Icons.notifications_active,
-                  Colors.red,
-                  'Alerts',
-                  'View Alerts',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Animals Left
-          _buildSectionHeader('Animal Left from Gaushala'),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                _buildListRow(Icons.home_work, Colors.orange, 'Sell', '', '-'),
-                const Divider(),
-                _buildListRow(
-                  Icons.warning,
-                  Colors.grey,
-                  'Death',
-                  '',
-                  '-',
-                ), // skull isn't in material icons? Use warning
-                const Divider(),
-                _buildListRow(
-                  Icons.volunteer_activism,
-                  Colors.green,
-                  'Donation',
-                  '',
-                  '-',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Animal Health Information
-          _buildSectionHeader('Animal Health Information'),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildHealthCard(
-                  'Medical',
-                  Icons.medical_services_outlined,
-                  Colors.red,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildHealthCard(
-                  'Vaccination',
-                  Icons.colorize_outlined,
-                  Colors.blue,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildHealthCard(
-                  'Deworming',
-                  Icons.spa_outlined,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildHealthCard(
-                  'Lab Testing',
-                  Icons.biotech_outlined,
-                  Colors.purple,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Sick Animal
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEBEE), // Light Red
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.red.shade100),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.sick_outlined,
-                    color: Colors.brown,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 24),
+                  Row(
                     children: [
-                      Text(
-                        'Sick Animal',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Colors.red,
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ReportsScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildGridCard(
+                            Icons.article,
+                            Colors.blue,
+                            'Reports',
+                            'View Analytics',
+                          ),
                         ),
                       ),
-                      Text(
-                        '0',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AlertHubScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildGridCard(
+                            Icons.notifications_active,
+                            Colors.red,
+                            'Alerts',
+                            'View Alerts',
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Animal Left from Gaushala'),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(10),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _buildActionRow(
+                          context,
+                          icon: Icons.sell_outlined,
+                          color: Colors.orange,
+                          title: 'Sell',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SellReportScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Divider(
+                            height: 1,
+                            color: Colors.grey.shade100,
+                          ),
+                        ),
+                        _buildActionRow(
+                          context,
+                          icon: Icons.warning_amber_rounded,
+                          color: Colors.blueGrey,
+                          title: 'Death',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DeathReportScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Divider(
+                            height: 1,
+                            color: Colors.grey.shade100,
+                          ),
+                        ),
+                        _buildActionRow(
+                          context,
+                          icon: Icons.volunteer_activism_outlined,
+                          color: Colors.green,
+                          title: 'Donation',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DonationReportScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.chevron_right,
-                    size: 16,
-                    color: Colors.grey,
+                  const SizedBox(height: 24),
+                  _buildSectionHeader('Animal Health Information'),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                const MedicalInformationScreen(),
+                              ),
+                            );
+                            if (mounted) _refreshDashboard();
+                          },
+                          child: _buildHealthCard(
+                            'Medical',
+                            Icons.medical_services_outlined,
+                            Colors.red,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                const VaccinationInformationScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildHealthCard(
+                            'Vaccination',
+                            Icons.colorize_outlined,
+                            Colors.blue,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Gallery
-          Row(
-            children: [
-              Expanded(
-                child: _buildHealthCard(
-                  'Photo Gallery',
-                  Icons.image_outlined,
-                  Colors.blue,
-                ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                const DewormingInformationScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildHealthCard(
+                            'Deworming',
+                            Icons.spa_outlined,
+                            Colors.green,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                const LabTestingInformationScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildHealthCard(
+                            'Lab Testing',
+                            Icons.biotech_outlined,
+                            Colors.purple,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.red.shade100),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.sick_outlined,
+                            color: Colors.brown,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Sick Animal',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              Text(
+                                sickAnimalCount,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.chevron_right,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const PhotoGalleryScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildHealthCard(
+                            'Photo Gallery',
+                            Icons.image_outlined,
+                            Colors.blue,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const VideoGalleryScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildHealthCard(
+                            'Video Gallery',
+                            Icons.movie_outlined,
+                            Colors.red,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildHealthCard(
-                  'Video Gallery',
-                  Icons.movie_outlined,
-                  Colors.red,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
+
+  // --- Helper Widgets remain unchanged ---
 
   Widget _buildSectionHeader(String title, {String? action}) {
     return Row(
@@ -478,109 +1147,142 @@ class GaushalaTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard(String title, String count, String asset) {
+  Widget _buildSummaryCard(
+      String title,
+      String count,
+      String asset, {
+        VoidCallback? onTap,
+      }) {
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withAlpha(25),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
             children: [
-              Row(
-                children: [
-                  Icon(Icons.arrow_drop_down, color: _oliveGreen),
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.arrow_drop_down, color: _oliveGreen),
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      count,
+                      style: GoogleFonts.poppins(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: _oliveGreen,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                count,
-                style: GoogleFonts.poppins(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: _oliveGreen,
+              Positioned(
+                right: 0,
+                bottom: -15,
+                child: Opacity(
+                  opacity: 0.8,
+                  child: Image.asset(
+                    asset,
+                    width: 80,
+                    height: 80,
+                  ),
                 ),
               ),
             ],
           ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Opacity(
-              opacity: 0.8,
-              child: Image.asset(asset, width: 40, height: 40), // Use parameter
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatusCircle(String count, String label, Color color) {
+  Widget _buildStatusCircle(
+      String count,
+      String label,
+      Color color, {
+        VoidCallback? onTap,
+      }) {
     return Padding(
-      padding: const EdgeInsets.only(
-        right: 12,
-        bottom: 8,
-      ), // Add bottom padding for shadow
-      child: Container(
-        width: 100, // Fixed width for card look
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
+      padding: const EdgeInsets.only(right: 12, bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFFA5D6A7),
-                  width: 2,
-                ), // Light Green Border
-              ),
-              child: Text(
-                count,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF388E3C), // Dark Green Text
-                  fontSize: 16,
+          child: Container(
+            width: 100,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withAlpha(25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFA5D6A7),
+                      width: 2,
+                    ),
+                  ),
+                  child: Text(
+                    count,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF388E3C),
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -590,7 +1292,7 @@ class GaushalaTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withAlpha(51),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -619,20 +1321,49 @@ class GaushalaTab extends StatelessWidget {
     );
   }
 
+  Widget _buildActionRow(
+      BuildContext context, {
+        required IconData icon,
+        required Color color,
+        required String title,
+        required VoidCallback onTap,
+      }) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withAlpha(13),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+          color: Colors.black87,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+    );
+  }
+
   Widget _buildListRow(
-    IconData icon,
-    Color color,
-    String title,
-    String subtitle,
-    String value, {
-    String? assetPath,
-  }) {
+      IconData icon,
+      Color color,
+      String title,
+      String subtitle,
+      String value, {
+        String? assetPath,
+      }) {
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withAlpha(25),
             shape: BoxShape.circle,
           ),
           child: assetPath != null
@@ -668,12 +1399,12 @@ class GaushalaTab extends StatelessWidget {
   }
 
   Widget _buildGridCard(
-    IconData icon,
-    Color color,
-    String title,
-    String subtitle, {
-    String? assetPath,
-  }) {
+      IconData icon,
+      Color color,
+      String title,
+      String subtitle, {
+        String? assetPath,
+      }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -686,7 +1417,7 @@ class GaushalaTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withAlpha(25),
               shape: BoxShape.circle,
             ),
             child: assetPath != null
@@ -718,11 +1449,11 @@ class GaushalaTab extends StatelessWidget {
   }
 
   Widget _buildHealthCard(
-    String title,
-    IconData icon,
-    Color color, {
-    String? assetPath,
-  }) {
+      String title,
+      IconData icon,
+      Color color, {
+        String? assetPath,
+      }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -735,7 +1466,7 @@ class GaushalaTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withAlpha(25),
               shape: BoxShape.circle,
             ),
             child: assetPath != null
@@ -748,7 +1479,7 @@ class GaushalaTab extends StatelessWidget {
               title,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
-                fontSize: 14, // Adjusted size to fit
+                fontSize: 14,
               ),
               overflow: TextOverflow.ellipsis,
             ),

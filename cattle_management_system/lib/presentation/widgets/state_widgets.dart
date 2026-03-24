@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cattle_management_system/core/localization/app_text.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Loading Indicator Widget
@@ -74,7 +75,7 @@ class ErrorDisplay extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(context.tr.retry),
               ),
             ],
           ],

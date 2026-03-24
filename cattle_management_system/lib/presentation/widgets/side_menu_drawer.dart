@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/di/injection_container.dart';
-import '../../features/auth/data/datasources/auth_local_data_source.dart';
+import '../../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/change_password_screen.dart';
 import '../../features/milk_distribution/presentation/screens/distribution_title_screen.dart';
 import '../../features/user_management/presentation/screens/user_list_screen.dart';
+import '../../features/about_us/presentation/screens/about_developer_screen.dart';
+import '../../features/about_us/presentation/screens/about_gaushala_screen.dart';
+import '../../features/about_us/presentation/screens/guidance_screen.dart';
+import '../../features/about_us/presentation/screens/feedback_screen.dart';
+import '../../features/about_us/presentation/screens/contact_us_screen.dart';
+import '../../features/settings/presentation/screens/change_language_screen.dart';
+import '../../features/cattle/presentation/screens/ai_bull_list_screen.dart';
+import '../../features/animal_left/presentation/screens/animal_left_summary_screen.dart';
+import '../../features/milk_production/presentation/screens/feed_inventory_screen.dart';
+import '../../features/cow_group/presentation/screens/cow_group_screen.dart';
+
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SideMenuDrawer extends StatelessWidget {
   const SideMenuDrawer({super.key});
@@ -22,42 +36,61 @@ class SideMenuDrawer extends StatelessWidget {
           _buildHeader(context),
 
           // Account Section
-          _buildSectionTitle('Account'),
+          _buildSectionTitle(AppLocalizations.of(context)!.sectionAccount),
           _buildDrawerItem(
             context,
             Icons.home_rounded,
-            'Home',
+            AppLocalizations.of(context)!.menuHome,
             () => Navigator.pop(context),
           ),
-          _buildDrawerItem(context, Icons.lock_rounded, 'Change Password', () {
-            Navigator.pop(context); // Close drawer
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
-            );
-          }),
+          _buildDrawerItem(
+            context,
+            Icons.lock_rounded,
+            AppLocalizations.of(context)!.menuChangePassword,
+            () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+              );
+            },
+          ),
           _buildDrawerItem(
             context,
             Icons.translate_rounded,
-            'Change Language',
+            AppLocalizations.of(context)!.menuChangeLanguage,
             () {
-              // TODO: Navigate to Language Selection
               Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChangeLanguageScreen()),
+              );
             },
           ),
           _buildDrawerItem(
             context,
             Icons.privacy_tip_rounded,
-            'Privacy Policy',
+            AppLocalizations.of(context)!.menuPrivacyPolicy,
             () {},
           ),
-          _buildDrawerItem(context, Icons.share_rounded, 'Share App', () {}),
+          _buildDrawerItem(
+            context,
+            Icons.share_rounded,
+            AppLocalizations.of(context)!.menuShareApp,
+            () {},
+          ),
           _buildDrawerItem(
             context,
             Icons.power_settings_new_rounded,
-            'Logout',
+            AppLocalizations.of(context)!.menuLogout,
             () async {
-              await sl<AuthLocalDataSource>().logout();
+              // Close drawer first
+              Navigator.pop(context);
+
+              // Use Repository logout to clear ALL tokens (auth_token, gaushala_id, user_name, etc.)
+              // This fixes the issue where the app still thinks it is logged in on the first try.
+              await sl<AuthRepository>().logout();
+
               if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -71,31 +104,61 @@ class SideMenuDrawer extends StatelessWidget {
           const Divider(height: 32, thickness: 0.5),
 
           // Settings Section
-          _buildSectionTitle('Settings'),
-          _buildDrawerItem(context, Icons.person_rounded, 'User', () {
-            Navigator.pop(context); // Close drawer
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const UserListScreen()),
-            );
-          }),
-          _buildDrawerItem(context, Icons.groups_rounded, 'Cow Group', () {}),
+          _buildSectionTitle(AppLocalizations.of(context)!.sectionSettings),
+          _buildDrawerItem(
+            context,
+            Icons.person_rounded,
+            AppLocalizations.of(context)!.menuUser,
+            () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const UserListScreen()),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            context,
+            Icons.groups_rounded,
+            AppLocalizations.of(context)!.menuCowGroup,
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CowGroupScreen()),
+              );
+            },
+          ),
           _buildDrawerItem(
             context,
             Icons.smart_toy_rounded,
-            'AI Bull',
-            () {},
+            AppLocalizations.of(context)!.menuAIBull,
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AiBullListScreen()),
+              );
+            },
           ), // Using smart_toy as proxy for AI/Tech icon
           _buildDrawerItem(
             context,
             Icons.pets_rounded,
-            'Animal Left From Gaushala',
-            () {},
+            AppLocalizations.of(context)!.menuAnimalLeft,
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AnimalLeftSummaryScreen(),
+                ),
+              );
+            },
           ),
           _buildDrawerItem(
             context,
             Icons.local_shipping_rounded,
-            'Distribution Title',
+            AppLocalizations.of(context)!.menuDistribution,
             () {
               Navigator.pop(context); // Close drawer
               Navigator.push(
@@ -106,36 +169,88 @@ class SideMenuDrawer extends StatelessWidget {
               );
             },
           ),
-          _buildDrawerItem(context, Icons.post_add_rounded, 'My Post', () {}),
+          _buildDrawerItem(
+            context,
+            Icons.post_add_rounded,
+            AppLocalizations.of(context)!.menuMyPost,
+            () {},
+          ),
+          _buildDrawerItem(
+            context,
+            Icons.inventory_2_rounded,
+            'Feed Inventory',
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FeedInventoryScreen()),
+              );
+            },
+          ),
 
           const Divider(height: 32, thickness: 0.5),
 
           // About Us Section
-          _buildSectionTitle('About Us'),
+          _buildSectionTitle(AppLocalizations.of(context)!.sectionAboutUs),
           _buildDrawerItem(
             context,
             Icons.info_outline_rounded,
-            'About Developers',
-            () {},
+            AppLocalizations.of(context)!.menuAboutDevelopers,
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AboutDeveloperScreen()),
+              );
+            },
           ),
           _buildDrawerItem(
             context,
             Icons.business_rounded,
-            'About Gaushala',
-            () {},
+            AppLocalizations.of(context)!.menuAboutGaushala,
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AboutGaushalaScreen()),
+              );
+            },
           ),
           _buildDrawerItem(
             context,
             Icons.help_outline_rounded,
-            'Guidance',
-            () {},
+            AppLocalizations.of(context)!.menuGuidance,
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const GuidanceScreen()),
+              );
+            },
           ),
-          _buildDrawerItem(context, Icons.feedback_rounded, 'Feedback', () {}),
+          _buildDrawerItem(
+            context,
+            Icons.feedback_rounded,
+            AppLocalizations.of(context)!.menuFeedback,
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FeedbackScreen()),
+              );
+            },
+          ),
           _buildDrawerItem(
             context,
             Icons.support_agent_rounded,
-            'Contact Us',
-            () {},
+            AppLocalizations.of(context)!.menuContactUs,
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ContactUsScreen()),
+              );
+            },
           ),
 
           const SizedBox(height: 24),
@@ -145,11 +260,14 @@ class SideMenuDrawer extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: sl<AuthLocalDataSource>().getCurrentUserData(),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: sl<AuthRemoteDataSource>().getProfile(),
       builder: (context, snapshot) {
-        final name = snapshot.data?['name'] ?? 'Loading...';
-        final mobile = snapshot.data?['mobile'] ?? '';
+        // Try to get cached name if API is still loading
+        final String cachedName = sl<SharedPreferences>().getString('user_name') ?? 'Smart User';
+        final name = snapshot.data?['name'] ?? (snapshot.connectionState == ConnectionState.waiting ? cachedName : 'Smart User');
+        final mobile = snapshot.data?['mobileNumber'] ?? snapshot.data?['mobile'] ?? '';
+        final profileImageUrl = snapshot.data?['profileImage'] ?? snapshot.data?['photo'];
 
         return Container(
           padding: const EdgeInsets.only(
@@ -168,6 +286,7 @@ class SideMenuDrawer extends StatelessWidget {
                     'assets/icons/cowlogo_splash.png',
                     width: 40,
                     height: 40,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.pets, color: AppTheme.primaryColor),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -196,27 +315,41 @@ class SideMenuDrawer extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          mobile,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.grey,
+                        if (mobile.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            mobile,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
                   Stack(
                     children: [
-                      const CircleAvatar(
-                        radius: 28,
-                        backgroundImage: AssetImage(
-                          'assets/images/user_avatar_placeholder.png',
-                        ), // Placeholder
-                        backgroundColor: Colors.grey,
-                      ),
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                        ? NetworkImage(profileImageUrl) as ImageProvider
+                        : null,
+                    backgroundColor: const Color(0xFFF5F6F7),
+                    child: (profileImageUrl == null || profileImageUrl.isEmpty)
+                        ? Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                            style: GoogleFonts.poppins(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor,
+                            ),
+                          )
+                        : null,
+                  ),
                       Positioned(
                         right: 0,
                         bottom: 0,
