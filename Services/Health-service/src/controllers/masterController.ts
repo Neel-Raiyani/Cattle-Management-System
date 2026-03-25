@@ -5,16 +5,39 @@ import { AuthRequest } from '@appTypes/express.js';
 
 /**
  * Fetch all diseases for a specific gaushala.
+ * Returns common diseases (gaushalaId = null) merged with gaushala-specific ones.
+ * If a gaushala-specific disease has the same name as a common one, the specific one takes precedence.
  */
 export const getAllDiseases = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
 
-        const diseases = await prisma.diseaseMaster.findMany({
-            where: { gaushalaId },
+        const allDiseases = await prisma.diseaseMaster.findMany({
+            where: {
+                OR: [
+                    { gaushalaId: null },
+                    { gaushalaId }
+                ]
+            },
             orderBy: { name: 'asc' }
         });
+
+        // Deduplicate: gaushala-specific diseases take precedence over common ones
+        const diseaseMap = new Map<string, typeof allDiseases[0]>();
+        for (const d of allDiseases) {
+            if (d.gaushalaId === null) {
+                diseaseMap.set(d.name.toLowerCase(), d);
+            }
+        }
+        for (const d of allDiseases) {
+            if (d.gaushalaId !== null) {
+                diseaseMap.set(d.name.toLowerCase(), d);
+            }
+        }
+
+        const diseases = Array.from(diseaseMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
         res.status(200).json({
             success: true,
             data: diseases
@@ -51,16 +74,42 @@ export const addDisease = async (req: AuthRequest, res: Response, next: NextFunc
 
 /**
  * Fetch all vaccines for a specific gaushala.
+ * Returns common vaccines (gaushalaId = null) merged with gaushala-specific ones.
+ * If a gaushala-specific vaccine has the same name as a common one, the specific one takes precedence.
  */
 export const getAllVaccines = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
 
-        const vaccines = await prisma.vaccineMaster.findMany({
-            where: { gaushalaId },
+        // Fetch common vaccines (gaushalaId is null) and gaushala-specific vaccines
+        const allVaccines = await prisma.vaccineMaster.findMany({
+            where: {
+                OR: [
+                    { gaushalaId: null },   // Common vaccines
+                    { gaushalaId }           // Gaushala-specific vaccines
+                ]
+            },
             orderBy: { name: 'asc' }
         });
+
+        // Deduplicate: gaushala-specific vaccines take precedence over common ones
+        const vaccineMap = new Map<string, typeof allVaccines[0]>();
+        // First, add common vaccines
+        for (const v of allVaccines) {
+            if (v.gaushalaId === null) {
+                vaccineMap.set(v.name.toLowerCase(), v);
+            }
+        }
+        // Then, overwrite with gaushala-specific vaccines (these win)
+        for (const v of allVaccines) {
+            if (v.gaushalaId !== null) {
+                vaccineMap.set(v.name.toLowerCase(), v);
+            }
+        }
+
+        const vaccines = Array.from(vaccineMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
         res.status(200).json({
             success: true,
             data: vaccines

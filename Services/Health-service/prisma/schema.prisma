@@ -70,7 +70,7 @@ enum LabResult {
 model DiseaseMaster {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
-  gaushalaId  String   @db.ObjectId
+  gaushalaId  String?  @db.ObjectId   // null = common disease (visible to all gaushalas)
   createdAt   DateTime @default(now())
 
   @@unique([name, gaushalaId])
@@ -80,7 +80,7 @@ model DiseaseMaster {
 model VaccineMaster {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   name            String
-  gaushalaId      String   @db.ObjectId
+  gaushalaId      String?  @db.ObjectId   // null = common vaccine (visible to all gaushalas)
   frequencyMonths Int      @default(0)
   createdAt       DateTime @default(now())
 
