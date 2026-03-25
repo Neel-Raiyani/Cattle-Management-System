@@ -203,6 +203,6 @@ model Animal {
   isActive        Boolean  @default(true)
   gaushalaId      String   @db.ObjectId
   
-  @@unique([tagNumber, gaushalaId])
+  // @@unique([tagNumber, gaushalaId])
   @@map("animals")
 }

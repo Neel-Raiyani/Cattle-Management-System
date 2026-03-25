@@ -151,7 +151,7 @@ model Animal {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@unique([tagNumber, gaushalaId])
+  // @@unique([tagNumber, gaushalaId]) // Removed to allow re-use of tags from inactive/deleted animals
   @@index([gaushalaId, gender, isActive, status])
   @@index([gaushalaId, birthDate])
   @@map("animals")

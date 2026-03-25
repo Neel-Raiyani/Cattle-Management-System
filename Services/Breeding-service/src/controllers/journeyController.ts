@@ -239,8 +239,8 @@ export const recordDelivery = async (req: AuthRequest, res: Response, next: Next
             if (calfStatus === 'ALIVE') {
                 // Duplicate tag check for calf
                 if (calfTagNumber) {
-                    const existingTag = await tx.animal.findUnique({
-                        where: { tagNumber_gaushalaId: { tagNumber: calfTagNumber, gaushalaId } }
+                    const existingTag = await tx.animal.findFirst({
+                        where: { tagNumber: calfTagNumber, gaushalaId, isActive: true }
                     });
                     if (existingTag) {
                         throw new AppError('Calf tag number already exists in this Gaushala', 409, 'DUPLICATE_TAG');

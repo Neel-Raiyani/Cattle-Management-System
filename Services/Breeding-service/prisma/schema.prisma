@@ -157,7 +157,7 @@ model Animal {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@unique([tagNumber, gaushalaId])
+  // @@unique([tagNumber, gaushalaId])
   @@map("animals")
 }
 

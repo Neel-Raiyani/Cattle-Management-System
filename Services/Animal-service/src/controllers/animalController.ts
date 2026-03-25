@@ -45,8 +45,8 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
 
         // Duplicate tag check within same gaushala
         if (tagNumber) {
-            const existing = await prisma.animal.findUnique({
-                where: { tagNumber_gaushalaId: { tagNumber, gaushalaId } }
+            const existing = await prisma.animal.findFirst({
+                where: { tagNumber, gaushalaId, isActive: true }
             });
             if (existing) {
                 throw new AppError('Tag number already exists in this Gaushala', 409, 'DUPLICATE_TAG');
@@ -336,8 +336,8 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
 
         // Duplicate tag check — only if tagNumber is changing
         if (tagNumber !== undefined && tagNumber !== existingAnimal.tagNumber) {
-            const duplicate = await prisma.animal.findUnique({
-                where: { tagNumber_gaushalaId: { tagNumber, gaushalaId } }
+            const duplicate = await prisma.animal.findFirst({
+                where: { tagNumber, gaushalaId, isActive: true }
             });
             if (duplicate) {
                 throw new AppError('Tag number already exists in this Gaushala', 409, 'DUPLICATE_TAG');
