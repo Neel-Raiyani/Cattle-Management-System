@@ -107,23 +107,35 @@ export const recordYields = async (req: AuthRequest, res: Response, next: NextFu
 export const getYieldEntries = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.gaushala?.id as string;
-        const { date, session } = req.query as { date: string; session: Session };
+        const { date, session, page = '1', limit = '20' } = req.query as { date: string; session: Session; page?: string; limit?: string };
 
         if (!date || !session) {
             throw new AppError('Date and session are required', 400, 'MISSING_PARAMS');
         }
 
-        const entries = await prisma.milkRecord.findMany({
-            where: {
-                gaushalaId,
-                date: new Date(date),
-                session: session as Session
-            }
-        });
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
+
+        const where = {
+            gaushalaId,
+            date: new Date(date),
+            session: session as Session
+        };
+
+        const [total, entries] = await Promise.all([
+            prisma.milkRecord.count({ where }),
+            prisma.milkRecord.findMany({
+                where,
+                skip,
+                take: limitNum
+            })
+        ]);
 
         res.status(200).json({
             success: true,
-            entries
+            entries,
+            pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
         });
     } catch (error) {
         next(error);

@@ -97,6 +97,11 @@ export const getMedicalHistoryByAnimal = async (req: AuthRequest, res: Response,
     try {
         const gaushalaId = req.gaushala?.id as string;
         const { animalId } = req.params;
+        const { page = '1', limit = '20' } = req.query as { page?: string; limit?: string };
+        
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
 
         const animal = await prisma.animal.findFirst({
             where: { id: animalId as string, gaushalaId: gaushalaId as string, isActive: true }
@@ -106,14 +111,26 @@ export const getMedicalHistoryByAnimal = async (req: AuthRequest, res: Response,
             throw new AppError('Animal not found or inactive', 404, 'ANIMAL_NOT_FOUND');
         }
 
-        const history = await prisma.medicalRecord.findMany({
-            where: { animalId: animalId as string, gaushalaId: gaushalaId as string },
-            orderBy: { visitDate: 'desc' }
-        });
+        const where = { animalId: animalId as string, gaushalaId: gaushalaId as string };
+        const [total, history] = await Promise.all([
+            prisma.medicalRecord.count({ where }),
+            prisma.medicalRecord.findMany({
+                where,
+                orderBy: { visitDate: 'desc' },
+                skip,
+                take: limitNum
+            })
+        ]);
 
         res.status(200).json({
             success: true,
-            data: history
+            data: history,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: Math.ceil(total / limitNum)
+            }
         });
     } catch (error) {
         next(error);
@@ -126,6 +143,10 @@ export const getMedicalHistoryByAnimal = async (req: AuthRequest, res: Response,
 export const getSickAnimals = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.gaushala?.id as string;
+        const { page = '1', limit = '20' } = req.query as { page?: string; limit?: string };
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
 
         // 1. Get the latest visitDate for each animal in this gaushala
         const latestVisits = await prisma.medicalRecord.groupBy({
@@ -159,9 +180,12 @@ export const getSickAnimals = async (req: AuthRequest, res: Response, next: Next
             });
         }
 
+        const total = sickLatestRecords.length;
+        const paginatedRecords = sickLatestRecords.slice(skip, skip + limitNum);
+
         // 4. Fetch Animal and Disease details for these records
-        const animalIds = sickLatestRecords.map(r => r.animalId);
-        const diseaseIds = sickLatestRecords.map(r => r.diseaseId).filter(id => id !== null) as string[];
+        const animalIds = paginatedRecords.map(r => r.animalId);
+        const diseaseIds = paginatedRecords.map(r => r.diseaseId).filter(id => id !== null) as string[];
 
         const [animals, diseases] = await Promise.all([
             prisma.animal.findMany({
@@ -177,7 +201,7 @@ export const getSickAnimals = async (req: AuthRequest, res: Response, next: Next
         const diseaseMap = new Map(diseases.map(d => [d.id, d.name]));
 
         // 5. Build final response
-        const result = sickLatestRecords.map(record => ({
+        const result = paginatedRecords.map(record => ({
             id: record.id,
             animal: animalMap.get(record.animalId) || null,
             visitDate: record.visitDate,
@@ -190,8 +214,14 @@ export const getSickAnimals = async (req: AuthRequest, res: Response, next: Next
 
         res.status(200).json({
             success: true,
-            count: result.length,
-            data: result
+            count: result.length, // records in this page
+            data: result,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: Math.ceil(total / limitNum)
+            }
         });
     } catch (error) {
         next(error);

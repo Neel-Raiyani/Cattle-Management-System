@@ -14,7 +14,10 @@ export const getDewormingReport = async (req: AuthRequest, res: Response, next: 
         const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
 
-        const { from, to, animalId } = req.query as { from?: string; to?: string; animalId?: string };
+        const { from, to, animalId, page = '1', limit = '20' } = req.query as { from?: string; to?: string; animalId?: string; page?: string; limit?: string };
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
         const where: Prisma.DewormingRecordWhereInput = { gaushalaId };
 
         if (animalId) where.animalId = animalId;
@@ -25,10 +28,13 @@ export const getDewormingReport = async (req: AuthRequest, res: Response, next: 
         }
 
         // FIX #1: Fetch records + all deworming history for last-dose calculation in parallel
-        const [records, allDewormingRecords] = await Promise.all([
+        const [total, records, allDewormingRecords] = await Promise.all([
+            prisma.dewormingRecord.count({ where }),
             prisma.dewormingRecord.findMany({
                 where,
-                orderBy: { doseDate: 'desc' }
+                orderBy: { doseDate: 'desc' },
+                skip,
+                take: limitNum
             }),
             // Fetch all records for the gaushala (optionally filtered by animalId) to calculate lastDoseDate in-memory
             prisma.dewormingRecord.findMany({
@@ -96,7 +102,12 @@ export const getDewormingReport = async (req: AuthRequest, res: Response, next: 
             };
         });
 
-        res.json({ success: true, totalCount: records.length, data });
+        res.json({
+            success: true,
+            totalCount: total,
+            data,
+            pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
+        });
     } catch (error) {
         next(error);
     }
@@ -142,7 +153,10 @@ export const getMedicalReport = async (req: AuthRequest, res: Response, next: Ne
         const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
 
-        const { from, to, animalId, diseaseId } = req.query as { from?: string; to?: string; animalId?: string; diseaseId?: string };
+        const { from, to, animalId, diseaseId, page = '1', limit = '20' } = req.query as { from?: string; to?: string; animalId?: string; diseaseId?: string; page?: string; limit?: string };
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
 
         const where: Prisma.MedicalRecordWhereInput = { gaushalaId };
 
@@ -154,10 +168,15 @@ export const getMedicalReport = async (req: AuthRequest, res: Response, next: Ne
             if (to) (where.visitDate as Prisma.DateTimeFilter).lte = new Date(to);
         }
 
-        const records = await prisma.medicalRecord.findMany({
-            where,
-            orderBy: { visitDate: 'desc' }
-        });
+        const [total, records] = await Promise.all([
+            prisma.medicalRecord.count({ where }),
+            prisma.medicalRecord.findMany({
+                where,
+                orderBy: { visitDate: 'desc' },
+                skip,
+                take: limitNum
+            })
+        ]);
 
         const animalIds = [...new Set(records.map(r => r.animalId))];
         const vetIds = [...new Set(records.map(r => r.vetId).filter(v => v !== null))] as string[];
@@ -210,7 +229,12 @@ export const getMedicalReport = async (req: AuthRequest, res: Response, next: Ne
             };
         });
 
-        res.json({ success: true, totalCount: records.length, data });
+        res.json({
+            success: true,
+            totalCount: total,
+            data,
+            pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
+        });
     } catch (error) {
         next(error);
     }
@@ -226,7 +250,10 @@ export const getVaccineReport = async (req: AuthRequest, res: Response, next: Ne
         const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
 
-        const { from, to, animalId, vaccineId } = req.query as { from?: string; to?: string; animalId?: string; vaccineId?: string };
+        const { from, to, animalId, vaccineId, page = '1', limit = '20' } = req.query as { from?: string; to?: string; animalId?: string; vaccineId?: string; page?: string; limit?: string };
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
 
         const where: Prisma.VaccinationRecordWhereInput = { gaushalaId };
 
@@ -238,10 +265,15 @@ export const getVaccineReport = async (req: AuthRequest, res: Response, next: Ne
             if (to) (where.doseDate as Prisma.DateTimeFilter).lte = new Date(to);
         }
 
-        const records = await prisma.vaccinationRecord.findMany({
-            where,
-            orderBy: { doseDate: 'desc' }
-        });
+        const [total, records] = await Promise.all([
+            prisma.vaccinationRecord.count({ where }),
+            prisma.vaccinationRecord.findMany({
+                where,
+                orderBy: { doseDate: 'desc' },
+                skip,
+                take: limitNum
+            })
+        ]);
 
         const animalIds = [...new Set(records.map(r => r.animalId))];
         const vIds = [...new Set(records.map(r => r.vaccineId).filter(v => v !== null))] as string[];
@@ -286,7 +318,12 @@ export const getVaccineReport = async (req: AuthRequest, res: Response, next: Ne
             };
         });
 
-        res.json({ success: true, totalCount: records.length, data });
+        res.json({
+            success: true,
+            totalCount: total,
+            data,
+            pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
+        });
     } catch (error) {
         next(error);
     }
@@ -302,7 +339,10 @@ export const getLabReport = async (req: AuthRequest, res: Response, next: NextFu
         const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) return res.status(401).json({ message: 'Gaushala ID missing' });
 
-        const { from, to, animalId, labtestId } = req.query as { from?: string; to?: string; animalId?: string; labtestId?: string };
+        const { from, to, animalId, labtestId, page = '1', limit = '20' } = req.query as { from?: string; to?: string; animalId?: string; labtestId?: string; page?: string; limit?: string };
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
 
         const where: any = { gaushalaId };
 
@@ -314,10 +354,15 @@ export const getLabReport = async (req: AuthRequest, res: Response, next: NextFu
             if (to) where.sampleDate.lte = new Date(to);
         }
 
-        const records = await (prisma as any).labRecord.findMany({
-            where,
-            orderBy: { sampleDate: 'desc' }
-        });
+        const [total, records] = await Promise.all([
+            (prisma as any).labRecord.count({ where }),
+            (prisma as any).labRecord.findMany({
+                where,
+                orderBy: { sampleDate: 'desc' },
+                skip,
+                take: limitNum
+            })
+        ]);
 
         const animalIds = [...new Set(records.map((r: any) => r.animalId))] as string[];
         const lIds = [...new Set(records.map((r: any) => r.labtestId))] as string[];
@@ -362,7 +407,12 @@ export const getLabReport = async (req: AuthRequest, res: Response, next: NextFu
             };
         });
 
-        res.json({ success: true, totalCount: records.length, data });
+        res.json({
+            success: true,
+            totalCount: total,
+            data,
+            pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
+        });
     } catch (error) {
         next(error);
     }

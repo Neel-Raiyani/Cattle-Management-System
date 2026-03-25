@@ -72,6 +72,11 @@ export const getFolderItems = async (req: AuthRequest, res: Response, next: Next
     try {
         const gaushalaId = req.gaushala?.id as string;
         const { folderId } = req.params;
+        const { page = '1', limit = '20' } = req.query as { page?: string; limit?: string };
+
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
 
         const folder = await (prisma as any).folder.findFirst({
             where: { id: folderId, gaushalaId }
@@ -79,10 +84,15 @@ export const getFolderItems = async (req: AuthRequest, res: Response, next: Next
 
         if (!folder) throw new AppError('Folder not found', 404, 'FOLDER_NOT_FOUND');
 
-        const items = await (prisma as any).galleryItem.findMany({
-            where: { folderId },
-            orderBy: { createdAt: 'desc' }
-        });
+        const [total, items] = await Promise.all([
+            (prisma as any).galleryItem.count({ where: { folderId } }),
+            (prisma as any).galleryItem.findMany({
+                where: { folderId },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limitNum
+            })
+        ]);
 
         const data = await Promise.all(items.map(async (item: any) => ({
             ...item,
@@ -91,7 +101,8 @@ export const getFolderItems = async (req: AuthRequest, res: Response, next: Next
 
         res.status(200).json({
             success: true,
-            data
+            data,
+            pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
         });
     } catch (error) {
         next(error);

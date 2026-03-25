@@ -329,7 +329,11 @@ export const listJourneys = async (req: AuthRequest, res: Response, next: NextFu
         if (!gaushalaId) {
             return res.status(401).json({ message: 'Gaushala ID missing' });
         }
-        const { filter, animalId } = req.query as { filter?: string; animalId?: string };
+        const { filter, animalId, page = '1', limit = '20' } = req.query as { filter?: string; animalId?: string; page?: string; limit?: string };
+
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+        const skip = (pageNum - 1) * limitNum;
 
         const where: Prisma.ConceptionJourneyWhereInput = { gaushalaId };
 
@@ -349,10 +353,15 @@ export const listJourneys = async (req: AuthRequest, res: Response, next: NextFu
             where.status = 'FAILED';
         }
 
-        const journeys = await prisma.conceptionJourney.findMany({
-            where,
-            orderBy: { conceiveDate: 'desc' }
-        });
+        const [total, journeys] = await Promise.all([
+            prisma.conceptionJourney.count({ where }),
+            prisma.conceptionJourney.findMany({
+                where,
+                orderBy: { conceiveDate: 'desc' },
+                skip,
+                take: limitNum
+            })
+        ]);
 
         const animalIds = [...new Set(journeys.map(j => j.animalId))];
         const animals = await prisma.animal.findMany({
@@ -385,7 +394,16 @@ export const listJourneys = async (req: AuthRequest, res: Response, next: NextFu
             };
         }));
 
-        res.json({ success: true, data: formattedJourneys });
+        res.json({
+            success: true,
+            data: formattedJourneys,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: Math.ceil(total / limitNum)
+            }
+        });
     } catch (error) {
         next(error);
     }
