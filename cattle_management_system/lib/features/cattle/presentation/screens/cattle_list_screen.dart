@@ -377,24 +377,25 @@ class _CattleListScreenState extends State<CattleListScreen> {
     if (_selectedFilter == l10n.lblAllCows) {
       return activeCows;
     }
-    // Mapping logic: UI Filter String -> Data Status String
-    // Assuming backend status matches english keys somewhat lowercased or exact.
-    // In a real app, use Enums.
-    // Here we'll match based on the text.
-    String statusToMatch = '';
-    if (_selectedFilter == l10n.lblLactating) statusToMatch = 'Lactating';
-    if (_selectedFilter == l10n.lblHeifer) statusToMatch = 'Heifer';
-    if (_selectedFilter == l10n.lblPregnant) statusToMatch = 'Pregnant';
-    if (_selectedFilter == l10n.lblDryOff) statusToMatch = 'Dry Off';
-    if (_selectedFilter == l10n.lblRetiredCow) statusToMatch = 'Retired';
 
     if (_selectedFilter == l10n.lblRetiredCow) {
       return retiredCows;
     }
 
-    return activeCows
-        .where((c) => c.status.toLowerCase() == statusToMatch.toLowerCase())
-        .toList();
+    if (_selectedFilter == l10n.lblLactating) {
+      return activeCows.where((c) => c.isLactating == true).toList();
+    }
+    if (_selectedFilter == l10n.lblHeifer) {
+      return activeCows.where((c) => c.isHeifer == true).toList();
+    }
+    if (_selectedFilter == l10n.lblPregnant) {
+      return activeCows.where((c) => c.isPregnant == true).toList();
+    }
+    if (_selectedFilter == l10n.lblDryOff) {
+      return activeCows.where((c) => c.isDryOff == true).toList();
+    }
+
+    return activeCows;
   }
 }
 

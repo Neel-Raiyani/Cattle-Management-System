@@ -40,6 +40,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       event.name,
       event.mobile,
       event.password,
+      event.confirmPassword,
       event.city,
       event.gaushalaName,
       event.totalCattle,

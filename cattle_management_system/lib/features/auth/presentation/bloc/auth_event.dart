@@ -21,6 +21,7 @@ class RegisterEvent extends AuthEvent {
   final String name;
   final String mobile;
   final String password;
+  final String confirmPassword;
   final String city;
   final String gaushalaName;
   final int totalCattle;
@@ -29,13 +30,22 @@ class RegisterEvent extends AuthEvent {
     required this.name,
     required this.mobile,
     required this.password,
+    required this.confirmPassword,
     required this.city,
     required this.gaushalaName,
     required this.totalCattle,
   });
 
   @override
-  List<Object> get props => [name, mobile, password, city, gaushalaName, totalCattle];
+  List<Object> get props => [
+    name,
+    mobile,
+    password,
+    confirmPassword,
+    city,
+    gaushalaName,
+    totalCattle,
+  ];
 }
 
 class CheckAuthStatusEvent extends AuthEvent {}

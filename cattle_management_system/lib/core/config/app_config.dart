@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// App Configuration Constants
 class AppConfig {
   // App Information
@@ -6,8 +8,10 @@ class AppConfig {
   static const String packageName = 'com.gaushala.cattle_management';
 
   // API Configuration
-  static const String baseUrl =
-      'https://cattle-management-system-1.onrender.com';
+  static String get baseUrl =>
+      dotenv.env['BASE_URL']?.trim().isNotEmpty == true
+      ? dotenv.env['BASE_URL']!.trim()
+      : 'https://week3reqbackend.empyreal.work';
   static const String apiKey = 'YOUR_API_KEY_HERE';
   static const int connectionTimeout =
       30000; // 30 seconds (Reduced from 60s for faster failure)

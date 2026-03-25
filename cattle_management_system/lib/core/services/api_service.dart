@@ -1,5 +1,6 @@
 ﻿import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import '../../core/network/api_client.dart';
 import '../../core/error/exceptions.dart';
 
@@ -1076,7 +1077,13 @@ class ApiService {
     } on DioException catch (e) {
       _handleDioError(e, path);
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is ServerException ||
+          e is TimeoutException ||
+          e is NetworkException ||
+          e is AuthenticationException ||
+          e is PermissionException) {
+        rethrow;
+      }
       throw ServerException('Failed to fetch $path', 500);
     }
   }
@@ -1091,7 +1098,13 @@ class ApiService {
     } on DioException catch (e) {
       _handleDioError(e, path);
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is ServerException ||
+          e is TimeoutException ||
+          e is NetworkException ||
+          e is AuthenticationException ||
+          e is PermissionException) {
+        rethrow;
+      }
       throw ServerException('Failed to post to $path', 500);
     }
   }
@@ -1106,7 +1119,13 @@ class ApiService {
     } on DioException catch (e) {
       _handleDioError(e, path);
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is ServerException ||
+          e is TimeoutException ||
+          e is NetworkException ||
+          e is AuthenticationException ||
+          e is PermissionException) {
+        rethrow;
+      }
       throw ServerException('Failed to patch $path', 500);
     }
   }
@@ -1127,7 +1146,13 @@ class ApiService {
     } on DioException catch (e) {
       _handleDioError(e, path);
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is ServerException ||
+          e is TimeoutException ||
+          e is NetworkException ||
+          e is AuthenticationException ||
+          e is PermissionException) {
+        rethrow;
+      }
       throw ServerException('Failed to delete $path', 500);
     }
   }

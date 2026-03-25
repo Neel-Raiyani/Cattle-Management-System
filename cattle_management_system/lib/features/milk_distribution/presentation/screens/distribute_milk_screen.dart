@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/app_feedback_service.dart';
 import '../../../../core/di/injection_container.dart';
@@ -14,6 +15,11 @@ class DistributeMilkScreen extends StatefulWidget {
 }
 
 class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
+  static const String _hiddenDistributionTitleIdsKey =
+      'hidden_distribution_title_ids';
+  static const String _hiddenDistributionTitleNamesKey =
+      'hidden_distribution_title_names';
+
   DateTime _selectedDate = DateTime.now();
   String _selectedShift = 'Morning'; // Morning, Evening
   bool _isLoading = true;
@@ -147,6 +153,21 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
       }
 
       final categories = await sl<ApiService>().getMilkCategories();
+      final prefs = sl<SharedPreferences>();
+      final hiddenIds = prefs.getStringList(_hiddenDistributionTitleIdsKey) ?? [];
+      final hiddenNames =
+          prefs.getStringList(_hiddenDistributionTitleNamesKey) ?? [];
+      final visibleCategories = List<Map<String, dynamic>>.from(categories)
+          .where((category) {
+            final id =
+                category['id']?.toString() ?? category['_id']?.toString() ?? '';
+            final normalizedName =
+                category['name']?.toString().trim().toLowerCase() ?? '';
+            return !(id.isNotEmpty && hiddenIds.contains(id)) &&
+                !(normalizedName.isNotEmpty &&
+                    hiddenNames.contains(normalizedName));
+          })
+          .toList();
 
       double alreadyDist = 0.0;
       try {
@@ -166,7 +187,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
         setState(() {
           _totalMilkProduced = totalProd;
           _alreadyDistributed = alreadyDist;
-          _categories = List<Map<String, dynamic>>.from(categories);
+          _categories = visibleCategories;
           _isLoading = false;
         });
       }

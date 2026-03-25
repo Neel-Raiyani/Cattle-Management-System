@@ -111,7 +111,7 @@ class CattleBloc extends Bloc<CattleEvent, CattleState> {
     });
   }
 
-  Future<void> _onLoadCattleById(
+Future<void> _onLoadCattleById(
     LoadCattleById event,
     Emitter<CattleState> emit,
   ) async {

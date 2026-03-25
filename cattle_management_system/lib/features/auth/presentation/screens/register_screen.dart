@@ -314,6 +314,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       name: _nameController.text,
                                       mobile: _mobileController.text,
                                       password: _passwordController.text,
+                                      confirmPassword:
+                                          _confirmPasswordController.text,
                                       city: _selectedCity ?? '',
                                       gaushalaName: _gaushalaNameController.text,
                                       totalCattle: int.tryParse(_totalCowController.text) ?? 0,

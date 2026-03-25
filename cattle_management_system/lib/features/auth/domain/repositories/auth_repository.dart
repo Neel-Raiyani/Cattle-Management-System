@@ -7,6 +7,7 @@ abstract class AuthRepository {
     String name,
     String mobile,
     String password,
+    String confirmPassword,
     String city,
     String gaushalaName,
     int totalCattle,

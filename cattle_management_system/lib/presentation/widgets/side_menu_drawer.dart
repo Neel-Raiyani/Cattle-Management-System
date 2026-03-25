@@ -22,8 +22,21 @@ import '../../features/cow_group/presentation/screens/cow_group_screen.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SideMenuDrawer extends StatelessWidget {
+class SideMenuDrawer extends StatefulWidget {
   const SideMenuDrawer({super.key});
+
+  @override
+  State<SideMenuDrawer> createState() => _SideMenuDrawerState();
+}
+
+class _SideMenuDrawerState extends State<SideMenuDrawer> {
+  late final Future<Map<String, dynamic>> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = sl<AuthRemoteDataSource>().getProfile();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -261,7 +274,7 @@ class SideMenuDrawer extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
-      future: sl<AuthRemoteDataSource>().getProfile(),
+      future: _profileFuture,
       builder: (context, snapshot) {
         // Try to get cached name if API is still loading
         final String cachedName = sl<SharedPreferences>().getString('user_name') ?? 'Smart User';

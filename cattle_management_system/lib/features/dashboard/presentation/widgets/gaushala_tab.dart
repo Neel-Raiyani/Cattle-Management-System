@@ -28,6 +28,8 @@ import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/data/models/cattle_model.dart';
+import '../../../../features/conception/domain/entities/conception_record.dart';
+import '../../../../features/heat_record/domain/entities/heat_record.dart';
 import '../../../../features/milk_production/presentation/bloc/milk_production_bloc.dart';
 import '../../../../features/milk_production/presentation/bloc/milk_production_state.dart';
 import '../../../../features/milk_production/presentation/bloc/milk_production_event.dart';
@@ -64,8 +66,9 @@ class _GaushalaTabState extends State<GaushalaTab> {
   }
 
   Future<void> _loadInitialData() async {
-    _triggerBlocLoads();
-    _fetchSummary();
+    await _triggerBlocLoads();
+    await _fetchSummary();
+    await _fetchHealthAndReproductionCounts();
   }
 
   Future<void> _loadCachedSummary() async {
@@ -125,6 +128,13 @@ class _GaushalaTabState extends State<GaushalaTab> {
     milkBloc.add(
       LoadMilkProductionList(date: DateTime.now(), cattleList: cattleList),
     );
+
+    final milkState = milkBloc.state;
+    if (milkState is! MilkProductionLoaded && milkState is! MilkProductionError) {
+      await milkBloc.stream.firstWhere(
+        (state) => state is MilkProductionLoaded || state is MilkProductionError,
+      );
+    }
   }
 
   Future<void> _fetchSummary() async {
@@ -184,67 +194,78 @@ class _GaushalaTabState extends State<GaushalaTab> {
   }
 
   Future<void> _fetchHealthAndReproductionCounts() async {
-    final shouldFetchHeat = _heatRecordCount == null &&
-        !_hasUsableSummaryValue(['activeHeatCount']);
-    final shouldFetchConception = _conceptionCount == null &&
-        !_hasUsableSummaryValue(['pregnantCount']);
-    final shouldFetchDryOff = _dryOffRecordCount == null &&
-        !_hasUsableSummaryValue(['dryOffCount']);
+    final activeCattle = _getActiveCattle();
+    final femaleCattle = activeCattle
+        .where((c) => c.gender.toUpperCase().startsWith('F'))
+        .toList();
+    final registry = _DashboardAnimalRegistry.from(activeCattle);
 
-    if (!shouldFetchHeat && !shouldFetchConception && !shouldFetchDryOff) {
-      return;
-    }
+    int heatCount = 0;
+    int conceptionCount = 0;
+    int dryOffCount = 0;
 
-    int? heatCount;
-    int? conceptionCount;
-    int? dryOffCount;
-
-    final futures = <Future<void>>[];
-    if (shouldFetchHeat) {
-      futures.add(
-        sl<ApiService>().getHeatReport(
-          from: DateTime.now().subtract(const Duration(days: 30)),
-          to: DateTime.now().add(const Duration(days: 1)),
-        ).then((v) => heatCount = v.length).catchError((_) => 0),
+    try {
+      final items = await sl<ApiService>().getHeatReport(
+        from: DateTime.now().subtract(const Duration(days: 30)),
+        to: DateTime.now().add(const Duration(days: 1)),
       );
-    }
-    if (shouldFetchConception) {
-      futures.add(
-        sl<ApiService>().getActiveJourneys()
-            .then((v) => conceptionCount = v.length)
-            .catchError((_) => 0),
-      );
-    }
-    if (shouldFetchDryOff) {
-      futures.add(
-        _fetchDryOffCount()
-            .then((v) => dryOffCount = v)
-            .catchError((_) => 0),
-      );
-    }
+      final records = items
+          .whereType<Map>()
+          .map(
+            (item) => HeatRecord.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .where(
+            (record) => registry.matches(
+              animalId: record.animalId,
+              tagNumber: record.cowTagNumber,
+              serialNumber: record.cowSerialNumber,
+              name: record.cowName,
+            ),
+          )
+          .toList();
+      heatCount = records.length;
+    } catch (_) {}
 
-    await Future.wait(futures);
+    try {
+      final items = await sl<ApiService>().getActiveJourneys();
+      final records = items
+          .whereType<Map>()
+          .map(
+            (item) => ConceptionRecord.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .where((record) => !record.isDelivered)
+          .where(
+            (record) => registry.matches(
+              animalId: record.cowId,
+              tagNumber: record.cowTagNumber,
+              serialNumber: record.cowSerialNumber,
+              name: record.cowName,
+            ),
+          )
+          .toList();
+      conceptionCount = records.length;
+    } catch (_) {}
+
+    try {
+      dryOffCount = await _fetchDryOffCount(femaleCattle);
+    } catch (_) {}
 
     if (mounted) {
       setState(() {
-        _heatRecordCount = heatCount ?? _heatRecordCount;
-        _conceptionCount = conceptionCount ?? _conceptionCount;
-        _dryOffRecordCount = dryOffCount ?? _dryOffRecordCount;
+        _heatRecordCount = heatCount;
+        _conceptionCount = conceptionCount;
+        _dryOffRecordCount = dryOffCount;
       });
     }
   }
 
-  Future<int> _fetchDryOffCount() async {
-    final cattleState = context.read<CattleBloc>().state;
-    final cattleList = cattleState is CattleListLoaded
-        ? cattleState.cattleList
-        : _cachedCattle;
+  Future<int> _fetchDryOffCount([List<Cattle>? cows]) async {
+    final femaleCattle = cows ??
+        _getActiveCattle()
+            .where((c) => c.gender.toUpperCase().startsWith('F'))
+            .toList();
 
-    final cows = cattleList.where((c) {
-      return c.gender.toUpperCase().startsWith('F');
-    }).toList();
-
-    if (cows.isEmpty) return 0;
+    if (femaleCattle.isEmpty) return 0;
 
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day);
@@ -259,7 +280,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
     );
     final uniqueIds = <String>{};
 
-    for (final cow in cows) {
+    for (final cow in femaleCattle) {
       try {
         final records = await sl<ApiService>().getDryOffReport(animalId: cow.id);
         for (final raw in records.whereType<Map>()) {
@@ -281,6 +302,23 @@ class _GaushalaTabState extends State<GaushalaTab> {
     }
 
     return uniqueIds.length;
+  }
+
+  List<Cattle> _getCurrentCattleList() {
+    final cattleState = context.read<CattleBloc>().state;
+    if (cattleState is CattleListLoaded) {
+      final loadedList = cattleState.cattleList;
+      final shouldUseCachedFullList =
+          _cachedCattle.isNotEmpty &&
+          _isFilteredGenderOnlyList(loadedList) &&
+          _cachedCattle.length > loadedList.length;
+      return shouldUseCachedFullList ? _cachedCattle : loadedList;
+    }
+    return _cachedCattle;
+  }
+
+  List<Cattle> _getActiveCattle() {
+    return _getCurrentCattleList().where((c) => c.isActive).toList();
   }
 
   int _summaryCount(List<String> keys, {int fallback = 0}) {
@@ -339,16 +377,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
       builder: (context, cattleState) {
         return BlocBuilder<MilkProductionBloc, MilkProductionState>(
           builder: (context, milkState) {
-            List<Cattle> cattleList = _cachedCattle;
-            if (cattleState is CattleListLoaded) {
-              final loadedList = cattleState.cattleList;
-              final shouldUseCachedFullList =
-                  _cachedCattle.isNotEmpty &&
-                  _isFilteredGenderOnlyList(loadedList) &&
-                  _cachedCattle.length > loadedList.length;
-
-              cattleList = shouldUseCachedFullList ? _cachedCattle : loadedList;
-            }
+            final cattleList = _getCurrentCattleList();
             // Removed direct Event triggers from Build to prevent UI lag/loops
 
             List<MilkProductionEntry> milkEntries = [];
@@ -428,18 +457,11 @@ class _GaushalaTabState extends State<GaushalaTab> {
               ['sickAnimalCount', 'sickCount'],
               fallback: _derivedSickAnimalCount ?? 0,
             ).toString();
-            final String heatRecordCount = (_heatRecordCount ??
-                    int.tryParse(_summary?['activeHeatCount']?.toString() ?? '') ??
-                    0)
-                .toString();
-            final String pregnancyStatusCount = (_conceptionCount ??
-                    int.tryParse(_summary?['pregnantCount']?.toString() ?? '') ??
-                    calvingCount)
-                .toString();
-            final String dryOffTargetCount = (_dryOffRecordCount ??
-                    int.tryParse(_summary?['dryOffCount']?.toString() ?? '') ??
-                    dryCount)
-                .toString();
+            final String heatRecordCount = (_heatRecordCount ?? 0).toString();
+            final String pregnancyStatusCount =
+                (_conceptionCount ?? calvingCount).toString();
+            final String dryOffTargetCount =
+                (_dryOffRecordCount ?? dryCount).toString();
 
             final double totalMorningMilk = milkEntries.fold<double>(
               0.0,
@@ -1500,5 +1522,67 @@ class _GaushalaTabState extends State<GaushalaTab> {
         ],
       ),
     );
+  }
+}
+
+class _DashboardAnimalRegistry {
+  final Set<String> ids;
+  final Set<String> tags;
+  final Set<String> serials;
+  final Set<String> names;
+
+  const _DashboardAnimalRegistry({
+    required this.ids,
+    required this.tags,
+    required this.serials,
+    required this.names,
+  });
+
+  factory _DashboardAnimalRegistry.from(List<Cattle> cattleList) {
+    String normalize(String? value) => value?.trim().toLowerCase() ?? '';
+
+    return _DashboardAnimalRegistry(
+      ids: cattleList
+          .map((c) => normalize(c.id))
+          .where((v) => v.isNotEmpty)
+          .toSet(),
+      tags: cattleList
+          .map((c) => normalize(c.tagNumber))
+          .where((v) => v.isNotEmpty && v != '-')
+          .toSet(),
+      serials: cattleList
+          .map((c) => normalize(c.serialNumber))
+          .where((v) => v.isNotEmpty && v != '-')
+          .toSet(),
+      names: cattleList
+          .map((c) => normalize(c.name))
+          .where((v) => v.isNotEmpty && v != 'unknown')
+          .toSet(),
+    );
+  }
+
+  bool matches({
+    String? animalId,
+    String? tagNumber,
+    String? serialNumber,
+    String? name,
+  }) {
+    String normalize(String? value) => value?.trim().toLowerCase() ?? '';
+
+    final normalizedId = normalize(animalId);
+    if (normalizedId.isNotEmpty && ids.contains(normalizedId)) return true;
+
+    final normalizedTag = normalize(tagNumber);
+    if (normalizedTag.isNotEmpty && tags.contains(normalizedTag)) return true;
+
+    final normalizedSerial = normalize(serialNumber);
+    if (normalizedSerial.isNotEmpty && serials.contains(normalizedSerial)) {
+      return true;
+    }
+
+    final normalizedName = normalize(name);
+    if (normalizedName.isNotEmpty && names.contains(normalizedName)) return true;
+
+    return false;
   }
 }

@@ -3,11 +3,37 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../features/cattle/domain/entities/cattle.dart';
+import '../../../../features/cattle/data/models/cattle_model.dart';
 
 // ============================================================
 // CONSTANTS
 // ============================================================
 const _kOlive = Color(0xFF99AA5A);
+
+Map<String, dynamic>? _firstMap(
+  Map<String, dynamic> source,
+  List<String> keys,
+) {
+  for (final key in keys) {
+    final value = source[key];
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+  }
+  return null;
+}
+
+String _asText(dynamic value, {required String fallback}) {
+  final text = value?.toString().trim() ?? '';
+  return text.isEmpty ? fallback : text;
+}
+
+double _asDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? 0;
+}
+
 // ============================================================
 // HUB
 // ============================================================
@@ -147,6 +173,7 @@ class _DailyMilkReportScreenState
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
   Map<String, dynamic> _apiDailyData = {};
+  List<Cattle> _cattleCache = const [];
 
   double get _totalMorning => (_apiDailyData['morning'] ?? 0.0).toDouble();
   double get _totalEvening => (_apiDailyData['evening'] ?? 0.0).toDouble();
@@ -162,11 +189,27 @@ class _DailyMilkReportScreenState
     setState(() => _isLoading = true);
     try {
       final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      final report = await sl<ApiService>().getDailyProductionReport(date: dateStr);
+      final report = await sl<ApiService>().getDailyProductionReport(
+        date: dateStr,
+      );
+      if (_cattleCache.isEmpty) {
+        try {
+          final cattle = await sl<ApiService>().getCows(limit: 500);
+          final bulls = await sl<ApiService>().getBulls(limit: 500);
+          _cattleCache = [
+            ...cattle
+                .whereType<Map>()
+                .map((item) => CattleModel.fromJson(Map<String, dynamic>.from(item))),
+            ...bulls
+                .whereType<Map>()
+                .map((item) => CattleModel.fromJson(Map<String, dynamic>.from(item))),
+          ];
+        } catch (_) {}
+      }
       
       if (mounted) {
         setState(() {
-          _apiDailyData = report['data'] ?? report;
+          _apiDailyData = _normalizeDailyReport(report);
           _isLoading = false;
         });
       }
@@ -174,6 +217,55 @@ class _DailyMilkReportScreenState
       debugPrint('Error fetching daily report: $e');
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Map<String, dynamic> _normalizeDailyReport(Map<String, dynamic> report) {
+    final payload = _firstMap(report, const ['data', 'result']) ?? report;
+    final rawItems =
+        (payload['items'] as List?) ??
+        (payload['report'] as List?) ??
+        (payload['records'] as List?) ??
+        (report['items'] as List?) ??
+        (report['report'] as List?) ??
+        const [];
+
+    double morningTotal = 0;
+    double eveningTotal = 0;
+
+    final items = rawItems.whereType<Map>().map((item) {
+      final map = Map<String, dynamic>.from(item);
+      final morning = _asDouble(map['morning'] ?? map['morningMilk']);
+      final evening = _asDouble(map['evening'] ?? map['eveningMilk']);
+      final animalId = map['animalId']?.toString() ?? '';
+      final matchedAnimal = _cattleCache.cast<Cattle?>().firstWhere(
+        (cattle) => cattle?.id == animalId,
+        orElse: () => null,
+      );
+      morningTotal += morning;
+      eveningTotal += evening;
+      return {
+        ...map,
+        'animalName': _asText(
+          map['animalName'] ??
+              map['name'] ??
+              map['cowName'] ??
+              matchedAnimal?.name ??
+              map['animalId'],
+          fallback: 'Unknown',
+        ),
+        'morning': morning,
+        'evening': evening,
+        'feed': _asDouble(map['feed'] ?? map['morningFeed']),
+      };
+    }).toList();
+
+    return {
+      ...payload,
+      'items': items,
+      'morning': morningTotal,
+      'evening': eveningTotal,
+      'total': morningTotal + eveningTotal,
+    };
   }
 
   @override
@@ -467,15 +559,16 @@ class _MonthlyMilkReportScreenState
   ) {
     final payload = _firstMap(report, const [
           'data',
-          'report',
           'monthlyReport',
           'result',
         ]) ??
         report;
+    final items = _extractMonthlyItems(payload, report);
 
     return {
       ...payload,
-      'items': _extractMonthlyItems(payload, report),
+      'items': items,
+      'isDateWise': items.any((item) => item['date'] != null),
     };
   }
 
@@ -486,12 +579,14 @@ class _MonthlyMilkReportScreenState
     final dynamic nestedData = payload['data'];
     final List<dynamic> rawItems =
         (payload['items'] as List?) ??
+            (payload['report'] as List?) ??
             (payload['records'] as List?) ??
             (payload['rows'] as List?) ??
             (payload['list'] as List?) ??
             (payload['animals'] as List?) ??
             (nestedData is List ? nestedData : null) ??
             (root['items'] as List?) ??
+            (root['report'] as List?) ??
             (root['records'] as List?) ??
             (root['rows'] as List?) ??
             (root['list'] as List?) ??
@@ -513,6 +608,9 @@ class _MonthlyMilkReportScreenState
           item['totalMilkProduction'] ??
           item['monthlyTotal'] ??
           item['quantity'],
+    );
+    final totalFeed = _asDouble(
+      item['totalFeed'] ?? item['feed'] ?? item['feedTotal'],
     );
     final average = _asDouble(
       item['average'] ??
@@ -537,6 +635,9 @@ class _MonthlyMilkReportScreenState
             animal['tagno'],
         fallback: '-',
       ),
+      'date': item['date']?.toString(),
+      'totalFeed': totalFeed,
+      'count': item['count'] ?? item['animalCount'] ?? item['recordsCount'] ?? 0,
       'total': total,
       'average': average > 0 ? average : _deriveAverage(item, total),
     };
@@ -581,6 +682,7 @@ class _MonthlyMilkReportScreenState
   @override
   Widget build(BuildContext context) {
     final monthFmt = DateFormat('MMM, yyyy');
+    final bool isDateWise = _apiMonthlyData['isDateWise'] == true;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -687,15 +789,34 @@ class _MonthlyMilkReportScreenState
                                   color: Colors.black87),
                               dataTextStyle: GoogleFonts.inter(
                                   fontSize: 12, color: Colors.black87),
-                              columns: [
-                                const DataColumn(label: Text('Cow Name')),
-                                const DataColumn(label: Text('Tag No.')),
-                                const DataColumn(label: Text('Total (Ltr)')),
-                                const DataColumn(label: Text('Avg (Ltr)')),
-                              ],
+                              columns: isDateWise
+                                  ? const [
+                                      DataColumn(label: Text('Date')),
+                                      DataColumn(label: Text('Total (Ltr)')),
+                                      DataColumn(label: Text('Feed')),
+                                      DataColumn(label: Text('Count')),
+                                    ]
+                                  : const [
+                                      DataColumn(label: Text('Cow Name')),
+                                      DataColumn(label: Text('Tag No.')),
+                                      DataColumn(label: Text('Total (Ltr)')),
+                                      DataColumn(label: Text('Avg (Ltr)')),
+                                    ],
                               rows: _monthlyItems.map((item) {
                                 final total = _asDouble(item['total']);
                                 final average = _asDouble(item['average']);
+                                if (isDateWise) {
+                                  final feed = _asDouble(item['totalFeed']);
+                                  final count = item['count']?.toString() ?? '0';
+                                  return DataRow(cells: [
+                                    DataCell(Text(item['date'] ?? '-')),
+                                    DataCell(Text(total.toStringAsFixed(1),
+                                        style: GoogleFonts.inter(
+                                            fontWeight: FontWeight.bold))),
+                                    DataCell(Text(feed.toStringAsFixed(1))),
+                                    DataCell(Text(count)),
+                                  ]);
+                                }
                                 return DataRow(cells: [
                                   DataCell(Text(item['animalName'] ?? 'Unknown',
                                       style: GoogleFonts.inter(
@@ -801,7 +922,11 @@ class _MilkReportAsPerParityScreenState
       final report = await sl<ApiService>().getParityReport(animalId: animalId);
       if (mounted) {
         setState(() {
-          _apiParityData = report['data'] ?? report;
+          _apiParityData = _normalizeParityReport(
+            report,
+            animalId: animalId,
+            selectedCow: _selectedCow,
+          );
           _isLoading = false;
         });
       }
@@ -814,6 +939,77 @@ class _MilkReportAsPerParityScreenState
         });
       }
     }
+  }
+
+  Map<String, dynamic> _normalizeParityReport(
+    Map<String, dynamic> report, {
+    required String animalId,
+    required dynamic selectedCow,
+  }) {
+    final payload =
+        _firstMap(report, const ['data', 'report', 'result']) ?? report;
+    final rawItems =
+        (payload['items'] as List?) ??
+        (payload['records'] as List?) ??
+        (payload['rows'] as List?) ??
+        (payload['parities'] as List?) ??
+        (payload['paritySummary'] as List?) ??
+        (report['items'] as List?) ??
+        (report['records'] as List?) ??
+        (report['paritySummary'] as List?) ??
+        const [];
+
+    final filteredItems = rawItems.whereType<Map>().where((item) {
+      final map = Map<String, dynamic>.from(item);
+      final rowAnimalId = map['animalId']?.toString() ?? '';
+      return rowAnimalId.isEmpty || rowAnimalId == animalId;
+    }).toList();
+
+    final fallbackParity = selectedCow is Map
+        ? selectedCow['parity'] ?? selectedCow['parityNo'] ?? selectedCow['parityNumber']
+        : null;
+
+    final items = filteredItems.map((item) {
+      final map = Map<String, dynamic>.from(item);
+      final sum = map['_sum'] is Map ? Map<String, dynamic>.from(map['_sum']) : const <String, dynamic>{};
+      final avg = map['_avg'] is Map ? Map<String, dynamic>.from(map['_avg']) : const <String, dynamic>{};
+      final count = map['_count'] is Map ? Map<String, dynamic>.from(map['_count']) : const <String, dynamic>{};
+
+      return {
+        ...map,
+        'parity':
+            map['parity'] ??
+            map['parityNo'] ??
+            map['parityNumber'] ??
+            fallbackParity ??
+            '-',
+        'totalMilk': _asDouble(
+          map['totalMilk'] ??
+              map['total'] ??
+              map['milk'] ??
+              map['quantity'] ??
+              sum['quantity'],
+        ),
+        'days':
+            map['days'] ??
+            map['daysCount'] ??
+            map['milkingDays'] ??
+            count['id'] ??
+            '-',
+        'avgMilk': _asDouble(
+          map['avgMilk'] ??
+              map['average'] ??
+              map['avg'] ??
+              map['averageMilk'] ??
+              avg['quantity'],
+        ),
+      };
+    }).toList();
+
+    return {
+      ...payload,
+      'items': items,
+    };
   }
 
   List<dynamic> get _filteredCows {
@@ -1112,39 +1308,76 @@ class _CowWiseMonthlyMilkReportScreenState
       );
       if (mounted) {
         setState(() {
-          final data = report['data'] ?? report;
-          final dailyRecords = (data['dailyRecords'] as List?) ?? const [];
-          _apiReportData = dailyRecords.isNotEmpty
-              ? data
-              : _buildCowMonthlyFallback(
-                  records: data is Map<String, dynamic> ? const [] : const [],
-                );
+          _apiReportData = _normalizeCowMonthlyReport(report);
           _isLoading = false;
         });
       }
     } catch (e) {
-      try {
-        final history = await sl<ApiService>().getMilkHistoryForAnimal(
-          animalId: _selectedCow['id'].toString(),
-          month: _selectedMonth!.month,
-          year: _selectedMonth!.year,
-        );
-        if (mounted) {
-          setState(() {
-            _apiReportData = _buildCowMonthlyFallback(records: history);
-            _isLoading = false;
-          });
-        }
-      } catch (_) {
-        debugPrint('Error fetching cow monthly report: $e');
-        if (mounted) {
-          setState(() {
-            _apiReportData = null;
-            _isLoading = false;
-          });
-        }
+      debugPrint('Error fetching cow monthly report: $e');
+      if (mounted) {
+        setState(() {
+          _apiReportData = null;
+          _isLoading = false;
+        });
       }
     }
+  }
+
+  Map<String, dynamic> _normalizeCowMonthlyReport(
+    Map<String, dynamic> report,
+  ) {
+    final payload =
+        _firstMap(report, const ['data', 'report', 'result']) ?? report;
+    final rawRecords =
+        (payload['dailyRecords'] as List?) ??
+        (payload['records'] as List?) ??
+        (payload['items'] as List?) ??
+        (payload['list'] as List?) ??
+        (report['dailyRecords'] as List?) ??
+        (report['records'] as List?) ??
+        const [];
+
+    final normalizedRecords = rawRecords.whereType<Map>().map((item) {
+      final map = Map<String, dynamic>.from(item);
+      final morning = _asDouble(
+        map['morningMilk'] ?? map['morning'] ?? map['amMilk'],
+      );
+      final evening = _asDouble(
+        map['eveningMilk'] ?? map['evening'] ?? map['pmMilk'],
+      );
+      return {
+        ...map,
+        'date': map['date'] ?? map['entryDate'] ?? map['productionDate'],
+        'morningMilk': morning,
+        'eveningMilk': evening,
+        'morningFeed': _asDouble(map['morningFeed'] ?? map['amFeed']),
+        'eveningFeed': _asDouble(map['eveningFeed'] ?? map['pmFeed']),
+      };
+    }).toList();
+
+    final totalMorning = _asDouble(
+      payload['totalMorningMilk'] ?? payload['morningTotal'] ?? payload['morning'],
+    );
+    final totalEvening = _asDouble(
+      payload['totalEveningMilk'] ?? payload['eveningTotal'] ?? payload['evening'],
+    );
+
+    return {
+      ...payload,
+      'dailyRecords': normalizedRecords,
+      'totalMorningMilk': totalMorning > 0
+          ? totalMorning
+          : normalizedRecords.fold<double>(
+              0,
+              (sum, item) => sum + _asDouble(item['morningMilk']),
+            ),
+      'totalEveningMilk': totalEvening > 0
+          ? totalEvening
+          : normalizedRecords.fold<double>(
+              0,
+              (sum, item) => sum + _asDouble(item['eveningMilk']),
+            ),
+    };
   }
 
   Map<String, dynamic> _buildCowMonthlyFallback({required List<dynamic> records}) {

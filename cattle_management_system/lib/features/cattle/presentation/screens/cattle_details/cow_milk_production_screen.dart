@@ -89,17 +89,9 @@ class _CowMilkProductionScreenState extends State<CowMilkProductionScreen> {
         });
         return;
       }
-
-      final history = await _apiService.getMilkHistoryForAnimal(
-        animalId: widget.cattle.id,
-        month: selectedMonth,
-        year: selectedYear,
-      );
-
       setState(() {
-        final normalized = _buildMonthlyFallback(records: history);
-        _milkRecords = normalized['dailyRecords'] as List<dynamic>;
-        _reportSummary = normalized;
+        _milkRecords = const [];
+        _reportSummary = normalizedData;
         _isLoading = false;
       });
     } catch (e) {

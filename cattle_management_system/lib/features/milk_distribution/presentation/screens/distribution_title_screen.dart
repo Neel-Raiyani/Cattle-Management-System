@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
@@ -13,6 +14,11 @@ class DistributionTitleScreen extends StatefulWidget {
 }
 
 class _DistributionTitleScreenState extends State<DistributionTitleScreen> {
+  static const String _hiddenDistributionTitleIdsKey =
+      'hidden_distribution_title_ids';
+  static const String _hiddenDistributionTitleNamesKey =
+      'hidden_distribution_title_names';
+
   List<Map<String, dynamic>> _distributionTitles = []; 
   bool _isLoading = true;
   String? _error;
@@ -30,8 +36,14 @@ class _DistributionTitleScreenState extends State<DistributionTitleScreen> {
     });
     try {
       final categories = await sl<ApiService>().getMilkCategories();
+      final prefs = sl<SharedPreferences>();
+      final hiddenIds = prefs.getStringList(_hiddenDistributionTitleIdsKey) ?? [];
+      final hiddenNames =
+          prefs.getStringList(_hiddenDistributionTitleNamesKey) ?? [];
       setState(() {
-        _distributionTitles = List<Map<String, dynamic>>.from(categories);
+        _distributionTitles = List<Map<String, dynamic>>.from(categories)
+            .where((category) => !_isHiddenCategory(category, hiddenIds, hiddenNames))
+            .toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -44,6 +56,87 @@ class _DistributionTitleScreenState extends State<DistributionTitleScreen> {
 
   void _onCategoryAdded() {
     _fetchCategories();
+  }
+
+  bool _isHiddenCategory(
+    Map<String, dynamic> category,
+    List<String> hiddenIds,
+    List<String> hiddenNames,
+  ) {
+    final id = category['id']?.toString() ?? category['_id']?.toString() ?? '';
+    final normalizedName = _normalizeCategoryName(category['name']);
+    return (id.isNotEmpty && hiddenIds.contains(id)) ||
+        (normalizedName.isNotEmpty && hiddenNames.contains(normalizedName));
+  }
+
+  String _normalizeCategoryName(dynamic value) {
+    return value?.toString().trim().toLowerCase() ?? '';
+  }
+
+  Future<void> _hideCategoryLocally(Map<String, dynamic> category) async {
+    final prefs = sl<SharedPreferences>();
+    final hiddenIds =
+        List<String>.from(prefs.getStringList(_hiddenDistributionTitleIdsKey) ?? []);
+    final hiddenNames = List<String>.from(
+      prefs.getStringList(_hiddenDistributionTitleNamesKey) ?? [],
+    );
+
+    final id = category['id']?.toString() ?? category['_id']?.toString() ?? '';
+    final normalizedName = _normalizeCategoryName(category['name']);
+
+    if (id.isNotEmpty && !hiddenIds.contains(id)) {
+      hiddenIds.add(id);
+    }
+    if (normalizedName.isNotEmpty && !hiddenNames.contains(normalizedName)) {
+      hiddenNames.add(normalizedName);
+    }
+
+    await prefs.setStringList(_hiddenDistributionTitleIdsKey, hiddenIds);
+    await prefs.setStringList(_hiddenDistributionTitleNamesKey, hiddenNames);
+
+    if (!mounted) return;
+    setState(() {
+      _distributionTitles.removeWhere(
+        (item) =>
+            (id.isNotEmpty &&
+                (item['id']?.toString() == id || item['_id']?.toString() == id)) ||
+            _normalizeCategoryName(item['name']) == normalizedName,
+      );
+    });
+  }
+
+  Future<void> _confirmDeleteCategory(Map<String, dynamic> category) async {
+    final name = category['name']?.toString() ?? 'this title';
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Delete Distribution Title',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Delete "$name" from this mobile device? It may still exist on the backend.',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      await _hideCategoryLocally(category);
+    }
   }
 
   @override
@@ -165,6 +258,7 @@ class _DistributionTitleScreenState extends State<DistributionTitleScreen> {
               padding: const EdgeInsets.all(16),
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
+                final category = _distributionTitles[index];
                 return Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -175,9 +269,26 @@ class _DistributionTitleScreenState extends State<DistributionTitleScreen> {
                       BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
                     ],
                   ),
-                  child: Text(
-                    _distributionTitles[index]['name'] ?? '-',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          category['name'] ?? '-',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => _confirmDeleteCategory(category),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                        ),
+                        tooltip: 'Delete',
+                      ),
+                    ],
                   ),
                 );
               },

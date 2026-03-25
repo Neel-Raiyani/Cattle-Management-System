@@ -320,7 +320,7 @@ class _BullListReportScreenState extends State<BullListReportScreen> {
 // BullCalfReportScreen – shows all bull calves (status == 'bull_calf')
 // ===========================================================================
 class BullCalfReportScreen extends StatefulWidget {
-  const BullCalfReportScreen({super.key});
+  const BullCalfReportScreen({super.key}); 
 
   @override
   State<BullCalfReportScreen> createState() => _BullCalfReportScreenState();

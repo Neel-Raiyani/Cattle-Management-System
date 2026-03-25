@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -21,6 +23,7 @@ class ApiClient {
   final Map<String, DateTime> _cacheTime = {};
   final Map<String, Future<Response>> _inFlightGetRequests = {};
   final Duration _cacheTTL = const Duration(minutes: 5);
+  static const int _maxGetRetries = 3;
 
   void _clearGetCache() {
     _cache.clear();
@@ -95,7 +98,9 @@ class ApiClient {
           return handler.next(response);
         },
         onError: (error, handler) async {
-          if (error.response?.statusCode == 401 && !_isHandlingUnauthorized) {
+          if (error.response?.statusCode == 401 &&
+              !_isHandlingUnauthorized &&
+              await _shouldTreat401AsSessionExpired(error)) {
             _isHandlingUnauthorized = true;
             final ctx = NavigationService.navigatorKey.currentContext;
 
@@ -179,6 +184,55 @@ class ApiClient {
     }
   }
 
+  Future<bool> _shouldTreat401AsSessionExpired(DioException error) async {
+    final token = await _getAuthToken();
+    if (token == null || token.isEmpty) return true;
+    if (_isJwtExpired(token)) return true;
+
+    final responseData = error.response?.data;
+    if (responseData is Map) {
+      final directMessage = responseData['message']?.toString().toLowerCase();
+      final errors = responseData['errors'];
+      final nestedMessage =
+          errors is List && errors.isNotEmpty && errors.first is Map
+          ? errors.first['message']?.toString().toLowerCase()
+          : null;
+      final combined = '${directMessage ?? ''} ${nestedMessage ?? ''}';
+      if (combined.contains('expired') ||
+          combined.contains('invalid token') ||
+          combined.contains('jwt') ||
+          combined.contains('token')) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  bool _isJwtExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final data = jsonDecode(decoded);
+      if (data is! Map<String, dynamic>) return false;
+
+      final exp = data['exp'];
+      if (exp is! num) return false;
+
+      final expiry = DateTime.fromMillisecondsSinceEpoch(
+        exp.toInt() * 1000,
+        isUtc: true,
+      );
+      return DateTime.now().toUtc().isAfter(expiry);
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<Response> get(
     String path, {
     Map<String, dynamic>? queryParameters,
@@ -194,8 +248,7 @@ class ApiClient {
     }
 
     late final Future<Response> requestFuture;
-    requestFuture = _dio
-        .get(
+    requestFuture = _executeGetWithRetry(
           path,
           queryParameters: queryParameters,
           options: options,
@@ -212,6 +265,53 @@ class ApiClient {
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
+  }
+
+  Future<Response> _executeGetWithRetry(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    DioException? lastError;
+
+    for (var attempt = 0; attempt < _maxGetRetries; attempt++) {
+      try {
+        return await _dio.get(
+          path,
+          queryParameters: queryParameters,
+          options: options,
+        );
+      } on DioException catch (e) {
+        lastError = e;
+        if (!_shouldRetryGet(e) || attempt == _maxGetRetries - 1) {
+          rethrow;
+        }
+
+        final retryDelaySeconds = attempt + 1;
+        debugPrint(
+          '--- [ApiClient] Retrying GET $path in ${retryDelaySeconds}s (attempt ${attempt + 2}/$_maxGetRetries) ---',
+        );
+        await Future.delayed(Duration(seconds: retryDelaySeconds));
+      }
+    }
+
+    throw lastError ??
+        DioException(
+          requestOptions: RequestOptions(path: path),
+          type: DioExceptionType.unknown,
+        );
+  }
+
+  bool _shouldRetryGet(DioException error) {
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.connectionError) {
+      return true;
+    }
+
+    final statusCode = error.response?.statusCode;
+    return statusCode == 502 || statusCode == 503 || statusCode == 504;
   }
 
   Future<Response> post(
@@ -327,8 +427,21 @@ class ApiClient {
 
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
-        final message =
-            error.response?.data['message'] ?? 'Server error occurred';
+        final responseData = error.response?.data;
+        String message = 'Server error occurred';
+        if (responseData is Map) {
+          final directMessage = responseData['message']?.toString().trim();
+          final errors = responseData['errors'];
+          final nestedMessage =
+              errors is List && errors.isNotEmpty && errors.first is Map
+              ? (errors.first['message']?.toString().trim())
+              : null;
+          if (directMessage != null && directMessage.isNotEmpty) {
+            message = directMessage;
+          } else if (nestedMessage != null && nestedMessage.isNotEmpty) {
+            message = nestedMessage;
+          }
+        }
 
         if (statusCode == 401) {
           return AuthenticationException(message, statusCode);
@@ -341,6 +454,12 @@ class ApiClient {
           if (message.contains('transaction') && message.contains('expired')) {
             return ServerException(
               'Database is busy. Clearing animal history is taking longer than expected. Please try again in 10 seconds.',
+              statusCode,
+            );
+          }
+          if (statusCode == 502 || statusCode == 503 || statusCode == 504) {
+            return ServerException(
+              'Server is busy right now. Please try again in a moment.',
               statusCode,
             );
           }

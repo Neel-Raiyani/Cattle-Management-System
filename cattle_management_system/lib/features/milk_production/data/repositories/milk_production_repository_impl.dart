@@ -39,10 +39,26 @@ class MilkProductionRepositoryImpl implements MilkProductionRepository {
     required int month,
     required int year,
   }) async {
-    return await apiService.getMilkHistoryForAnimal(
+    final report = await apiService.getCowMonthlyReport(
       animalId: animalId,
       month: month,
       year: year,
     );
+    final data = report['data'] ?? report;
+    if (data is Map<String, dynamic>) {
+      final dailyRecords = data['dailyRecords'];
+      if (dailyRecords is List) {
+        return dailyRecords;
+      }
+      final records = data['records'];
+      if (records is List) {
+        return records;
+      }
+      final items = data['items'];
+      if (items is List) {
+        return items;
+      }
+    }
+    return const [];
   }
 }
