@@ -30,6 +30,8 @@ class _CattleListScreenState extends State<CattleListScreen> {
         normalized == 'DONATED';
   }
 
+  bool _isHeiferCandidate(Cattle cattle) => cattle.effectiveIsHeifer;
+
   @override
   void initState() {
     super.initState();
@@ -361,17 +363,15 @@ class _CattleListScreenState extends State<CattleListScreen> {
 
   List<Cattle> _filterCattle(List<Cattle> cattleList, AppLocalizations l10n) {
     final visibleCows = cattleList.where((cattle) {
-      final isFemale = cattle.gender.toUpperCase().startsWith('F') ||
-          cattle.gender.toLowerCase() == 'cow';
-      return isFemale;
+      return cattle.isFemaleGender;
     }).toList();
 
     final activeCows = visibleCows.where((cattle) {
-      return !_isTerminalStatus(cattle.status) && cattle.isRetired != true;
+      return cattle.isActive;
     }).toList();
 
     final retiredCows = visibleCows.where((cattle) {
-      return cattle.isRetired == true;
+      return cattle.effectiveIsRetired;
     }).toList();
 
     if (_selectedFilter == l10n.lblAllCows) {
@@ -383,16 +383,16 @@ class _CattleListScreenState extends State<CattleListScreen> {
     }
 
     if (_selectedFilter == l10n.lblLactating) {
-      return activeCows.where((c) => c.isLactating == true).toList();
+      return activeCows.where((c) => c.effectiveIsLactating).toList();
     }
     if (_selectedFilter == l10n.lblHeifer) {
-      return activeCows.where((c) => c.isHeifer == true).toList();
+      return activeCows.where(_isHeiferCandidate).toList();
     }
     if (_selectedFilter == l10n.lblPregnant) {
-      return activeCows.where((c) => c.isPregnant == true).toList();
+      return activeCows.where((c) => c.effectiveIsPregnant).toList();
     }
     if (_selectedFilter == l10n.lblDryOff) {
-      return activeCows.where((c) => c.isDryOff == true).toList();
+      return activeCows.where((c) => c.effectiveIsDryOff).toList();
     }
 
     return activeCows;
@@ -407,8 +407,8 @@ class _CustomCattleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isLactating = cattle.status == 'Lactating';
-    final isHeifer = cattle.status == 'Heifer';
+    final isLactating = cattle.effectiveIsLactating;
+    final isHeifer = cattle.effectiveIsHeifer;
     // Logic for other statuses
 
     Color statusColor = Colors.orange;
@@ -418,9 +418,9 @@ class _CustomCattleCard extends StatelessWidget {
       // statusBg remains white
     }
     // Add other colors maps preferred
-    if (cattle.status == 'Pregnant') statusColor = Colors.green;
-    if (cattle.status == 'Dry Off') statusColor = Colors.grey;
-    if (cattle.status == 'Retired') statusColor = Colors.red;
+    if (cattle.effectiveIsPregnant) statusColor = Colors.green;
+    if (cattle.effectiveIsDryOff) statusColor = Colors.grey;
+    if (cattle.effectiveIsRetired) statusColor = Colors.red;
 
     return GestureDetector(
       onTap: () {
@@ -495,7 +495,7 @@ class _CustomCattleCard extends StatelessWidget {
                           ],
                         ),
                         child: Text(
-                          _getLocalizedStatus(cattle.status, l10n),
+                          _getLocalizedStatus(cattle, l10n),
                           style: GoogleFonts.poppins(
                             fontSize: 10,
                             color: statusColor,
@@ -650,9 +650,10 @@ class _CustomCattleCard extends StatelessWidget {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
+                      final blocContext = context;
                       showDialog(
                         context: context,
-                        builder: (BuildContext context) {
+                        builder: (BuildContext dialogContext) {
                           return AlertDialog(
                             title: Text(
                               "Delete Cow",
@@ -671,7 +672,7 @@ class _CustomCattleCard extends StatelessWidget {
                                   style: GoogleFonts.inter(color: Colors.grey),
                                 ),
                                 onPressed: () {
-                                  Navigator.of(context).pop();
+                                  Navigator.of(dialogContext).pop();
                                 },
                               ),
                               TextButton(
@@ -680,10 +681,13 @@ class _CustomCattleCard extends StatelessWidget {
                                   style: GoogleFonts.inter(color: Colors.red),
                                 ),
                                 onPressed: () {
-                                  context.read<CattleBloc>().add(
-                                    DeleteCattle(cattle.id),
-                                  );
-                                  Navigator.of(context).pop();
+                                  Navigator.of(dialogContext).pop();
+                                  Future.microtask(() {
+                                    if (!blocContext.mounted) return;
+                                    blocContext.read<CattleBloc>().add(
+                                      DeleteCattle(cattle.id),
+                                    );
+                                  });
                                 },
                               ),
                             ],
@@ -749,8 +753,14 @@ class _CustomCattleCard extends StatelessWidget {
     );
   }
 
-  String _getLocalizedStatus(String status, AppLocalizations l10n) {
-    switch (status.toLowerCase()) {
+  String _getLocalizedStatus(Cattle cattle, AppLocalizations l10n) {
+    if (cattle.effectiveIsRetired) return l10n.lblRetiredCow;
+    if (cattle.effectiveIsDryOff) return l10n.lblDryOff;
+    if (cattle.effectiveIsPregnant) return l10n.lblPregnant;
+    if (cattle.effectiveIsHeifer) return l10n.lblHeifer;
+    if (cattle.effectiveIsLactating) return l10n.lblLactating;
+
+    switch (cattle.status.toLowerCase()) {
       case 'lactating':
         return l10n.lblLactating;
       case 'heifer':
@@ -762,7 +772,7 @@ class _CustomCattleCard extends StatelessWidget {
       case 'retired':
         return l10n.lblRetiredCow;
       default:
-        return status;
+        return cattle.status;
     }
   }
 }

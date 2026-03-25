@@ -52,7 +52,6 @@ class _BullListScreenState extends State<BullListScreen> {
       body: BlocListener<CattleBloc, CattleState>(
         listener: (context, state) {
           if (state is CattleAdded ||
-              state is CattleDeleted ||
               state is CattleUpdated) {
             // Refresh the list when an animal is added, deleted, or updated
             context.read<CattleBloc>().add(const LoadCattleList());
@@ -331,8 +330,7 @@ class _BullListScreenState extends State<BullListScreen> {
   List<Cattle> _filterBulls(List<Cattle> cattleList) {
     // Basic filter: Male cattle
     final males = cattleList.where((c) {
-      return c.gender.toUpperCase().startsWith('M') &&
-          !_isTerminalStatus(c.status);
+      return c.isMaleGender && !_isTerminalStatus(c.status);
     }).toList();
 
     if (_selectedFilter == 'all_bull') {
@@ -341,24 +339,15 @@ class _BullListScreenState extends State<BullListScreen> {
     }
 
     if (_selectedFilter == 'retired_bull') {
-      return males.where((c) => c.isRetired == true).toList();
+      return males.where((c) => c.effectiveIsRetired).toList();
     }
 
     if (_selectedFilter == 'bull_calf') {
-      // Usually check age or specific group
-      return males.where((c) => 
-        c.cowGroup?.toLowerCase() == 'calf' || 
-        c.ageInMonths < 12 // fallback
-      ).toList();
+      return males.where((c) => c.isBullCalf).toList();
     }
 
     if (_selectedFilter == 'bull') {
-      // Active, non-calf bulls
-      return males.where((c) => 
-        c.isRetired != true && 
-        c.cowGroup?.toLowerCase() != 'calf' &&
-        c.ageInMonths >= 12
-      ).toList();
+      return males.where((c) => c.isActive && !c.isBullCalf).toList();
     }
 
     return males;
@@ -383,11 +372,11 @@ class _BullCard extends StatelessWidget {
     // Using screenshot colors:
     // Bull Calf (Image 2) has Blue text, White Bg, Blue border.
 
-    if (cattle.status == 'Bull Calf') {
+    if (cattle.isBullCalf) {
       statusColor = Color(0xFF3F51B5);
       statusBg = Colors.white;
       statusBorder = Color(0xFF3F51B5);
-    } else if (cattle.status == 'Retired Bull') {
+    } else if (cattle.effectiveIsRetired) {
       statusColor = Colors.grey;
       statusBg = Colors.white;
       statusBorder = Colors.grey;
@@ -465,7 +454,11 @@ class _BullCard extends StatelessWidget {
                           border: Border.all(color: statusBorder),
                         ),
                         child: Text(
-                          cattle.status,
+                          cattle.isBullCalf
+                              ? 'Bull Calf'
+                              : (cattle.effectiveIsRetired
+                                  ? 'Retired Bull'
+                                  : 'Bull'),
                           style: GoogleFonts.poppins(
                             fontSize: 10,
                             color: statusColor,
@@ -602,9 +595,10 @@ class _BullCard extends StatelessWidget {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
+                      final blocContext = context;
                       showDialog(
                         context: context,
-                        builder: (BuildContext context) {
+                        builder: (BuildContext dialogContext) {
                           return AlertDialog(
                             title: Text(
                               "Delete Bull",
@@ -623,7 +617,7 @@ class _BullCard extends StatelessWidget {
                                   style: GoogleFonts.inter(color: Colors.grey),
                                 ),
                                 onPressed: () {
-                                  Navigator.of(context).pop();
+                                  Navigator.of(dialogContext).pop();
                                 },
                               ),
                               TextButton(
@@ -632,10 +626,13 @@ class _BullCard extends StatelessWidget {
                                   style: GoogleFonts.inter(color: Colors.red),
                                 ),
                                 onPressed: () {
-                                  context.read<CattleBloc>().add(
-                                    DeleteCattle(cattle.id),
-                                  );
-                                  Navigator.of(context).pop();
+                                  Navigator.of(dialogContext).pop();
+                                  Future.microtask(() {
+                                    if (!blocContext.mounted) return;
+                                    blocContext.read<CattleBloc>().add(
+                                      DeleteCattle(cattle.id),
+                                    );
+                                  });
                                 },
                               ),
                             ],

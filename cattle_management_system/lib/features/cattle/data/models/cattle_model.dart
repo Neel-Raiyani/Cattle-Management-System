@@ -83,12 +83,14 @@ class CattleModel extends Cattle {
       id: json['_id'] ?? json['id'] ?? '',
       tagNumber: json['tagNumber'] ?? json['tagno'] ?? json['tagNo'] ?? '',
       name: json['name'] ?? '',
-      breed: json['cowBreed'] ?? 'Unknown',
+      breed: json['cowBreed'] ?? json['breed'] ?? 'Unknown',
       gender: (json['gender']?.toString().toUpperCase() ?? 'FEMALE'),
       dateOfBirth: _parseDate(birthDateRaw),
-      status: json['status'] ?? json['animalStatus'] ?? 'ACTIVE',
+      status: (json['status'] ?? json['animalStatus'] ?? 'ACTIVE')
+          .toString()
+          .toUpperCase(),
       imageUrl: imageUrlRaw?.toString(),
-      acquisitionType: json['acquisitionType'],
+      acquisitionType: json['acquisitionType']?.toString().toUpperCase(),
       isLactating: json['isLactating'] as bool?,
       isHeifer: json['isHeifer'] as bool?,
       isPregnant: json['isPregnant'] as bool?,
@@ -118,7 +120,7 @@ class CattleModel extends Cattle {
       deathDate: json['deathDate'] != null
           ? DateTime.tryParse(json['deathDate'])
           : null,
-      cowGroup: json['cowGroup'],
+      cowGroup: json['cowGroup']?.toString(),
       isHandicapped: json['isHandicapped'] as bool?,
       handicapReason: json['handicapReason'],
       isUdderClosedFL: json['isUdderClosedFL'] as bool?,
@@ -137,7 +139,7 @@ class CattleModel extends Cattle {
       retiredDate: json['retiredDate'] != null
           ? DateTime.tryParse(json['retiredDate'])
           : null,
-      bullView: json['bullView'],
+      bullView: json['bullView']?.toString(),
       motherMilk: json['motherMilk'] != null
           ? double.tryParse(json['motherMilk'].toString())
           : null,
@@ -157,13 +159,13 @@ class CattleModel extends Cattle {
       'birthDate': dateOfBirth.toIso8601String().split('T')[0],
       if (dateOfAdult != null)
         'adultDate': dateOfAdult!.toIso8601String().split('T')[0],
-      'status': status.toUpperCase(), // Enum: ACTIVE, SOLD, DEAD, DONATED
+      'status': normalizedStatus, // Enum: ACTIVE, SOLD, DEAD, DONATED
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       if (serialNumber != null && serialNumber!.isNotEmpty)
         'animalNumber': serialNumber!.toString(),
       if (parity != null) 'parity': parity,
-      'acquisitionType': (acquisitionType ?? 'BIRTH').toUpperCase(),
+      'acquisitionType': normalizedAcquisitionType,
       if (motherId != null && motherId!.isNotEmpty && motherId != '')
         'motherId': motherId,
       if (fatherId != null && fatherId!.isNotEmpty && fatherId != '')
@@ -196,7 +198,7 @@ class CattleModel extends Cattle {
       if (ownerMobile != null) 'ownerMobile': ownerMobile,
       if (retiredDate != null)
         'retiredDate': retiredDate!.toIso8601String().split('T')[0],
-      if (bullView != null) 'bullView': bullView,
+      if (normalizedBullView != null) 'bullView': normalizedBullView,
       if (motherMilk != null) 'motherMilk': motherMilk,
       if (grandmotherMilk != null) 'grandmotherMilk': grandmotherMilk,
     };

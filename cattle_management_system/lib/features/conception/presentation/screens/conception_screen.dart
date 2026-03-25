@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cattle_management_system/core/localization/app_text.dart';
 import 'add_pregnancy_screen.dart';
 import '../../domain/entities/conception_record.dart';
@@ -33,7 +34,10 @@ class ConceptionScreen extends StatefulWidget {
 }
 
 class _ConceptionScreenState extends State<ConceptionScreen> {
+  static const String _deliveredJourneyIdsKey =
+      'LOCALLY_DELIVERED_CONCEPTION_IDS';
   List<ConceptionRecord> _records = [];
+  final Set<String> _locallyDeliveredIds = <String>{};
   bool _isLoading = true;
   String? _errorMessage;
   String _activeFilter = _allCowsFilter;
@@ -43,7 +47,24 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
   void initState() {
     super.initState();
     context.read<CattleBloc>().add(const LoadCattleList());
-    _fetchRecords();
+    _restoreLocallyDeliveredIds();
+  }
+
+  Future<void> _restoreLocallyDeliveredIds() async {
+    final prefs = sl<SharedPreferences>();
+    final savedIds = prefs.getStringList(_deliveredJourneyIdsKey) ?? const [];
+    _locallyDeliveredIds
+      ..clear()
+      ..addAll(savedIds.where((id) => id.trim().isNotEmpty));
+    await _fetchRecords();
+  }
+
+  Future<void> _persistLocallyDeliveredIds() async {
+    final prefs = sl<SharedPreferences>();
+    await prefs.setStringList(
+      _deliveredJourneyIdsKey,
+      _locallyDeliveredIds.toList(),
+    );
   }
 
   Future<void> _fetchRecords() async {
@@ -65,7 +86,11 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
             .map((j) => ConceptionRecord.fromJson(j))
             .map((record) => _enrichRecord(record, cattleList))
             .whereType<ConceptionRecord>()
-            .where((record) => !record.isDelivered)
+            .where(
+              (record) =>
+                  !record.isDelivered &&
+                  !_locallyDeliveredIds.contains(record.id),
+            )
             .toList();
         _isLoading = false;
       });
@@ -121,6 +146,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
 
   Future<void> _recordDelivery(ConceptionRecord record) async {
     if (record.isDelivered) return;
+    FocusManager.instance.primaryFocus?.unfocus();
     final payload = await _showDeliveryDialog();
     if (payload == null) return;
 
@@ -132,9 +158,23 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
         calfGender: payload.calfGender,
         calfName: payload.calfName,
         calfTagNumber: payload.calfTagNumber,
+        calfGroup: payload.calfStatus == 'ALIVE'
+            ? (payload.calfGender == 'FEMALE' ? 'Heifer' : 'Bull Calf')
+            : null,
       );
+      await Future<void>.delayed(const Duration(milliseconds: 16));
       if (!mounted) return;
-      context.read<CattleBloc>().add(const LoadCattleList(forceRefresh: true));
+      setState(() {
+        _locallyDeliveredIds.add(record.id);
+        _records.removeWhere((item) => item.id == record.id);
+      });
+      await _persistLocallyDeliveredIds();
+      Future.microtask(() {
+        if (!mounted) return;
+        context.read<CattleBloc>().add(const LoadCattleList(forceRefresh: true));
+        context.read<CattleBloc>().add(const LoadCowsList(forceRefresh: true));
+        context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true));
+      });
       await _fetchRecords();
     } catch (_) {
       if (!mounted) return;
@@ -336,11 +376,19 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx),
+                onPressed: () async {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  await Future<void>.delayed(const Duration(milliseconds: 16));
+                  if (!ctx.mounted) return;
+                  Navigator.pop(ctx);
+                },
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  await Future<void>.delayed(const Duration(milliseconds: 16));
+                  if (!ctx.mounted) return;
                   Navigator.pop(
                     ctx,
                     _DeliveryPayload(
@@ -698,16 +746,24 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () async {
+              FocusManager.instance.primaryFocus?.unfocus();
+              await Future<void>.delayed(const Duration(milliseconds: 16));
+              if (!ctx.mounted) return;
+              Navigator.pop(ctx);
+            },
             child: Text(
               context.tr.cancel,
               style: GoogleFonts.inter(color: Colors.grey),
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              FocusManager.instance.primaryFocus?.unfocus();
+              await Future<void>.delayed(const Duration(milliseconds: 16));
+              if (!ctx.mounted) return;
               Navigator.pop(ctx);
-              _deleteRecord(id);
+              Future.microtask(() => _deleteRecord(id));
             },
             child: Text(
               context.tr.delete,

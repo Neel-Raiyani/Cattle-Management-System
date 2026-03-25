@@ -113,9 +113,9 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
             final aiBulls = state.cattleList
                 .where(
                   (c) =>
-                      c.gender.toUpperCase().startsWith('M') &&
-                      c.status.toUpperCase() == 'ACTIVE' &&
-                      c.bullView?.toUpperCase() == 'AI',
+                      c.isMaleGender &&
+                      c.isActive &&
+                      c.normalizedBullView == 'AI',
                 )
                 .toList();
 
@@ -347,9 +347,10 @@ class _AiBullCard extends StatelessWidget {
               Expanded(
                 child: GestureDetector(
                   onTap: () {
+                    final blocContext = context;
                     showDialog(
                       context: context,
-                      builder: (BuildContext context) {
+                      builder: (BuildContext dialogContext) {
                         return AlertDialog(
                           title: Text(
                             "Delete AI Bull",
@@ -367,7 +368,7 @@ class _AiBullCard extends StatelessWidget {
                                 "Cancel",
                                 style: GoogleFonts.inter(color: Colors.grey),
                               ),
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () => Navigator.pop(dialogContext),
                             ),
                             TextButton(
                               child: Text(
@@ -375,10 +376,13 @@ class _AiBullCard extends StatelessWidget {
                                 style: GoogleFonts.inter(color: Colors.red),
                               ),
                               onPressed: () {
-                                context.read<CattleBloc>().add(
-                                  DeleteCattle(cattle.id),
-                                );
-                                Navigator.pop(context);
+                                Navigator.pop(dialogContext);
+                                Future.microtask(() {
+                                  if (!blocContext.mounted) return;
+                                  blocContext.read<CattleBloc>().add(
+                                    DeleteCattle(cattle.id),
+                                  );
+                                });
                               },
                             ),
                           ],

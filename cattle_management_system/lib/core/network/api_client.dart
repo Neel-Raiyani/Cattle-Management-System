@@ -23,7 +23,7 @@ class ApiClient {
   final Map<String, DateTime> _cacheTime = {};
   final Map<String, Future<Response>> _inFlightGetRequests = {};
   final Duration _cacheTTL = const Duration(minutes: 5);
-  static const int _maxGetRetries = 3;
+  static const int _maxGetRetries = 2;
 
   void _clearGetCache() {
     _cache.clear();

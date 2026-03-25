@@ -160,10 +160,21 @@ Future<void> _onLoadCattleById(
     DeleteCattle event,
     Emitter<CattleState> emit,
   ) async {
-    emit(CattleLoading());
+    final removedIndex = _currentCattleList.indexWhere((c) => c.id == event.id);
+    Cattle? removedCattle;
+    if (removedIndex != -1) {
+      removedCattle = _currentCattleList.removeAt(removedIndex);
+      emit(CattleListLoaded(List.from(_currentCattleList), isFromCache: true));
+    }
+
     final result = await repository.deleteCattle(event.id);
-    result.fold((failure) => emit(CattleError(failure.message)), (_) {
-      _currentCattleList.removeWhere((c) => c.id == event.id);
+    result.fold((failure) {
+      if (removedCattle != null) {
+        _currentCattleList.insert(removedIndex, removedCattle);
+        emit(CattleListLoaded(List.from(_currentCattleList), isFromCache: true));
+      }
+      emit(CattleError(failure.message));
+    }, (_) {
       emit(CattleDeleted(event.id));
       emit(CattleListLoaded(List.from(_currentCattleList)));
     });

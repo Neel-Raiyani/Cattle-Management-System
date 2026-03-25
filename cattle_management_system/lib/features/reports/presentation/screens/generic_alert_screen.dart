@@ -7,13 +7,25 @@ import '../../../../core/services/api_service.dart';
 
 class GenericAlertScreen extends StatefulWidget {
   final String title;
-  const GenericAlertScreen({super.key, required this.title});
+  final String alertType;
+  final IconData icon;
+  final Color iconColor;
+
+  const GenericAlertScreen({
+    super.key,
+    required this.title,
+    required this.alertType,
+    required this.icon,
+    required this.iconColor,
+  });
 
   @override
   State<GenericAlertScreen> createState() => _GenericAlertScreenState();
 }
 
 class _GenericAlertScreenState extends State<GenericAlertScreen> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQ = '';
   bool _isLoading = true;
   List<Map<String, dynamic>> _items = [];
 
@@ -23,41 +35,18 @@ class _GenericAlertScreenState extends State<GenericAlertScreen> {
     _loadItems();
   }
 
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadItems() async {
     setState(() => _isLoading = true);
     try {
-      final title = widget.title.toLowerCase();
-      List<Map<String, dynamic>> items;
-
-      if (title.contains('insemination')) {
-        final journeys = await sl<ApiService>().getActiveJourneys();
-        items = journeys
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .where((item) => (item['conceiveDate'] ?? item['pregnancyType']) != null)
-            .toList();
-      } else if (title.contains('delivery')) {
-        final deliveries = await sl<ApiService>().getDeliveryReport();
-        items = deliveries
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList();
-      } else if (title.contains('deworming')) {
-        final deworming = await sl<ApiService>().getDewormingRecords();
-        items = deworming
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList();
-      } else if (title.contains('lab')) {
-        final labRecords = await sl<ApiService>().getLabRecords();
-        items = labRecords
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList();
-      } else {
-        items = [];
-      }
-
+      final items = await sl<ApiService>().getAlertRecords(
+        type: widget.alertType,
+      );
       if (!mounted) return;
       setState(() {
         _items = items;
@@ -70,6 +59,27 @@ class _GenericAlertScreenState extends State<GenericAlertScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  List<Map<String, dynamic>> get _filteredItems {
+    if (_searchQ.trim().isEmpty) return _items;
+    final query = _searchQ.trim().toLowerCase();
+    return _items.where((item) {
+      final animal = _map(item['animal']) ?? const <String, dynamic>{};
+      final values = [
+        item['name'],
+        item['animalName'],
+        item['tagNumber'],
+        item['animalNumber'],
+        animal['name'],
+        animal['tagNumber'],
+        animal['animalNumber'],
+      ];
+      return values.any(
+        (value) => value != null &&
+            value.toString().toLowerCase().contains(query),
+      );
+    }).toList();
   }
 
   @override
@@ -99,59 +109,138 @@ class _GenericAlertScreenState extends State<GenericAlertScreen> {
           ),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _items.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Image.asset(
-                        'assets/icons/no_data_found.png',
-                        width: 200,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.notifications_off_outlined,
-                          size: 100,
-                          color: Colors.grey,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F6F7),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search, size: 22, color: Colors.grey.shade400),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchCtrl,
+                      onChanged: (v) => setState(() => _searchQ = v),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Search here...',
+                        hintStyle: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.grey.shade400,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredItems.isEmpty
+                    ? _buildNoData()
+                    : RefreshIndicator(
+                        onRefresh: _loadItems,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                          itemCount: _filteredItems.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) => _GenericAlertCard(
+                            title: widget.title,
+                            alertType: widget.alertType,
+                            icon: widget.icon,
+                            iconColor: widget.iconColor,
+                            item: _filteredItems[index],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No Data Found',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) => _GenericAlertCard(
-                    title: widget.title,
-                    item: _items[index],
-                  ),
-                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoData() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            'assets/icons/no_data_found.png',
+            width: 200,
+            errorBuilder: (_, __, ___) => const Icon(
+              Icons.notifications_off_outlined,
+              size: 100,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No Data Found',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _GenericAlertCard extends StatelessWidget {
   final String title;
+  final String alertType;
+  final IconData icon;
+  final Color iconColor;
   final Map<String, dynamic> item;
 
-  const _GenericAlertCard({required this.title, required this.item});
+  const _GenericAlertCard({
+    required this.title,
+    required this.alertType,
+    required this.icon,
+    required this.iconColor,
+    required this.item,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final animal = _map(item['animal']) ?? _map(item['animalId']) ?? const {};
-    final imageUrl = (animal['viewUrl'] ?? animal['photoUrl'] ?? animal['imageUrl'] ?? '').toString();
-    final primaryValue = _primaryValue();
-    final secondaryValue = _secondaryValue();
+    final animal = _map(item['animal']) ?? const <String, dynamic>{};
+    final imageUrl = (animal['imageUrl'] ??
+            item['imageUrl'] ??
+            animal['viewUrl'] ??
+            animal['photoUrl'] ??
+            '')
+        .toString();
+    final name = (animal['name'] ??
+            item['name'] ??
+            item['animalName'] ??
+            item['animalId'] ??
+            'Unknown')
+        .toString();
+    final tagNumber =
+        (animal['tagNumber'] ?? item['tagNumber'] ?? item['tagNo'] ?? '-')
+            .toString();
+    final animalNumber = (animal['animalNumber'] ??
+            item['animalNumber'] ??
+            item['serialNumber'] ??
+            '-')
+        .toString();
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -189,7 +278,7 @@ class _GenericAlertCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      (animal['name'] ?? item['animalName'] ?? 'Unknown').toString(),
+                      name,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -198,16 +287,31 @@ class _GenericAlertCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        _tagBadge('Tag No.: ${(animal['tagNumber'] ?? '-').toString()}'),
+                        _tagBadge('Tag No.: $tagNumber'),
                         const SizedBox(width: 8),
-                        Text(
-                          'No. : ${(animal['animalNumber'] ?? animal['serialNumber'] ?? '-').toString()}',
-                          style: GoogleFonts.inter(fontSize: 10, color: Colors.grey),
+                        Expanded(
+                          child: Text(
+                            'No. : $animalNumber',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
             ],
           ),
@@ -217,8 +321,9 @@ class _GenericAlertCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _infoColumn(_primaryLabel(), primaryValue),
-              _infoColumn(_secondaryLabel(), secondaryValue, align: CrossAxisAlignment.end),
+              _infoColumn(_primaryLabel(), _primaryValue()),
+              _infoColumn(_secondaryLabel(), _secondaryValue(),
+                  align: CrossAxisAlignment.end),
             ],
           ),
         ],
@@ -227,36 +332,94 @@ class _GenericAlertCard extends StatelessWidget {
   }
 
   String _primaryLabel() {
-    final lower = title.toLowerCase();
-    if (lower.contains('delivery')) return 'Delivery';
-    if (lower.contains('lab')) return 'Sample Date';
-    if (lower.contains('deworming')) return 'Dose Date';
-    return 'Date';
+    switch (alertType) {
+      case 'heat':
+        return 'Heat Date';
+      case 'pregnancy-check':
+        return 'Conceive Date';
+      case 'insemination':
+        return 'Ready Since';
+      case 'delivery':
+        return 'Delivery Date';
+      case 'deworming':
+        return 'Dose Date';
+      case 'adult':
+        return 'Adult Date';
+      case 'lab-test':
+        return 'Sample Date';
+      case 'vaccination':
+        return 'Due Date';
+      default:
+        return 'Date';
+    }
   }
 
   String _secondaryLabel() {
-    final lower = title.toLowerCase();
-    if (lower.contains('lab')) return 'Result';
-    if (lower.contains('deworming')) return 'Dose Type';
-    if (lower.contains('delivery')) return 'Calf';
-    return 'Type';
+    switch (alertType) {
+      case 'heat':
+      case 'pregnancy-check':
+      case 'insemination':
+      case 'delivery':
+      case 'deworming':
+      case 'adult':
+      case 'vaccination':
+        return 'Status';
+      case 'lab-test':
+        return 'Result';
+      default:
+        return 'Details';
+    }
   }
 
   String _primaryValue() {
-    final rawDate = item['deliveryDate'] ?? item['sampleDate'] ?? item['doseDate'] ?? item['conceiveDate'];
-    final date = DateTime.tryParse((rawDate ?? '').toString());
-    if (date == null) return '-';
-    return DateFormat('dd MMM, yyyy').format(date);
+    final rawDate = item['alertDate'] ??
+        item['date'] ??
+        item['dueDate'] ??
+        item['nextDoseDate'] ??
+        item['deliveryDate'] ??
+        item['sampleDate'] ??
+        item['conceiveDate'] ??
+        item['dateOfAdult'];
+    final parsed = DateTime.tryParse((rawDate ?? '').toString());
+    if (parsed != null) {
+      return DateFormat('dd MMM, yyyy').format(parsed);
+    }
+    return (rawDate ?? '-').toString();
   }
 
   String _secondaryValue() {
-    final lower = title.toLowerCase();
-    if (lower.contains('lab')) return (item['result'] ?? '-').toString();
-    if (lower.contains('deworming')) return (item['doseType'] ?? '-').toString();
-    if (lower.contains('delivery')) {
-      return '${item['calfStatus'] ?? '-'} / ${item['calfGender'] ?? '-'}';
+    switch (alertType) {
+      case 'lab-test':
+        return (item['result'] ??
+                item['status'] ??
+                item['labTestName'] ??
+                'Pending')
+            .toString();
+      case 'vaccination':
+        return (item['vaccineName'] ?? item['status'] ?? 'Due').toString();
+      case 'deworming':
+        return (item['doseType'] ??
+                item['status'] ??
+                item['remark'] ??
+                'Due')
+            .toString();
+      case 'delivery':
+        return (item['status'] ??
+                item['calfStatus'] ??
+                item['remark'] ??
+                'Expected')
+            .toString();
+      case 'pregnancy-check':
+        return (item['status'] ?? 'Pending').toString();
+      case 'insemination':
+        return (item['status'] ?? 'Eligible').toString();
+      case 'heat':
+        return (item['status'] ?? 'Due').toString();
+      case 'adult':
+        return (item['status'] ?? 'Eligible').toString();
+      default:
+        return (item['status'] ?? '-').toString();
     }
-    return (item['pregnancyType'] ?? item['breedingType'] ?? '-').toString();
   }
 
   Widget _fallbackImage() {
@@ -287,7 +450,11 @@ class _GenericAlertCard extends StatelessWidget {
     );
   }
 
-  Widget _infoColumn(String label, String value, {CrossAxisAlignment align = CrossAxisAlignment.start}) {
+  Widget _infoColumn(
+    String label,
+    String value, {
+    CrossAxisAlignment align = CrossAxisAlignment.start,
+  }) {
     return Column(
       crossAxisAlignment: align,
       children: [

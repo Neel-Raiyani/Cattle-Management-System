@@ -405,6 +405,8 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
   }
 
   Future<void> _submitDonation() async {
+    FocusScope.of(context).unfocus();
+
     if (_selectedAnimal == null) {
       AppFeedbackService.showPopup(
         message: 'Please select an animal',
@@ -431,7 +433,7 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
       final donatedAt = DateTime.now();
       await sl<ApiService>().recordDonation(
         animalId: _selectedAnimal!.id,
-        donatedTo: _gaushalaNameCtrl.text,
+        gaushalaName: _gaushalaNameCtrl.text,
         mobileNumber: _mobileCtrl.text,
         referenceBy: _refCtrl.text.isNotEmpty ? _refCtrl.text : null,
         donatedAt: donatedAt,
@@ -451,10 +453,8 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
             ),
           ),
         );
-        AppFeedbackService.showPopup(
-          message: 'Donation record added successfully',
-          type: AppFeedbackType.success,
-        );
+        await Future<void>.delayed(const Duration(milliseconds: 16));
+        if (!mounted) return;
         Navigator.pop(context, true);
       }
     } on ServerException catch (e) {

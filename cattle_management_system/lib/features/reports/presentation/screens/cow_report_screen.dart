@@ -71,23 +71,18 @@ class _CowReportScreenState extends State<CowReportScreen> {
           final cows = allCattle
               .where(
                 (c) =>
-                    (c.gender.toLowerCase() == 'female' ||
-                        c.gender.toLowerCase() == 'cow') &&
-                    c.status.toUpperCase() == 'ACTIVE' &&
-                    c.isRetired != true,
+                    c.isFemaleGender && c.isActive,
               )
               .toList();
 
-          final heifer = cows.where((c) => c.isHeifer == true).length;
-          final pregnant = cows.where((c) => c.isPregnant == true).length;
-          final lactating = cows.where((c) => c.isLactating == true).length;
-          final dryOff = cows.where((c) => c.isDryOff == true).length;
+          final heifer = cows.where((c) => c.effectiveIsHeifer).length;
+          final pregnant = cows.where((c) => c.effectiveIsPregnant).length;
+          final lactating = cows.where((c) => c.effectiveIsLactating).length;
+          final dryOff = cows.where((c) => c.effectiveIsDryOff).length;
           final retired = allCattle
               .where(
                 (c) =>
-                    (c.gender.toLowerCase() == 'female' ||
-                        c.gender.toLowerCase() == 'cow') &&
-                    c.isRetired == true,
+                    c.isFemaleGender && c.effectiveIsRetired,
               )
               .length;
           final total = cows.length + retired;

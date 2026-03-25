@@ -126,7 +126,7 @@ class ApiService {
   /// POST /api/animal/donation — Records donation and marks animal as DONATED
   Future<Map<String, dynamic>> recordDonation({
     required String animalId,
-    required String donatedTo,
+    required String gaushalaName,
     required String mobileNumber,
     String? city,
     String? referenceBy,
@@ -135,7 +135,7 @@ class ApiService {
   }) async {
     return await _post('/api/animal/donation', {
       'animalId': animalId,
-      'donatedTo': donatedTo,
+      'gaushalaName': gaushalaName,
       'mobileNumber': mobileNumber,
       if (city != null) 'city': city,
       if (referenceBy != null) 'referenceBy': referenceBy,
@@ -185,6 +185,36 @@ class ApiService {
       ],
     );
     return items.map(_normalizeAnimalSummaryItem).toList();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // ALERT SERVICE
+  // ─────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getAlertRecords({
+    required String type,
+  }) async {
+    final endpoint = _alertEndpoint(type);
+    final data = await _get(endpoint, {});
+    var items = _extractList(
+      data,
+      primaryKeys: const [
+        'data',
+        'alerts',
+        'items',
+        'list',
+        'records',
+        'result',
+      ],
+    );
+    if (items.isEmpty && data is Map && data['data'] is Map) {
+      items = _extractList(
+        Map<String, dynamic>.from(data['data'] as Map),
+        primaryKeys: const ['alerts', 'items', 'list', 'records', 'result'],
+      );
+    }
+    final normalized = items.map(_normalizeAlertRecord).toList();
+    return _filterRecordsForVisibleAnimals(normalized);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1251,6 +1281,105 @@ class ApiService {
         distribution['remarks']?.toString() ??
         distribution['remark']?.toString();
     return distribution;
+  }
+
+  String _alertEndpoint(String type) {
+    switch (type.trim().toLowerCase()) {
+      case 'heat':
+        return '/api/alert/heat';
+      case 'pregnancy-check':
+        return '/api/alert/pregnancy-check';
+      case 'insemination':
+        return '/api/alert/insemination';
+      case 'delivery':
+        return '/api/alert/delivery';
+      case 'deworming':
+        return '/api/alert/deworming';
+      case 'adult':
+        return '/api/alert/adult';
+      case 'lab-test':
+        return '/api/alert/lab-test';
+      case 'vaccination':
+        return '/api/alert/vaccination';
+      default:
+        throw ServerException('Unsupported alert type: $type', 400);
+    }
+  }
+
+  Map<String, dynamic> _normalizeAlertRecord(Map<String, dynamic> item) {
+    final record = Map<String, dynamic>.from(item);
+    record['id'] = record['id']?.toString() ?? record['_id']?.toString() ?? '';
+
+    if (record['animal'] is Map) {
+      record['animal'] = _normalizeAnimalSummaryItem(
+        Map<String, dynamic>.from(record['animal'] as Map),
+      );
+    } else if (record['animalId'] is Map) {
+      record['animal'] = _normalizeAnimalSummaryItem(
+        Map<String, dynamic>.from(record['animalId'] as Map),
+      );
+    }
+
+    record['name'] =
+        record['name']?.toString() ??
+        record['animalName']?.toString() ??
+        (record['animal'] is Map
+            ? (record['animal']['name']?.toString())
+            : null) ??
+        'Unknown';
+    record['tagNumber'] =
+        record['tagNumber']?.toString() ??
+        record['tagno']?.toString() ??
+        record['tagNo']?.toString() ??
+        (record['animal'] is Map
+            ? (record['animal']['tagNumber']?.toString())
+            : null) ??
+        '';
+    record['animalNumber'] =
+        record['animalNumber']?.toString() ??
+        record['serialNumber']?.toString() ??
+        record['animalNo']?.toString() ??
+        (record['animal'] is Map
+            ? (record['animal']['animalNumber']?.toString())
+            : null) ??
+        '';
+    record['imageUrl'] =
+        record['imageUrl'] ??
+        record['viewUrl'] ??
+        record['photoUrl'] ??
+        (record['animal'] is Map ? record['animal']['imageUrl'] : null);
+    record['alertDate'] =
+        record['alertDate']?.toString() ??
+        record['date']?.toString() ??
+        record['dueDate']?.toString() ??
+        record['nextDoseDate']?.toString() ??
+        record['deliveryDate']?.toString() ??
+        record['conceiveDate']?.toString() ??
+        record['sampleDate']?.toString() ??
+        record['adultDate']?.toString() ??
+        record['dateOfAdult']?.toString();
+    record['status'] =
+        record['status']?.toString() ??
+        record['alertStatus']?.toString() ??
+        record['result']?.toString();
+    record['vaccineName'] =
+        record['vaccineName']?.toString() ??
+        (record['vaccine'] is Map
+            ? record['vaccine']['name']?.toString()
+            : null) ??
+        (record['vaccineId'] is Map
+            ? record['vaccineId']['name']?.toString()
+            : null);
+    record['labTestName'] =
+        record['labTestName']?.toString() ??
+        record['testName']?.toString() ??
+        (record['labTest'] is Map
+            ? record['labTest']['name']?.toString()
+            : null) ??
+        (record['labTestId'] is Map
+            ? record['labTestId']['name']?.toString()
+            : null);
+    return record;
   }
 
   Map<String, dynamic> _normalizeVaccinationRecord(

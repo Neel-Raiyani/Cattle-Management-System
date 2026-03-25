@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'ear_tag_alert_screen.dart';
-import 'adult_alert_screen.dart';
-import 'heat_alert_screen.dart';
-import 'pregnancy_checking_alert_screen.dart';
 import 'generic_alert_screen.dart';
-import 'vaccination_alert_screen.dart';
 
 class AlertHubScreen extends StatelessWidget {
   const AlertHubScreen({super.key});
@@ -55,7 +51,14 @@ class AlertHubScreen extends StatelessWidget {
             iconColor: const Color(0xFF99AA5A),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AdultAlertScreen()),
+              MaterialPageRoute(
+                builder: (_) => const GenericAlertScreen(
+                  title: 'Adult Alert',
+                  alertType: 'adult',
+                  icon: Icons.pets,
+                  iconColor: Color(0xFF99AA5A),
+                ),
+              ),
             ),
           ),
           _AlertTile(
@@ -64,7 +67,14 @@ class AlertHubScreen extends StatelessWidget {
             iconColor: Colors.pink,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const HeatAlertScreen()),
+              MaterialPageRoute(
+                builder: (_) => const GenericAlertScreen(
+                  title: 'Heat Alert',
+                  alertType: 'heat',
+                  icon: Icons.favorite,
+                  iconColor: Colors.pink,
+                ),
+              ),
             ),
           ),
           _AlertTile(
@@ -73,7 +83,14 @@ class AlertHubScreen extends StatelessWidget {
             iconColor: Colors.green,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const PregnancyCheckingAlertScreen()),
+              MaterialPageRoute(
+                builder: (_) => const GenericAlertScreen(
+                  title: 'Pregnancy Checking Alert',
+                  alertType: 'pregnancy-check',
+                  icon: Icons.pregnant_woman,
+                  iconColor: Colors.green,
+                ),
+              ),
             ),
           ),
           _AlertTile(
@@ -83,7 +100,12 @@ class AlertHubScreen extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const GenericAlertScreen(title: 'Insemination Alert'),
+                builder: (_) => const GenericAlertScreen(
+                  title: 'Insemination Alert',
+                  alertType: 'insemination',
+                  icon: Icons.biotech,
+                  iconColor: Colors.teal,
+                ),
               ),
             ),
           ),
@@ -94,7 +116,12 @@ class AlertHubScreen extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const GenericAlertScreen(title: 'Delivery Alert'),
+                builder: (_) => const GenericAlertScreen(
+                  title: 'Delivery Alert',
+                  alertType: 'delivery',
+                  icon: Icons.favorite_border,
+                  iconColor: Colors.red,
+                ),
               ),
             ),
           ),
@@ -104,7 +131,14 @@ class AlertHubScreen extends StatelessWidget {
             iconColor: Colors.blue,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const VaccinationAlertScreen()),
+              MaterialPageRoute(
+                builder: (_) => const GenericAlertScreen(
+                  title: 'Vaccination Alert',
+                  alertType: 'vaccination',
+                  icon: Icons.colorize,
+                  iconColor: Colors.blue,
+                ),
+              ),
             ),
           ),
           _AlertTile(
@@ -114,7 +148,12 @@ class AlertHubScreen extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const GenericAlertScreen(title: 'Deworming Alert'),
+                builder: (_) => const GenericAlertScreen(
+                  title: 'Deworming Alert',
+                  alertType: 'deworming',
+                  icon: Icons.spa,
+                  iconColor: Colors.lightGreen,
+                ),
               ),
             ),
           ),
@@ -125,7 +164,12 @@ class AlertHubScreen extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const GenericAlertScreen(title: 'Lab Checking Alert'),
+                builder: (_) => const GenericAlertScreen(
+                  title: 'Lab Checking Alert',
+                  alertType: 'lab-test',
+                  icon: Icons.science,
+                  iconColor: Colors.purple,
+                ),
               ),
             ),
           ),

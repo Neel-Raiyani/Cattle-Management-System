@@ -98,6 +98,20 @@ class ConceptionRecord {
     final bull = _readMap(json['bull']) ?? _readMap(json['bullId']) ?? <String, dynamic>{};
     final stage = json['currentStage']?.toString().toUpperCase();
     final status = json['status']?.toString();
+    final statusUpper = status?.toUpperCase();
+    final hasDeliveryMarkers =
+        json['deliveryDate'] != null ||
+        json['deliveredAt'] != null ||
+        json['actualDeliveryDate'] != null ||
+        json['calfStatus'] != null;
+    final delivered = json['isDelivered'] == true ||
+        stage == 'DELIVERED' ||
+        stage == 'COMPLETED' ||
+        stage == 'CLOSED' ||
+        statusUpper == 'DELIVERED' ||
+        statusUpper == 'COMPLETED' ||
+        statusUpper == 'CLOSED' ||
+        hasDeliveryMarkers;
 
     return ConceptionRecord(
       id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
@@ -122,9 +136,11 @@ class ConceptionRecord {
           (stage == 'PD_CONFIRMED'
               ? 'Pregnant'
               : 'Pregnancy Check Pending'),
-      isPregnant: json['isPregnant'] == true || stage == 'PD_CONFIRMED',
+      isPregnant:
+          !delivered &&
+          (json['isPregnant'] == true || stage == 'PD_CONFIRMED'),
       isDryOff: json['isDryOff'] == true || stage == 'DRY_OFF',
-      isDelivered: json['isDelivered'] == true || stage == 'DELIVERED',
+      isDelivered: delivered,
     );
   }
 

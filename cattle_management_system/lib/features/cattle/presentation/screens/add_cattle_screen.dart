@@ -27,6 +27,39 @@ class AddCattleScreen extends StatefulWidget {
 }
 
 class _AddCattleScreenState extends State<AddCattleScreen> {
+  static const List<String> _cowBreedOptions = [
+    'Gir',
+    'Sahiwal',
+    'Red Sindhi',
+    'Tharparkar',
+    'Kankrej',
+    'Rathi',
+    'Punganur',
+    'Badri',
+    'Hallikar',
+    'Kangayam',
+    'Hariana',
+    'Mewati',
+    'Nagori',
+    'Nimadi',
+    'Malvi',
+    'Kherigarh',
+    'Amritmahal',
+    'Umblachery',
+    'Pulikulam',
+    'Bargur',
+    'Ongole',
+    'Red Kandhari',
+    'Gaolao',
+    'Gangatiri',
+    'Siri',
+    'Motu',
+    'Vechur',
+    'Jersey',
+    'Holstein Friesian',
+    'Brown Swiss',
+  ];
+
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -70,15 +103,13 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
   List<String> _cowLabels = [];
   List<String> _bullLabels = [];
   bool _loadingParents = false;
-  List<String> _breeds = [];
-  bool _loadingBreeds = false;
+  final List<String> _breeds = List<String>.from(_cowBreedOptions);
 
   @override
   void initState() {
     super.initState();
     context.read<CowGroupBloc>().add(LoadCowGroups());
     _fetchParentAnimals();
-    _fetchBreeds();
   }
 
   @override
@@ -117,20 +148,6 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
       debugPrint('Error fetching parent animals: $e');
     } finally {
       if (mounted) setState(() => _loadingParents = false);
-    }
-  }
-
-  Future<void> _fetchBreeds() async {
-    setState(() => _loadingBreeds = true);
-    try {
-      final breeds = await sl<ApiService>().getBreeds();
-      setState(() {
-        _breeds = breeds;
-      });
-    } catch (e) {
-      debugPrint('Error fetching breeds: $e');
-    } finally {
-      if (mounted) setState(() => _loadingBreeds = false);
     }
   }
 
@@ -345,39 +362,33 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _loadingBreeds
-                          ? const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                          : _buildDropdown(
+                      child: _buildDropdown(
                         'Cow Type',
                         'Select cow type',
                         _breeds,
                         _selectedCowType,
-                            (val) => setState(() => _selectedCowType = val),
+                        (val) => setState(() => _selectedCowType = val),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: BlocBuilder<CowGroupBloc, CowGroupState>(
                         builder: (context, state) {
-                          List<String> groupNames = [
-                            'Milking',
-                            'Dry',
-                            'Heifer',
-                            'Calf',
-                          ];
-                          if (state is CowGroupLoaded && state.groups.isNotEmpty) {
-                            groupNames = state.groups
-                                .map((g) => g.name)
-                                .toList();
-                          }
+                          final groupNames = state is CowGroupLoaded
+                              ? state.groups.map((g) => g.name).toList()
+                              : const <String>[];
+                          final hasGroups = groupNames.isNotEmpty;
                           return _buildDropdown(
                             'Cow Group',
-                            'Select cow group',
+                            hasGroups
+                                ? 'Select cow group'
+                                : 'No cow groups available',
                             groupNames,
                             _selectedCowGroup,
-                                (val) => setState(() => _selectedCowGroup = val),
+                            hasGroups
+                                ? (val) =>
+                                    setState(() => _selectedCowGroup = val)
+                                : null,
                           );
                         },
                       ),

@@ -26,6 +26,39 @@ class AddBullScreen extends StatefulWidget {
 }
 
 class _AddBullScreenState extends State<AddBullScreen> {
+  static const List<String> _bullBreedOptions = [
+    'Gir',
+    'Sahiwal',
+    'Red Sindhi',
+    'Tharparkar',
+    'Kankrej',
+    'Rathi',
+    'Punganur',
+    'Badri',
+    'Hallikar',
+    'Kangayam',
+    'Hariana',
+    'Mewati',
+    'Nagori',
+    'Nimadi',
+    'Malvi',
+    'Kherigarh',
+    'Amritmahal',
+    'Umblachery',
+    'Pulikulam',
+    'Bargur',
+    'Ongole',
+    'Red Kandhari',
+    'Gaolao',
+    'Gangatiri',
+    'Siri',
+    'Motu',
+    'Vechur',
+    'Jersey',
+    'Holstein Friesian',
+    'Brown Swiss',
+  ];
+
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -58,8 +91,7 @@ class _AddBullScreenState extends State<AddBullScreen> {
   String _acquisitionSource = 'Birth';
   File? _selectedImage;
   bool _isUploading = false;
-  List<String> _breeds = [];
-  bool _loadingBreeds = false;
+  final List<String> _breeds = List<String>.from(_bullBreedOptions);
 
   // Live listing for dropdowns
   List<Map<String, dynamic>> _cows = []; // mothers
@@ -73,7 +105,6 @@ class _AddBullScreenState extends State<AddBullScreen> {
     super.initState();
     context.read<CowGroupBloc>().add(LoadCowGroups());
     _fetchParentAnimals();
-    _fetchBreeds();
   }
 
   @override
@@ -159,20 +190,6 @@ class _AddBullScreenState extends State<AddBullScreen> {
       return key;
     } catch (e) {
       return null;
-    }
-  }
-
-  Future<void> _fetchBreeds() async {
-    setState(() => _loadingBreeds = true);
-    try {
-      final breeds = await sl<ApiService>().getBreeds();
-      setState(() {
-        _breeds = breeds;
-      });
-    } catch (e) {
-      debugPrint('Error fetching breeds: $e');
-    } finally {
-      if (mounted) setState(() => _loadingBreeds = false);
     }
   }
 
@@ -298,35 +315,33 @@ class _AddBullScreenState extends State<AddBullScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _loadingBreeds
-                          ? const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                          : _buildDropdown(
+                      child: _buildDropdown(
                         'Bull Type',
                         'Select breed',
                         _breeds,
                         _selectedCowType,
-                            (val) => setState(() => _selectedCowType = val),
+                        (val) => setState(() => _selectedCowType = val),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: BlocBuilder<CowGroupBloc, CowGroupState>(
                         builder: (context, state) {
-                          List<String> groupNames = [
-                            'Bulls',
-                            'Nandi',
-                          ];
-                          if (state is CowGroupLoaded && state.groups.isNotEmpty) {
-                            groupNames = state.groups.map((g) => g.name).toList();
-                          }
+                          final groupNames = state is CowGroupLoaded
+                              ? state.groups.map((g) => g.name).toList()
+                              : const <String>[];
+                          final hasGroups = groupNames.isNotEmpty;
                           return _buildDropdown(
                             'Bull Group',
-                            'Select bull group',
+                            hasGroups
+                                ? 'Select bull group'
+                                : 'No bull groups available',
                             groupNames,
                             _selectedCowGroup,
-                                (val) => setState(() => _selectedCowGroup = val),
+                            hasGroups
+                                ? (val) =>
+                                    setState(() => _selectedCowGroup = val)
+                                : null,
                           );
                         },
                       ),
@@ -407,15 +422,17 @@ class _AddBullScreenState extends State<AddBullScreen> {
                         'Enter income',
                         _motherMilkController,
                         keyboardType: TextInputType.number,
+                        labelHeight: 44,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildTextField(
-                        'Grand Mother Milk Yield',
+                        'Grand  Mother Milk Yield',
                         'Enter income',
                         _grandmotherMilkController,
                         keyboardType: TextInputType.number,
+                        labelHeight: 44,
                       ),
                     ),
                   ],
@@ -596,13 +613,25 @@ class _AddBullScreenState extends State<AddBullScreen> {
       TextEditingController controller, {
         TextInputType? keyboardType,
         String? prefixText,
+        double? labelHeight,
       }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
+        SizedBox(
+          height: labelHeight,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -632,7 +661,7 @@ class _AddBullScreenState extends State<AddBullScreen> {
       String hint,
       List<String> items,
       String? value,
-      ValueChanged<String?> onChanged,
+      ValueChanged<String?>? onChanged,
       ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -123,14 +123,89 @@ class Cattle extends Equatable {
     return age;
   }
 
+  bool get isFemaleGender {
+    final normalized = gender.trim().toUpperCase();
+    return normalized.startsWith('F') || normalized == 'COW';
+  }
+
+  bool get isMaleGender {
+    final normalized = gender.trim().toUpperCase();
+    return normalized.startsWith('M') || normalized == 'BULL';
+  }
+
+  String get normalizedStatus => status.trim().toUpperCase();
+
+  String get normalizedAcquisitionType {
+    final normalized = (acquisitionType ?? 'BIRTH').trim().toUpperCase();
+    switch (normalized) {
+      case 'BIRTH':
+      case 'PURCHASE':
+      case 'DONATION':
+        return normalized;
+      default:
+        return 'BIRTH';
+    }
+  }
+
+  String? get normalizedBullView {
+    final trimmed = bullView?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed.toUpperCase();
+  }
+
+  String? get normalizedCowGroup {
+    final trimmed = cowGroup?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
+  }
+
   bool get isTerminalStatus {
-    final normalized = status.toUpperCase();
+    final normalized = normalizedStatus;
     return normalized == 'SOLD' ||
         normalized == 'DEAD' ||
         normalized == 'DONATED';
   }
 
-  bool get isActive => !isTerminalStatus && isRetired != true;
+  DateTime get effectiveAdultDate =>
+      dateOfAdult ??
+      DateTime(dateOfBirth.year + 1, dateOfBirth.month, dateOfBirth.day);
+
+  bool get effectiveIsRetired => isRetired == true || retiredDate != null;
+
+  bool get isActive => !isTerminalStatus && !effectiveIsRetired;
+
+  bool get effectiveIsPregnant =>
+      isActive && (isPregnant == true);
+
+  bool get effectiveIsDryOff =>
+      isActive && (isDryOff == true);
+
+  bool get effectiveIsLactating =>
+      isActive && (isLactating == true) && !effectiveIsDryOff;
+
+  bool get effectiveIsHeifer {
+    if (!isFemaleGender || !isActive) return false;
+    if (isHeifer == true) return true;
+
+    final group = normalizedCowGroup?.toLowerCase();
+    if (group == 'heifer') return true;
+
+    final parityValue = parity ?? 0;
+    final hasNoPregnancyHistory =
+        parityValue == 0 &&
+        lastDeliveryDate == null &&
+        !effectiveIsPregnant &&
+        !effectiveIsLactating &&
+        !effectiveIsDryOff;
+
+    return ageInMonths < 12 || hasNoPregnancyHistory;
+  }
+
+  bool get isBullCalf {
+    if (!isMaleGender || !isActive) return false;
+    final group = normalizedCowGroup?.toLowerCase();
+    return group == 'calf' || ageInMonths < 12;
+  }
 
   String get displayAge {
     final years = ageInYears;

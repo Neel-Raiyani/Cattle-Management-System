@@ -238,8 +238,6 @@ class CattleRepositoryImpl implements CattleRepository {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.deleteCattle(id);
-        // Refresh full cache after delete
-        await getAllCattle();
         return const Right(null);
       } on ServerException catch (e) {
         return Left(ServerFailure(e.message));

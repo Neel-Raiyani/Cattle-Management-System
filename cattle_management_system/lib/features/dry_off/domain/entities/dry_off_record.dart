@@ -58,17 +58,35 @@ class DryOffRecord {
           animal?['id']?.toString() ??
           animal?['_id']?.toString() ??
           '',
-      cowName: animal?['name']?.toString() ?? 'Unknown',
-      cowTagNumber: animal?['tagNumber']?.toString() ?? '-',
-      cowSerialNumber: animal?['serialNumber']?.toString() ?? '-',
+      cowName:
+          animal?['name']?.toString() ??
+          json['animalName']?.toString() ??
+          json['name']?.toString() ??
+          'Unknown',
+      cowTagNumber:
+          animal?['tagNumber']?.toString() ??
+          json['tagNumber']?.toString() ??
+          json['tagNo']?.toString() ??
+          '-',
+      cowSerialNumber:
+          animal?['serialNumber']?.toString() ??
+          json['serialNumber']?.toString() ??
+          json['animalNumber']?.toString() ??
+          '-',
       cowImageUrl:
-          animal?['photoUrl']?.toString() ?? animal?['imageUrl']?.toString(),
+          animal?['photoUrl']?.toString() ??
+          animal?['imageUrl']?.toString() ??
+          json['photoUrl']?.toString() ??
+          json['imageUrl']?.toString(),
       dryOffDate: json['date'] != null
           ? DateTime.parse(json['date'].toString())
           : DateTime.now(),
       reason: json['reason']?.toString() ?? 'OTHER',
       remarks: json['remarks']?.toString(),
-      isPregnant: json['isPregnant'] == true || animal?['isPregnant'] == true,
+      isPregnant:
+          json['isPregnant'] == true ||
+          animal?['isPregnant'] == true ||
+          json['pregnancyStatus']?.toString().toLowerCase() == 'pregnant',
     );
   }
 }

@@ -30,6 +30,7 @@ class DryOffScreen extends StatefulWidget {
 
 class _DryOffScreenState extends State<DryOffScreen> {
   List<DryOffRecord> _records = [];
+  List<DryOffRecord> _localRecords = [];
   bool _isLoading = true;
   String? _errorMessage;
   DateTime _fromDate = DateTime.now();
@@ -82,6 +83,18 @@ class _DryOffScreenState extends State<DryOffScreen> {
         final rawList = await sl<ApiService>().getDryOffReport(animalId: cow.id);
         for (final item in rawList) {
           var record = DryOffRecord.fromJson(item);
+          final hasMatchingAnimalId =
+              record.animalId.isNotEmpty && record.animalId == cow.id;
+          final hasMatchingTag =
+              record.cowTagNumber.trim().isNotEmpty &&
+              record.cowTagNumber.trim() != '-' &&
+              record.cowTagNumber.trim().toLowerCase() ==
+                  cow.tagNumber.trim().toLowerCase();
+
+          if (!hasMatchingAnimalId && !hasMatchingTag) {
+            continue;
+          }
+
           if (record.cowName == 'Unknown') {
             record = record.copyWith(
               animalId: record.animalId.isEmpty ? cow.id : record.animalId,
@@ -98,8 +111,18 @@ class _DryOffScreenState extends State<DryOffScreen> {
         }
       }
       if (!mounted) return;
+      final fetchedRecords = uniqueById.values.toList();
       setState(() {
-        _records = uniqueById.values.toList();
+        _localRecords = _localRecords.where((local) {
+          return !fetchedRecords.any(
+            (remote) =>
+                remote.animalId == local.animalId &&
+                remote.dryOffDate.year == local.dryOffDate.year &&
+                remote.dryOffDate.month == local.dryOffDate.month &&
+                remote.dryOffDate.day == local.dryOffDate.day,
+          );
+        }).toList();
+        _records = fetchedRecords;
         _isLoading = false;
       });
     } catch (e) {
@@ -121,7 +144,11 @@ class _DryOffScreenState extends State<DryOffScreen> {
   }
 
   List<DryOffRecord> get _filtered {
-    List<DryOffRecord> list = _records;
+    final mergedById = <String, DryOffRecord>{
+      for (final record in _records) record.id: record,
+      for (final record in _localRecords) record.id: record,
+    };
+    List<DryOffRecord> list = mergedById.values.toList();
 
     // Apply basic status filter
     if (_activeFilter == 'Pregnant') {
@@ -205,8 +232,20 @@ class _DryOffScreenState extends State<DryOffScreen> {
   Future<void> _deleteRecord(String id) async {
     setState(() => _isLoading = true);
     try {
+      if (id.startsWith('local_')) {
+        setState(() {
+          _localRecords.removeWhere((record) => record.id == id);
+          _isLoading = false;
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dry off record deleted successfully')),
+        );
+        return;
+      }
       await sl<ApiService>().deleteDryOff(id: id);
       if (!mounted) return;
+      _localRecords.removeWhere((record) => record.id == id);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Dry off record deleted successfully')),
       );
@@ -228,6 +267,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
 
   void _openAddSheet({DryOffRecord? record}) async {
     final eligibleResponse = await sl<ApiService>().getDryOffEligibleAnimals();
+    if (!mounted) return;
     final cattleById = {
       for (final cow in _getCowCandidates()) cow.id: cow,
     };
@@ -259,7 +299,21 @@ class _DryOffScreenState extends State<DryOffScreen> {
         initialRecord: record,
       ),
     );
-    if (result == true) {
+    if (!mounted) return;
+    if (result is DryOffRecord) {
+      setState(() {
+        _localRecords.removeWhere(
+          (item) =>
+              item.id == result.id ||
+              (item.animalId == result.animalId &&
+                  item.dryOffDate.year == result.dryOffDate.year &&
+                  item.dryOffDate.month == result.dryOffDate.month &&
+                  item.dryOffDate.day == result.dryOffDate.day),
+        );
+        _localRecords.insert(0, result);
+      });
+      _fetchRecords();
+    } else if (result == true) {
       _fetchRecords();
     }
   }
@@ -1036,11 +1090,27 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
         _selectedDate != null) {
       setState(() => _isSubmitting = true);
       try {
+        late final DryOffRecord localRecord;
         if (widget.initialRecord == null) {
-          await sl<ApiService>().recordDryOff(
+          final response = await sl<ApiService>().recordDryOff(
             animalId: _selectedCow!.id,
             date: _selectedDate!,
             reason: 'OTHER',
+          );
+          localRecord = DryOffRecord(
+            id:
+                response['id']?.toString() ??
+                response['_id']?.toString() ??
+                'local_${_selectedCow!.id}_${_selectedDate!.millisecondsSinceEpoch}',
+            animalId: _selectedCow!.id,
+            cowName: _selectedCow!.name,
+            cowTagNumber: _selectedCow!.tagNumber,
+            cowSerialNumber: _selectedCow!.serialNumber ?? '-',
+            cowImageUrl: _selectedCow!.imageUrl,
+            dryOffDate: _selectedDate!,
+            reason: 'OTHER',
+            remarks: null,
+            isPregnant: _selectedCow!.isPregnant ?? false,
           );
         } else {
           await sl<ApiService>().updateDryOff(
@@ -1049,6 +1119,15 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
             date: _selectedDate!,
             reason: widget.initialRecord!.reason,
             remarks: widget.initialRecord!.remarks,
+          );
+          localRecord = widget.initialRecord!.copyWith(
+            animalId: _selectedCow!.id,
+            cowName: _selectedCow!.name,
+            cowTagNumber: _selectedCow!.tagNumber,
+            cowSerialNumber: _selectedCow!.serialNumber ?? '-',
+            cowImageUrl: _selectedCow!.imageUrl,
+            dryOffDate: _selectedDate!,
+            isPregnant: _selectedCow!.isPregnant ?? false,
           );
         }
         if (mounted) {
@@ -1061,7 +1140,7 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
               ),
             ),
           );
-          Navigator.pop(context, true);
+          Navigator.pop(context, localRecord);
         }
       } on ServerException catch (e) {
         if (mounted)

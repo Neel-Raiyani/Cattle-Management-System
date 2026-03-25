@@ -50,6 +50,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
   final Color _oliveGreen = const Color(0xFF8DA94D);
   static const String _summaryCacheKey = 'CACHED_ANIMAL_SUMMARY';
   static const String _cattleCacheKey = 'CACHED_CATTLE_LIST';
+  static const String _deliveredJourneyIdsKey =
+      'LOCALLY_DELIVERED_CONCEPTION_IDS';
   Map<String, dynamic>? _summary;
   List<Cattle> _cachedCattle = [];
   int? _derivedSickAnimalCount;
@@ -199,6 +201,11 @@ class _GaushalaTabState extends State<GaushalaTab> {
         .where((c) => c.gender.toUpperCase().startsWith('F'))
         .toList();
     final registry = _DashboardAnimalRegistry.from(activeCattle);
+    final prefs = sl<SharedPreferences>();
+    final deliveredJourneyIds = (prefs.getStringList(_deliveredJourneyIdsKey) ??
+            const <String>[])
+        .where((id) => id.trim().isNotEmpty)
+        .toSet();
 
     int heatCount = 0;
     int conceptionCount = 0;
@@ -234,6 +241,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
             (item) => ConceptionRecord.fromJson(Map<String, dynamic>.from(item)),
           )
           .where((record) => !record.isDelivered)
+          .where((record) => !deliveredJourneyIds.contains(record.id))
           .where(
             (record) => registry.matches(
               animalId: record.cowId,
@@ -371,6 +379,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
     return hasFemale != hasMale;
   }
 
+  bool _isHeiferCandidate(Cattle cattle) => cattle.effectiveIsHeifer;
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CattleBloc, CattleState>(
@@ -401,7 +411,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                 'cows',
                 'total',
                 fallback: activeCattle
-                    .where((c) => c.gender.toUpperCase().startsWith('F'))
+                    .where((c) => c.isFemaleGender)
                     .length,
               ),
             );
@@ -412,7 +422,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                 'bulls',
                 'total',
                 fallback: activeCattle
-                    .where((c) => c.gender.toUpperCase().startsWith('M'))
+                    .where((c) => c.isMaleGender)
                     .length,
               ),
             );
@@ -422,25 +432,24 @@ class _GaushalaTabState extends State<GaushalaTab> {
               fallback: _nestedSummaryCount(
                 'cows',
                 'lactating',
-                fallback: activeCattle.where((c) => c.isLactating == true).length,
+                fallback: activeCattle
+                    .where((c) => c.effectiveIsLactating)
+                    .length,
               ),
             );
 
-            final int heiferCount = _summaryCount(
-              ['heiferCount'],
-              fallback: _nestedSummaryCount(
-                'cows',
-                'heifer',
-                fallback: activeCattle.where((c) => c.isHeifer == true).length,
-              ),
-            );
+            final int heiferCount = activeCattle
+                .where(_isHeiferCandidate)
+                .length;
 
             final int calvingCount = _summaryCount(
               ['pregnantCount'],
               fallback: _nestedSummaryCount(
                 'cows',
                 'pregnant',
-                fallback: activeCattle.where((c) => c.isPregnant == true).length,
+                fallback: activeCattle
+                    .where((c) => c.effectiveIsPregnant)
+                    .length,
               ),
             );
 
@@ -449,7 +458,9 @@ class _GaushalaTabState extends State<GaushalaTab> {
               fallback: _nestedSummaryCount(
                 'cows',
                 'dryOff',
-                fallback: activeCattle.where((c) => c.isDryOff == true).length,
+                fallback: activeCattle
+                    .where((c) => c.effectiveIsDryOff)
+                    .length,
               ),
             );
 

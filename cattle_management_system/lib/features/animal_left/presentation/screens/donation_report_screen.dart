@@ -7,6 +7,7 @@ import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
+import '../../../../core/services/app_feedback_service.dart';
 import 'add_donation_record_screen.dart';
 
 class DonationReportScreen extends StatefulWidget {
@@ -147,6 +148,12 @@ class _DonationReportScreenState extends State<DonationReportScreen> {
               );
               if (result == true && mounted) {
                 _loadData();
+                Future.microtask(() {
+                  AppFeedbackService.showPopup(
+                    message: 'Donation record added successfully',
+                    type: AppFeedbackType.success,
+                  );
+                });
               }
             },
             child: Container(
