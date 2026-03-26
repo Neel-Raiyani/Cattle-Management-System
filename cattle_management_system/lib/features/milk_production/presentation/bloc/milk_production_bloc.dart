@@ -32,7 +32,10 @@ class MilkProductionBloc
         enrichedEntries = entries.map((entry) {
           try {
             final matched = event.cattleList!.firstWhere((c) => c.id == entry.cattleId);
-            return entry.copyWith(cattleName: matched.name);
+            return entry.copyWith(
+              cattleName: matched.name,
+              cattleGroup: matched.normalizedCowGroup,
+            );
           } catch (_) {
             return entry;
           }

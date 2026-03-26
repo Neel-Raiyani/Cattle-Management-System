@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cattle_management_system/core/theme/app_theme.dart';
 import 'package:cattle_management_system/l10n/app_localizations.dart';
 import 'package:cattle_management_system/core/di/injection_container.dart';
-import 'package:cattle_management_system/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:cattle_management_system/core/error/exceptions.dart';
+import 'package:cattle_management_system/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:cattle_management_system/features/auth/presentation/screens/verify_otp_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -145,32 +146,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       final mobile = _mobileController.text;
 
       try {
-        // Check if user exists (Mock API)
-        // Ensure AuthLocalDataSource is available and method exists
-        final exists = await sl<AuthLocalDataSource>().isUserRegistered(mobile);
-        
+        await sl<AuthRemoteDataSource>().sendForgotPasswordOtp(
+          mobileNumber: mobile.trim(),
+        );
+
         if (!mounted) return;
         setState(() { _isLoading = false; });
-        
-        if (exists) {
-          navigator.push(
-            MaterialPageRoute(
-              builder: (context) => VerifyOtpScreen(mobileNumber: mobile),
-            ),
-          );
-        } else {
-          scaffoldMessenger.showSnackBar(
-            const SnackBar(
-              content: Text('User not found. Please register.'),
-              backgroundColor: Colors.red,
-            )
-          );
-        }
+
+        navigator.push(
+          MaterialPageRoute(
+            builder: (context) => VerifyOtpScreen(mobileNumber: mobile.trim()),
+          ),
+        );
+      } on ServerException catch (e) {
+        if (!mounted) return;
+        setState(() { _isLoading = false; });
+        scaffoldMessenger.showSnackBar(
+           SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
       } catch (e) {
         if (!mounted) return;
         setState(() { _isLoading = false; });
         scaffoldMessenger.showSnackBar(
-           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+           const SnackBar(content: Text('Failed to send OTP'), backgroundColor: Colors.red),
         );
       }
     }

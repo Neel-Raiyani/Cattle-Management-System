@@ -41,8 +41,8 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
     _selectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
 
     final state = context.read<CattleBloc>().state;
-    if (state is CattleListLoaded) {
-      _cowEntries = state.cattleList
+      if (state is CattleListLoaded) {
+        _cowEntries = state.cattleList
           .where(
             (c) =>
         c.gender.toUpperCase().startsWith('F') &&
@@ -53,6 +53,7 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
           'id': c.tagNumber,
           'animalId': c.id,
           'name': c.name,
+          'cowGroup': c.normalizedCowGroup,
           'milk': '',
           'feed': '',
         },
@@ -675,8 +676,22 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
   }
 
   List<Map<String, dynamic>> _getFilteredEntries() {
-    if (_searchQuery.isEmpty) return _cowEntries;
-    return _cowEntries.where((item) {
+    var entries = _cowEntries;
+
+    if (_selectedGroup != null && _selectedGroup!.trim().isNotEmpty) {
+      final selectedGroup = _selectedGroup!.trim().toLowerCase();
+      entries = entries
+          .where(
+            (item) =>
+                (item['cowGroup']?.toString().trim().toLowerCase() ?? '') ==
+                selectedGroup,
+          )
+          .toList();
+    }
+
+    if (_searchQuery.isEmpty) return entries;
+
+    return entries.where((item) {
       final name = (item['name'] as String).toLowerCase();
       final id = (item['id'] as String).toLowerCase();
       return name.contains(_searchQuery) || id.contains(_searchQuery);

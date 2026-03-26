@@ -37,7 +37,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
   static const String _deliveredJourneyIdsKey =
       'LOCALLY_DELIVERED_CONCEPTION_IDS';
   List<ConceptionRecord> _records = [];
-  final Set<String> _locallyDeliveredIds = <String>{};
+  final Set<String> _locallyDeliveredKeys = <String>{};
   bool _isLoading = true;
   String? _errorMessage;
   String _activeFilter = _allCowsFilter;
@@ -53,7 +53,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
   Future<void> _restoreLocallyDeliveredIds() async {
     final prefs = sl<SharedPreferences>();
     final savedIds = prefs.getStringList(_deliveredJourneyIdsKey) ?? const [];
-    _locallyDeliveredIds
+    _locallyDeliveredKeys
       ..clear()
       ..addAll(savedIds.where((id) => id.trim().isNotEmpty));
     await _fetchRecords();
@@ -63,7 +63,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
     final prefs = sl<SharedPreferences>();
     await prefs.setStringList(
       _deliveredJourneyIdsKey,
-      _locallyDeliveredIds.toList(),
+      _locallyDeliveredKeys.toList(),
     );
   }
 
@@ -89,7 +89,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
             .where(
               (record) =>
                   !record.isDelivered &&
-                  !_locallyDeliveredIds.contains(record.id),
+                  !_isLocallyDelivered(record),
             )
             .toList();
         _isLoading = false;
@@ -165,7 +165,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
       await Future<void>.delayed(const Duration(milliseconds: 16));
       if (!mounted) return;
       setState(() {
-        _locallyDeliveredIds.add(record.id);
+        _markLocallyDelivered(record);
         _records.removeWhere((item) => item.id == record.id);
       });
       await _persistLocallyDeliveredIds();
@@ -182,6 +182,38 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
         const SnackBar(content: Text('Failed to record delivery')),
       );
     }
+  }
+
+  void _markLocallyDelivered(ConceptionRecord record) {
+    for (final key in _deliveryKeysForRecord(record)) {
+      if (key.trim().isNotEmpty) {
+        _locallyDeliveredKeys.add(key);
+      }
+    }
+  }
+
+  bool _isLocallyDelivered(ConceptionRecord record) {
+    for (final key in _deliveryKeysForRecord(record)) {
+      if (key.trim().isNotEmpty && _locallyDeliveredKeys.contains(key)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Set<String> _deliveryKeysForRecord(ConceptionRecord record) {
+    final conceiveKey = record.conceiveDate.toIso8601String().split('T').first;
+    final cowId = record.cowId?.trim() ?? '';
+    final tag = record.cowTagNumber.trim().toLowerCase();
+    final name = record.cowName.trim().toLowerCase();
+    final serial = record.cowSerialNumber.trim().toLowerCase();
+    return <String>{
+      if (record.id.trim().isNotEmpty) record.id.trim(),
+      if (cowId.isNotEmpty) 'cow:$cowId|date:$conceiveKey',
+      if (tag.isNotEmpty && tag != '-') 'tag:$tag|date:$conceiveKey',
+      if (serial.isNotEmpty && serial != '-') 'serial:$serial|date:$conceiveKey',
+      if (name.isNotEmpty && name != 'unknown cow') 'name:$name|date:$conceiveKey',
+    };
   }
 
   Future<void> _deleteRecord(String id) async {

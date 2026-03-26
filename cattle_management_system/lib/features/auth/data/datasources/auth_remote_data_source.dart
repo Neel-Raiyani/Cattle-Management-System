@@ -14,6 +14,20 @@ abstract class AuthRemoteDataSource {
     int totalCattle,
   );
   Future<Map<String, dynamic>> getProfile();
+  Future<Map<String, dynamic>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  });
+  Future<Map<String, dynamic>> sendForgotPasswordOtp({
+    required String mobileNumber,
+  });
+  Future<Map<String, dynamic>> verifyForgotPasswordOtp({
+    required String mobileNumber,
+    required String otp,
+    required String newPassword,
+    required String confirmPassword,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -97,6 +111,110 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to get profile', 500);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        '/api/auth/change-password',
+        data: {
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data is Map) {
+        final data = Map<String, dynamic>.from(e.response!.data);
+        final errors = data['errors'];
+        final nestedMessage =
+            errors is List && errors.isNotEmpty && errors.first is Map
+            ? errors.first['message']?.toString()
+            : null;
+        throw ServerException(
+          nestedMessage ?? data['message'] ?? 'Failed to change password',
+          e.response!.statusCode ?? 400,
+        );
+      }
+      throw ServerException('Failed to change password', 500);
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Failed to change password', 500);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> sendForgotPasswordOtp({
+    required String mobileNumber,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        '/api/auth/forgot-password/send-otp',
+        data: {'mobileNumber': mobileNumber},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data is Map) {
+        final data = Map<String, dynamic>.from(e.response!.data);
+        final errors = data['errors'];
+        final nestedMessage =
+            errors is List && errors.isNotEmpty && errors.first is Map
+            ? errors.first['message']?.toString()
+            : null;
+        throw ServerException(
+          nestedMessage ?? data['message'] ?? 'Failed to send OTP',
+          e.response!.statusCode ?? 400,
+        );
+      }
+      throw ServerException('Failed to send OTP', 500);
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Failed to send OTP', 500);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> verifyForgotPasswordOtp({
+    required String mobileNumber,
+    required String otp,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        '/api/auth/forgot-password/verify',
+        data: {
+          'mobileNumber': mobileNumber,
+          'otp': otp,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data is Map) {
+        final data = Map<String, dynamic>.from(e.response!.data);
+        final errors = data['errors'];
+        final nestedMessage =
+            errors is List && errors.isNotEmpty && errors.first is Map
+            ? errors.first['message']?.toString()
+            : null;
+        throw ServerException(
+          nestedMessage ?? data['message'] ?? 'Failed to verify OTP',
+          e.response!.statusCode ?? 400,
+        );
+      }
+      throw ServerException('Failed to verify OTP', 500);
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Failed to verify OTP', 500);
     }
   }
 }

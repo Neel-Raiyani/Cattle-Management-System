@@ -514,20 +514,29 @@ class _CustomCattleCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            cattle.name,
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              cattle.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                          Text(
-                            '${l10n.lblParity}: ${cattle.parity ?? 0}',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.grey,
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              '${l10n.lblParity}: ${cattle.parity ?? 0}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
                           ),
                         ],
@@ -536,40 +545,52 @@ class _CustomCattleCard extends StatelessWidget {
 
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF9C4), // Yellowish
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.local_offer,
-                                  size: 12,
-                                  color: Colors.brown,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${l10n.lblTagNo} : ${cattle.tagNumber}',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: Colors.brown[800],
-                                    fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF9C4), // Yellowish
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.local_offer,
+                                    size: 12,
+                                    color: Colors.brown,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      '${l10n.lblTagNo} : ${cattle.tagNumber}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: Colors.brown[800],
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          const Spacer(),
-                          Text(
-                            '${l10n.lblNo} : ${cattle.serialNumber ?? "0000"}',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.grey,
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              '${l10n.lblNo} : ${cattle.serialNumber ?? "0000"}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
                           ),
                         ],

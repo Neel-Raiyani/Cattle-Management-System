@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/error/exceptions.dart';
+import '../../data/datasources/auth_remote_data_source.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'reset_password_screen.dart'; // Will create next
 
@@ -15,6 +18,8 @@ class VerifyOtpScreen extends StatefulWidget {
 class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   final List<TextEditingController> _controllers = List.generate(4, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
+  bool _isSubmitting = false;
+  bool _isResending = false;
 
   @override
   void dispose() {
@@ -151,10 +156,26 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                         SnackBar(content: Text('OTP Resent to ${widget.mobileNumber}')),
-                      );
+                    onPressed: _isResending ? null : () async {
+                      setState(() => _isResending = true);
+                      try {
+                        await sl<AuthRemoteDataSource>().sendForgotPasswordOtp(
+                          mobileNumber: widget.mobileNumber,
+                        );
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                           SnackBar(content: Text('OTP resent to ${widget.mobileNumber}')),
+                        );
+                      } on ServerException catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                           SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+                        );
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isResending = false);
+                        }
+                      }
                     },
                     child: Text(
                       AppLocalizations.of(context)!.resend,
@@ -174,20 +195,28 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: _isSubmitting ? null : () async {
                     final otp = _otp;
                     if (otp.length == 4) {
-                      // Validate Mock OTP
-                      if (otp == '1234') {
-                         Navigator.push(
-                           context,
-                           MaterialPageRoute(builder: (context) => ResetPasswordScreen(mobileNumber: widget.mobileNumber)),
-                         );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(content: Text('Invalid OTP. Use 1234'), backgroundColor: Colors.red),
-                        );
+                      setState(() => _isSubmitting = true);
+                      await Future<void>.delayed(Duration.zero);
+                      if (!mounted) return;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ResetPasswordScreen(
+                            mobileNumber: widget.mobileNumber,
+                            otp: otp,
+                          ),
+                        ),
+                      );
+                      if (mounted) {
+                        setState(() => _isSubmitting = false);
                       }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(content: Text('Please enter the 4-digit OTP'), backgroundColor: Colors.red),
+                      );
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -201,7 +230,16 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: Text(AppLocalizations.of(context)!.verify),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(AppLocalizations.of(context)!.verify),
                 ),
               ),
               const SizedBox(height: 24),

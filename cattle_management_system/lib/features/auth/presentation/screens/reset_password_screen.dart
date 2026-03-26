@@ -3,12 +3,18 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../data/datasources/auth_local_data_source.dart';
+import '../../../../core/error/exceptions.dart';
+import '../../data/datasources/auth_remote_data_source.dart';
 import 'login_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String mobileNumber;
-  const ResetPasswordScreen({super.key, required this.mobileNumber});
+  final String otp;
+  const ResetPasswordScreen({
+    super.key,
+    required this.mobileNumber,
+    required this.otp,
+  });
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -20,6 +26,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+  bool _isSubmitting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +119,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () async {
+                    onPressed: _isSubmitting ? null : () async {
                       if (_formKey.currentState!.validate()) {
                         if (_newPasswordController.text != _confirmPasswordController.text) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -121,19 +128,30 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           return;
                         }
 
-                        // Change Password
-                        final success = await sl<AuthLocalDataSource>().changePassword(
-                          widget.mobileNumber, 
-                          _newPasswordController.text
-                        );
-                        
-                        if (!mounted) return;
-                        if (success) {
-                          _showSuccessDialog();
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Failed to update password. User not found?'), backgroundColor: Colors.red),
+                        setState(() => _isSubmitting = true);
+                        try {
+                          await sl<AuthRemoteDataSource>().verifyForgotPasswordOtp(
+                            mobileNumber: widget.mobileNumber,
+                            otp: widget.otp,
+                            newPassword: _newPasswordController.text.trim(),
+                            confirmPassword: _confirmPasswordController.text.trim(),
                           );
+                          if (!mounted) return;
+                          _showSuccessDialog();
+                        } on ServerException catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+                          );
+                        } catch (_) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Failed to reset password'), backgroundColor: Colors.red),
+                          );
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isSubmitting = false);
+                          }
                         }
                       }
                     },
@@ -148,7 +166,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: Text(AppLocalizations.of(context)!.btnChangePassword),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(AppLocalizations.of(context)!.btnChangePassword),
                   ),
                 ),
                 const SizedBox(height: 24),

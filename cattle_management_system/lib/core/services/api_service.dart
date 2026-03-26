@@ -1,13 +1,22 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/network/api_client.dart';
 import '../../core/error/exceptions.dart';
+import '../di/injection_container.dart';
 
 /// Centralized API service for all backend calls.
 /// Each method maps directly to a backend endpoint.
 class ApiService {
   final ApiClient apiClient;
+  List<Map<String, dynamic>>? _allAnimalsCache;
+  DateTime? _allAnimalsCachedAt;
+  Future<List<Map<String, dynamic>>>? _allAnimalsInFlight;
+  static const Duration _allAnimalsCacheTtl = Duration(minutes: 2);
+  static const String _allAnimalsCacheKey = 'CACHED_VISIBLE_ANIMALS';
+  static const String _allAnimalsCacheAtKey = 'CACHED_VISIBLE_ANIMALS_AT';
   _VisibleAnimalRegistry? _visibleAnimalRegistryCache;
   DateTime? _visibleAnimalRegistryCachedAt;
   static const Duration _visibleAnimalRegistryTtl = Duration(minutes: 2);
@@ -146,6 +155,17 @@ class ApiService {
 
   /// GET /api/animal/cows — Fetch all cows
   Future<List<dynamic>> getCows({int limit = 200, int page = 1}) async {
+    if (page == 1) {
+      final animals = await _getAllAnimalsCached();
+      final cows = animals
+          .where(
+            (item) => _animalMatchesGender(item, 'F') && _isVisibleAnimal(item),
+          )
+          .take(limit)
+          .toList();
+      if (cows.isNotEmpty) return cows;
+    }
+
     final data = await _get('/api/animal/cows', {
       'limit': limit.toString(),
       'page': page.toString(),
@@ -154,11 +174,25 @@ class ApiService {
       data,
       primaryKeys: const ['cows', 'data', 'items', 'list'],
     );
-    return items.map(_normalizeAnimalSummaryItem).toList();
+    return items
+        .map(_normalizeAnimalSummaryItem)
+        .where(_isVisibleAnimal)
+        .toList();
   }
 
   /// GET /api/animal/bulls — Fetch all bulls
   Future<List<dynamic>> getBulls({int limit = 200, int page = 1}) async {
+    if (page == 1) {
+      final animals = await _getAllAnimalsCached();
+      final bulls = animals
+          .where(
+            (item) => _animalMatchesGender(item, 'M') && _isVisibleAnimal(item),
+          )
+          .take(limit)
+          .toList();
+      if (bulls.isNotEmpty) return bulls;
+    }
+
     final data = await _get('/api/animal/bulls', {
       'limit': limit.toString(),
       'page': page.toString(),
@@ -167,7 +201,10 @@ class ApiService {
       data,
       primaryKeys: const ['bulls', 'data', 'items', 'list'],
     );
-    return items.map(_normalizeAnimalSummaryItem).toList();
+    return items
+        .map(_normalizeAnimalSummaryItem)
+        .where(_isVisibleAnimal)
+        .toList();
   }
 
   /// GET /api/animal/reports/export/bulls — Bull report/export list
@@ -245,7 +282,8 @@ class ApiService {
   /// GET /api/breeding/heat/eligible — Animals eligible for heat recording
   Future<List<dynamic>> getHeatEligibleAnimals() async {
     final data = await _get('/api/breeding/heat/eligible', {});
-    return data is List ? data : (data['data'] as List? ?? []);
+    final items = data is List ? data : (data['data'] as List? ?? []);
+    return await _filterAnimalsForVisibleGaushala(items);
   }
 
   /// GET /api/breeding/reports/heat — Heat record report
@@ -294,10 +332,11 @@ class ApiService {
   /// GET /api/breeding/dry-off/eligible
   Future<List<dynamic>> getDryOffEligibleAnimals() async {
     final data = await _get('/api/breeding/dry-off/eligible', {});
-    return _extractList(
+    final items = _extractList(
       data,
       primaryKeys: const ['data', 'animals', 'items', 'list'],
     );
+    return await _filterAnimalsForVisibleGaushala(items);
   }
 
   /// GET /api/breeding/dry-off?animalId=...
@@ -423,7 +462,8 @@ class ApiService {
   /// GET /api/breeding/reports/parity/dropdown
   Future<List<dynamic>> getParityAnimalsDropdown() async {
     final data = await _get('/api/breeding/reports/parity/dropdown', {});
-    return data is List ? data : (data['data'] as List? ?? []);
+    final items = data is List ? data : (data['data'] as List? ?? []);
+    return await _filterAnimalsForVisibleGaushala(items);
   }
 
   /// GET /api/breeding/parity/{animalId}
@@ -440,13 +480,15 @@ class ApiService {
   /// GET /api/breeding/journey/eligible-cows
   Future<List<dynamic>> getEligibleCowsForJourney() async {
     final data = await _get('/api/breeding/journey/eligible-cows', {});
-    return data is List ? data : (data['data'] as List? ?? []);
+    final items = data is List ? data : (data['data'] as List? ?? []);
+    return await _filterAnimalsForVisibleGaushala(items);
   }
 
   /// GET /api/breeding/bulls/eligible
   Future<List<dynamic>> getEligibleBulls() async {
     final data = await _get('/api/breeding/bulls/eligible', {});
-    return data is List ? data : (data['data'] as List? ?? []);
+    final items = data is List ? data : (data['data'] as List? ?? []);
+    return await _filterAnimalsForVisibleGaushala(items);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -512,6 +554,16 @@ class ApiService {
     if (animalId != null) params['animalId'] = animalId;
 
     final data = await _get('/api/health/reports/medical', params);
+    final records = _extractList(
+      data,
+      primaryKeys: const ['data', 'records', 'items', 'list'],
+    );
+    return await _filterRecordsForVisibleAnimals(records);
+  }
+
+  /// GET /api/health/medical/sick — Fetch all currently sick animals
+  Future<List<dynamic>> getSickAnimals() async {
+    final data = await _get('/api/health/medical/sick', {});
     final records = _extractList(
       data,
       primaryKeys: const ['data', 'records', 'items', 'list'],
@@ -1121,7 +1173,7 @@ class ApiService {
   Future<Map<String, dynamic>> _post(String path, dynamic body) async {
     try {
       final response = await apiClient.post(path, data: body);
-      _clearVisibleAnimalRegistryCache();
+      _clearAnimalCaches();
       return response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : {'data': response.data};
@@ -1142,7 +1194,7 @@ class ApiService {
   Future<Map<String, dynamic>> _patch(String path, dynamic body) async {
     try {
       final response = await apiClient.patch(path, data: body);
-      _clearVisibleAnimalRegistryCache();
+      _clearAnimalCaches();
       return response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : {'data': response.data};
@@ -1169,7 +1221,7 @@ class ApiService {
         path,
         queryParameters: params.isEmpty ? null : params,
       );
-      _clearVisibleAnimalRegistryCache();
+      _clearAnimalCaches();
       return response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : {'data': response.data};
@@ -1461,12 +1513,7 @@ class ApiService {
       return _visibleAnimalRegistryCache!;
     }
 
-    final cows = await getCows(limit: 500);
-    final bulls = await getBulls(limit: 500);
-    final allAnimals = [
-      ...cows.whereType<Map>().map((e) => Map<String, dynamic>.from(e)),
-      ...bulls.whereType<Map>().map((e) => Map<String, dynamic>.from(e)),
-    ];
+    final allAnimals = await _getAllAnimalsCached();
 
     final byId = <String, Map<String, dynamic>>{};
     final byTag = <String, Map<String, dynamic>>{};
@@ -1505,6 +1552,153 @@ class ApiService {
   void _clearVisibleAnimalRegistryCache() {
     _visibleAnimalRegistryCache = null;
     _visibleAnimalRegistryCachedAt = null;
+  }
+
+  void _clearAnimalCaches() {
+    _allAnimalsCache = null;
+    _allAnimalsCachedAt = null;
+    _allAnimalsInFlight = null;
+    _clearVisibleAnimalRegistryCache();
+    try {
+      final prefs = sl<SharedPreferences>();
+      prefs.remove(_allAnimalsCacheKey);
+      prefs.remove(_allAnimalsCacheAtKey);
+    } catch (_) {}
+  }
+
+  Future<List<Map<String, dynamic>>> _getAllAnimalsCached() async {
+    final now = DateTime.now();
+    if (_allAnimalsCache != null &&
+        _allAnimalsCachedAt != null &&
+        now.difference(_allAnimalsCachedAt!) < _allAnimalsCacheTtl) {
+      return _allAnimalsCache!;
+    }
+
+    final persisted = _readPersistedAllAnimalsCache();
+    if (persisted != null) {
+      _allAnimalsCache = persisted;
+      _allAnimalsCachedAt = _readPersistedAllAnimalsCacheAt() ?? now;
+      _refreshAllAnimalsInBackground();
+      return persisted;
+    }
+
+    if (_allAnimalsInFlight != null) {
+      return await _allAnimalsInFlight!;
+    }
+
+    final future = _fetchAndCacheAllAnimals();
+    _allAnimalsInFlight = future;
+    try {
+      return await future;
+    } finally {
+      _allAnimalsInFlight = null;
+    }
+  }
+
+  void _refreshAllAnimalsInBackground() {
+    if (_allAnimalsInFlight != null) return;
+    _allAnimalsInFlight = _fetchAndCacheAllAnimals();
+    _allAnimalsInFlight!.whenComplete(() {
+      _allAnimalsInFlight = null;
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchAndCacheAllAnimals() async {
+    final results = await Future.wait<dynamic>([
+      _get('/api/animal/cows', {'limit': '500', 'page': '1'}),
+      _get('/api/animal/bulls', {'limit': '500', 'page': '1'}),
+    ]);
+
+    final cows = _extractList(
+      results[0],
+      primaryKeys: const ['cows', 'data', 'items', 'list'],
+    );
+    final bulls = _extractList(
+      results[1],
+      primaryKeys: const ['bulls', 'data', 'items', 'list'],
+    );
+
+    final allAnimals = [
+      ...cows.map(_normalizeAnimalSummaryItem),
+      ...bulls.map(_normalizeAnimalSummaryItem),
+    ];
+
+    _allAnimalsCache = allAnimals;
+    _allAnimalsCachedAt = DateTime.now();
+    await _persistAllAnimalsCache(allAnimals, _allAnimalsCachedAt!);
+    return allAnimals;
+  }
+
+  Future<void> _persistAllAnimalsCache(
+    List<Map<String, dynamic>> animals,
+    DateTime cachedAt,
+  ) async {
+    try {
+      final prefs = sl<SharedPreferences>();
+      await prefs.setString(_allAnimalsCacheKey, jsonEncode(animals));
+      await prefs.setString(_allAnimalsCacheAtKey, cachedAt.toIso8601String());
+    } catch (_) {}
+  }
+
+  List<Map<String, dynamic>>? _readPersistedAllAnimalsCache() {
+    try {
+      final prefs = sl<SharedPreferences>();
+      final cachedJson = prefs.getString(_allAnimalsCacheKey);
+      final cachedAtString = prefs.getString(_allAnimalsCacheAtKey);
+      if (cachedJson == null ||
+          cachedJson.isEmpty ||
+          cachedAtString == null ||
+          cachedAtString.isEmpty) {
+        return null;
+      }
+
+      final cachedAt = DateTime.tryParse(cachedAtString);
+      if (cachedAt == null ||
+          DateTime.now().difference(cachedAt) >= _allAnimalsCacheTtl) {
+        return null;
+      }
+
+      final decoded = jsonDecode(cachedJson) as List<dynamic>;
+      return decoded
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  DateTime? _readPersistedAllAnimalsCacheAt() {
+    try {
+      final prefs = sl<SharedPreferences>();
+      final raw = prefs.getString(_allAnimalsCacheAtKey);
+      if (raw == null || raw.isEmpty) return null;
+      return DateTime.tryParse(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _animalMatchesGender(Map<String, dynamic> animal, String prefix) {
+    final gender = (animal['gender'] ?? '').toString().trim().toUpperCase();
+    return gender.startsWith(prefix);
+  }
+
+  Future<List<Map<String, dynamic>>> _filterAnimalsForVisibleGaushala(
+    List<dynamic> items,
+  ) async {
+    final registry = await _getVisibleAnimalRegistry();
+    final filtered = <Map<String, dynamic>>[];
+
+    for (final raw in items.whereType<Map>()) {
+      final animal = _normalizeAnimalSummaryItem(Map<String, dynamic>.from(raw));
+      final resolved = _resolveVisibleAnimalForRecord(animal, registry);
+      if (resolved != null || _isVisibleAnimal(animal)) {
+        filtered.add(animal);
+      }
+    }
+
+    return filtered;
   }
 
   bool _isVisibleAnimal(Map<String, dynamic> animal) {

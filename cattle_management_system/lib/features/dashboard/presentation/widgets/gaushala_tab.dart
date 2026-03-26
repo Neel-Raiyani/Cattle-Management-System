@@ -23,6 +23,7 @@ import '../../../../features/animal_health/presentation/screens/deworming_inform
 import '../../../../features/animal_health/presentation/screens/lab_testing_information_screen.dart';
 import '../../../../features/photo_gallery/presentation/screens/photo_gallery_screen.dart';
 import '../../../../features/photo_gallery/presentation/screens/video_gallery_screen.dart';
+import '../../../../features/animal_health/presentation/screens/sick_animal_screen.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
@@ -202,7 +203,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
         .toList();
     final registry = _DashboardAnimalRegistry.from(activeCattle);
     final prefs = sl<SharedPreferences>();
-    final deliveredJourneyIds = (prefs.getStringList(_deliveredJourneyIdsKey) ??
+    final deliveredJourneyKeys = (prefs.getStringList(_deliveredJourneyIdsKey) ??
             const <String>[])
         .where((id) => id.trim().isNotEmpty)
         .toSet();
@@ -241,7 +242,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
             (item) => ConceptionRecord.fromJson(Map<String, dynamic>.from(item)),
           )
           .where((record) => !record.isDelivered)
-          .where((record) => !deliveredJourneyIds.contains(record.id))
+          .where((record) => !_isLocallyDeliveredConception(record, deliveredJourneyKeys))
           .where(
             (record) => registry.matches(
               animalId: record.cowId,
@@ -377,6 +378,25 @@ class _GaushalaTabState extends State<GaushalaTab> {
     final hasFemale = list.any((c) => c.gender.toUpperCase().startsWith('F'));
     final hasMale = list.any((c) => c.gender.toUpperCase().startsWith('M'));
     return hasFemale != hasMale;
+  }
+
+  bool _isLocallyDeliveredConception(
+    ConceptionRecord record,
+    Set<String> deliveredKeys,
+  ) {
+    final conceiveKey = record.conceiveDate.toIso8601String().split('T').first;
+    final cowId = record.cowId?.trim() ?? '';
+    final tag = record.cowTagNumber.trim().toLowerCase();
+    final name = record.cowName.trim().toLowerCase();
+    final serial = record.cowSerialNumber.trim().toLowerCase();
+    final candidates = <String>{
+      if (record.id.trim().isNotEmpty) record.id.trim(),
+      if (cowId.isNotEmpty) 'cow:$cowId|date:$conceiveKey',
+      if (tag.isNotEmpty && tag != '-') 'tag:$tag|date:$conceiveKey',
+      if (serial.isNotEmpty && serial != '-') 'serial:$serial|date:$conceiveKey',
+      if (name.isNotEmpty && name != 'unknown cow') 'name:$name|date:$conceiveKey',
+    };
+    return candidates.any(deliveredKeys.contains);
   }
 
   bool _isHeiferCandidate(Cattle cattle) => cattle.effectiveIsHeifer;
@@ -1040,67 +1060,77 @@ class _GaushalaTabState extends State<GaushalaTab> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBEE),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.red.shade100),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.sick_outlined,
-                            color: Colors.brown,
-                            size: 20,
-                          ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SickAnimalScreen(),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Sick Animal',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: Colors.red,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.red.shade100),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.sick_outlined,
+                              color: Colors.brown,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Sick Animal',
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: Colors.red,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                sickAnimalCount,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red,
+                                Text(
+                                  sickAnimalCount,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.chevron_right,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),

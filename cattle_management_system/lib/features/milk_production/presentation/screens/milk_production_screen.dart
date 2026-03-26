@@ -5,6 +5,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../cow_group/presentation/bloc/cow_group_bloc.dart';
 import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../cow_group/presentation/bloc/cow_group_event.dart';
+import '../../../cattle/presentation/bloc/cattle_bloc.dart';
+import '../../../cattle/presentation/bloc/cattle_state.dart';
 import '../bloc/milk_production_bloc.dart';
 import '../bloc/milk_production_event.dart';
 import '../bloc/milk_production_state.dart';
@@ -35,8 +37,10 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
   }
 
   void _loadEntries() {
+    final cattleState = context.read<CattleBloc>().state;
+    final cattleList = cattleState is CattleListLoaded ? cattleState.cattleList : null;
     context.read<MilkProductionBloc>().add(
-      LoadMilkProductionList(date: _selectedDate, cattleList: []),
+      LoadMilkProductionList(date: _selectedDate, cattleList: cattleList),
     );
   }
 
@@ -166,7 +170,12 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
 
             // Apply Group filter
             if (_selectedGroup != 'All') {
-              // ... existing group filtering logic (if any)
+              final selectedGroup = _selectedGroup.trim().toLowerCase();
+              entries = entries
+                  .where(
+                    (e) => (e.cattleGroup ?? '').trim().toLowerCase() == selectedGroup,
+                  )
+                  .toList();
             }
 
             double totalMMilk = entries.fold(0, (sum, item) => sum + item.morningMilk);

@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../data/datasources/auth_local_data_source.dart';
+import '../../../../core/error/exceptions.dart';
+import '../../data/datasources/auth_remote_data_source.dart';
 import 'forgot_password_screen.dart'; // Will create next
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureOld = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+  bool _isSubmitting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +167,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () async {
+                    onPressed: _isSubmitting ? null : () async {
                       if (_formKey.currentState!.validate()) {
                         if (_newPasswordController.text != _confirmPasswordController.text) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -173,37 +175,32 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           );
                           return;
                         }
-
-                        // Verify Old Password
-                        final currentUserMobile = await sl<AuthLocalDataSource>().getCurrentUserMobile();
-                        if (currentUserMobile == null) {
-                          // Error, not logged in?
-                          return;
-                        }
-
-                        // Use loginUser to verify old pass
-                        final user = await sl<AuthLocalDataSource>().loginUser(currentUserMobile, _oldPasswordController.text);
-                        if (user == null) {
+                        setState(() => _isSubmitting = true);
+                        try {
+                          await sl<AuthRemoteDataSource>().changePassword(
+                            oldPassword: _oldPasswordController.text.trim(),
+                            newPassword: _newPasswordController.text.trim(),
+                            confirmPassword: _confirmPasswordController.text.trim(),
+                          );
                           if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Invalid Old Password'), backgroundColor: Colors.red),
-                          );
-                          return;
-                        }
-
-                        // Change Password
-                        final success = await sl<AuthLocalDataSource>().changePassword(currentUserMobile, _newPasswordController.text);
-                        
-                        if (!mounted) return;
-                        if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Password Changed Successfully'), backgroundColor: Colors.green),
+                            const SnackBar(content: Text('Password changed successfully'), backgroundColor: Colors.green),
                           );
                           Navigator.pop(context);
-                        } else {
+                        } on ServerException catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+                          );
+                        } catch (_) {
+                          if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Failed to change password'), backgroundColor: Colors.red),
                           );
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isSubmitting = false);
+                          }
                         }
                       }
                     },
@@ -218,7 +215,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: Text(AppLocalizations.of(context)!.btnChangePassword),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(AppLocalizations.of(context)!.btnChangePassword),
                   ),
                 ),
                 const SizedBox(height: 24),

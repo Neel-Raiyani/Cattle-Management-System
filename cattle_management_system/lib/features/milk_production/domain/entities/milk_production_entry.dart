@@ -4,6 +4,7 @@ class MilkProductionEntry extends Equatable {
   final String id;
   final String cattleId; // Changed to match your screenshot error requirement
   final String cattleName;
+  final String? cattleGroup;
   final double morningMilk;
   final double eveningMilk;
   final double morningFeed;
@@ -14,6 +15,7 @@ class MilkProductionEntry extends Equatable {
     required this.id,
     required this.cattleId,
     required this.cattleName,
+    this.cattleGroup,
     required this.morningMilk,
     required this.eveningMilk,
     required this.morningFeed,
@@ -26,11 +28,13 @@ class MilkProductionEntry extends Equatable {
   // Added copyWith to allow the Bloc to attach the names found in CattleBloc
   MilkProductionEntry copyWith({
     String? cattleName,
+    String? cattleGroup,
   }) {
     return MilkProductionEntry(
       id: id,
       cattleId: cattleId,
       cattleName: cattleName ?? this.cattleName,
+      cattleGroup: cattleGroup ?? this.cattleGroup,
       morningMilk: morningMilk,
       eveningMilk: eveningMilk,
       morningFeed: morningFeed,
@@ -44,6 +48,7 @@ class MilkProductionEntry extends Equatable {
     id,
     cattleId,
     cattleName,
+    cattleGroup,
     morningMilk,
     eveningMilk,
     morningFeed,

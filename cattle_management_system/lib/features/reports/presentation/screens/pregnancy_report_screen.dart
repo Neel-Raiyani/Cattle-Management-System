@@ -87,13 +87,37 @@ class _PregnancyCow {
   }
 
   factory _PregnancyCow.fromDelivery(Map<String, dynamic> raw) {
-    final animal = _asMap(raw['animal']) ?? _asMap(raw['animalId']) ?? const {};
+    return _PregnancyCow.fromDeliveryResolved(raw, const {});
+  }
+
+  factory _PregnancyCow.fromDeliveryResolved(
+    Map<String, dynamic> raw,
+    Map<String, Map<String, dynamic>> animalRegistry,
+  ) {
+    final animal = _resolveReportAnimal(
+      raw: raw,
+      animalRegistry: animalRegistry,
+      nestedAnimal:
+          _asMap(raw['animal']) ?? _asMap(raw['animalId']) ?? const {},
+    );
     final pregnancyDate = _parseDate(raw['pregnancyDate'] ?? raw['conceiveDate']);
     final deliveryDate = _parseDate(raw['deliveryDate']);
     return _PregnancyCow(
-      name: _text(animal['name'], fallback: 'Unknown'),
-      tagNo: _text(animal['tagNumber'], fallback: '-'),
-      no: _text(animal['animalNumber'] ?? animal['serialNumber'], fallback: '-'),
+      name: _text(
+        animal['name'] ?? raw['animalName'] ?? raw['cowName'],
+        fallback: 'Unknown',
+      ),
+      tagNo: _text(
+        animal['tagNumber'] ?? raw['tagNumber'] ?? raw['animalTagNumber'],
+        fallback: '-',
+      ),
+      no: _text(
+        animal['animalNumber'] ??
+            animal['serialNumber'] ??
+            raw['animalNumber'] ??
+            raw['serialNumber'],
+        fallback: '-',
+      ),
       imagePath: _text(
         animal['viewUrl'] ?? animal['photoUrl'] ?? animal['imageUrl'],
         fallback: 'assets/icons/cow_and_calf.png',
@@ -148,6 +172,54 @@ class _PregnancyCow {
   }
 }
 
+class _DetailMetric extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _DetailMetric({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: iconColor),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+              ),
+              Text(
+                value.isEmpty ? '-' : value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: valueColor ?? Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 Map<String, dynamic>? _asMap(dynamic value) {
   if (value is Map<String, dynamic>) return value;
   if (value is Map) return Map<String, dynamic>.from(value);
@@ -157,6 +229,54 @@ Map<String, dynamic>? _asMap(dynamic value) {
 DateTime? _parseDate(dynamic value) {
   if (value == null) return null;
   return DateTime.tryParse(value.toString());
+}
+
+Map<String, dynamic> _resolveReportAnimal({
+  required Map<String, dynamic> raw,
+  required Map<String, Map<String, dynamic>> animalRegistry,
+  required Map<String, dynamic> nestedAnimal,
+}) {
+  if (nestedAnimal.isNotEmpty) {
+    final nestedId = _text(nestedAnimal['id']);
+    final nestedTag = _text(nestedAnimal['tagNumber']);
+    if (nestedId.isNotEmpty && animalRegistry.containsKey(nestedId)) {
+      return {...animalRegistry[nestedId]!, ...nestedAnimal};
+    }
+    if (nestedTag.isNotEmpty) {
+      final byTag = animalRegistry.values.firstWhere(
+        (item) => _text(item['tagNumber']) == nestedTag,
+        orElse: () => const {},
+      );
+      if (byTag.isNotEmpty) return {...byTag, ...nestedAnimal};
+    }
+    return nestedAnimal;
+  }
+
+  final rawAnimalId = _text(raw['animalId'] ?? raw['cowId'] ?? raw['id']);
+  if (rawAnimalId.isNotEmpty && animalRegistry.containsKey(rawAnimalId)) {
+    return animalRegistry[rawAnimalId]!;
+  }
+
+  final rawTag =
+      _text(raw['tagNumber'] ?? raw['animalTagNumber'] ?? raw['cowTagNumber']);
+  if (rawTag.isNotEmpty) {
+    final byTag = animalRegistry.values.firstWhere(
+      (item) => _text(item['tagNumber']) == rawTag,
+      orElse: () => const {},
+    );
+    if (byTag.isNotEmpty) return byTag;
+  }
+
+  final rawName = _text(raw['animalName'] ?? raw['cowName'] ?? raw['name']);
+  if (rawName.isNotEmpty) {
+    final byName = animalRegistry.values.firstWhere(
+      (item) => _text(item['name']).toLowerCase() == rawName.toLowerCase(),
+      orElse: () => const {},
+    );
+    if (byName.isNotEmpty) return byName;
+  }
+
+  return const {};
 }
 
 String _text(dynamic value, {String fallback = ''}) {
@@ -594,15 +714,27 @@ class _DateWiseDeliveryReportScreenState
   Future<void> _loadReport() async {
     setState(() => _isLoading = true);
     try {
-      final data = await sl<ApiService>().getDeliveryReport(
-        from: _fromDate,
-        to: _toDate,
-      );
+      final api = sl<ApiService>();
+      final results = await Future.wait<dynamic>([
+        api.getDeliveryReport(from: _fromDate, to: _toDate),
+        api.getCows(limit: 500),
+        api.getBulls(limit: 500),
+      ]);
+      final data = results[0] as List<dynamic>;
+      final registry = _buildAnimalRegistry([
+        ...(results[1] as List<dynamic>),
+        ...(results[2] as List<dynamic>),
+      ]);
       if (!mounted) return;
       setState(() {
         _cows = data
             .whereType<Map>()
-            .map((item) => _PregnancyCow.fromDelivery(Map<String, dynamic>.from(item)))
+            .map(
+              (item) => _PregnancyCow.fromDeliveryResolved(
+                Map<String, dynamic>.from(item),
+                registry,
+              ),
+            )
             .toList();
         _isLoading = false;
       });
@@ -613,6 +745,17 @@ class _DateWiseDeliveryReportScreenState
         _isLoading = false;
       });
     }
+  }
+
+  Map<String, Map<String, dynamic>> _buildAnimalRegistry(List<dynamic> items) {
+    final registry = <String, Map<String, dynamic>>{};
+    for (final item in items) {
+      final map = _asMap(item);
+      if (map == null || map.isEmpty) continue;
+      final id = _text(map['id'] ?? map['_id']);
+      if (id.isNotEmpty) registry[id] = map;
+    }
+    return registry;
   }
 
   @override
@@ -761,253 +904,275 @@ class _DateWiseDeliveryReportScreenState
 
   void _showDeliveryDetails(BuildContext context, _PregnancyCow cow) {
     final dateFmt = DateFormat('dd MMM, yyyy');
-    showModalBottomSheet(
+    showDialog<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.35),
       builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-
-              // Title
-              Text(
-                'Delivery Details',
-                style: GoogleFonts.poppins(
-                    fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 14),
-
-              // Cow info row
-              Row(
-                children: [
-                  // Avatar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: _buildAnimalImage(
-                      cow.imagePath,
-                      width: 56,
-                      height: 56,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          cow.name,
-                          style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF5F1DC),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                    color: const Color(0xFFD4B96A)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.sell_outlined,
-                                      size: 11,
-                                      color: Color(0xFFB8942C)),
-                                  const SizedBox(width: 3),
-                                  Text('Tag No.: ${cow.tagNo}',
-                                      style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: const Color(0xFFB8942C))),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Parity: ${cow.parity}',
-                        style: GoogleFonts.inter(
-                            fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'No.: ${cow.no}',
-                        style: GoogleFonts.inter(
-                            fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // Calf Status & Calf Gender
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        const Icon(Icons.pets, size: 16, color: _kGreen),
-                        const SizedBox(width: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Calf Status:',
-                                style: GoogleFonts.inter(
-                                    fontSize: 11, color: Colors.grey)),
-                            Text(cow.calfStatus,
-                                style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: _kGreen)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        const Icon(Icons.pets, size: 16, color: _kOlive),
-                        const SizedBox(width: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Calf Gender:',
-                                style: GoogleFonts.inter(
-                                    fontSize: 11, color: Colors.grey)),
-                            Text(cow.calfGender,
-                                style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Total Days & Total Milk
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today_outlined,
-                            size: 14, color: Colors.grey.shade600),
-                        const SizedBox(width: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Total Days:',
-                                style: GoogleFonts.inter(
-                                    fontSize: 11, color: Colors.grey)),
-                            Text('${cow.totalDays}',
-                                style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Icon(Icons.water_drop_outlined,
-                            size: 14, color: Colors.grey.shade600),
-                        const SizedBox(width: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Total Milk:',
-                                style: GoogleFonts.inter(
-                                    fontSize: 11, color: Colors.grey)),
-                            Text('${cow.totalMilk}',
-                                style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Note
-              if (cow.note.isNotEmpty) ...[
-                Row(
+              padding: const EdgeInsets.all(16),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.circle, size: 8, color: Colors.grey.shade600),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        cow.note,
-                        style: GoogleFonts.inter(
-                            fontSize: 12, color: Colors.grey.shade700),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Delivery Details',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(ctx),
+                          child: Container(
+                            height: 30,
+                            width: 30,
+                            decoration: const BoxDecoration(
+                              color: _kOlive,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: _buildAnimalImage(
+                              cow.imagePath,
+                              width: 48,
+                              height: 48,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        cow.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        'Parity: ${cow.parity}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.end,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFDF3C8),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.sell_outlined,
+                                              size: 10,
+                                              color: Color(0xFFB8942C),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                'Tag No.: ${cow.tagNo}',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: const Color(0xFFB8942C),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'No.: ${cow.no}',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _DetailMetric(
+                            icon: Icons.pets,
+                            iconColor: _kGreen,
+                            label: 'Calf Status:',
+                            value: cow.calfStatus,
+                            valueColor: _kGreen,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _DetailMetric(
+                            icon: Icons.pets,
+                            iconColor: _kOlive,
+                            label: 'Calf Gender:',
+                            value: cow.calfGender,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _DetailMetric(
+                            icon: Icons.calendar_today_outlined,
+                            iconColor: Colors.grey.shade600,
+                            label: 'Total Days:',
+                            value: '${cow.totalDays}',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _DetailMetric(
+                            icon: Icons.water_drop_outlined,
+                            iconColor: Colors.grey.shade600,
+                            label: 'Total Milk:',
+                            value: '${cow.totalMilk}',
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (cow.note.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        'Note:',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.description_outlined,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              cow.note,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _DatePill(
+                            label: 'Pregnant',
+                            date: cow.pregnantDate != null
+                                ? dateFmt.format(cow.pregnantDate!)
+                                : '-',
+                            color: const Color(0xFF5A9FD4),
+                            backgroundColor: const Color(0xFFE9F4FF),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _DatePill(
+                            label: 'Delivery',
+                            date: cow.deliveryDate != null
+                                ? dateFmt.format(cow.deliveryDate!)
+                                : '-',
+                            color: const Color(0xFFD49A2C),
+                            backgroundColor: const Color(0xFFFFF4DF),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-              ],
-
-              // Pregnant & Delivery date pills
-              Row(
-                children: [
-                  _DatePill(
-                    label: 'Pregnant',
-                    date: cow.pregnantDate != null
-                        ? dateFmt.format(cow.pregnantDate!)
-                        : '-',
-                    color: _kGreen,
-                  ),
-                  const SizedBox(width: 12),
-                  _DatePill(
-                    label: 'Delivery',
-                    date: cow.deliveryDate != null
-                        ? dateFmt.format(cow.deliveryDate!)
-                        : '-',
-                    color: _kOlive,
-                  ),
-                ],
               ),
-            ],
+            ),
           ),
         );
       },
@@ -1800,11 +1965,13 @@ class _DatePill extends StatelessWidget {
   final String label;
   final String date;
   final Color color;
+  final Color? backgroundColor;
 
   const _DatePill({
     required this.label,
     required this.date,
     required this.color,
+    this.backgroundColor,
   });
 
   @override
@@ -1812,7 +1979,7 @@ class _DatePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: backgroundColor ?? color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withOpacity(0.25)),
       ),
