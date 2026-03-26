@@ -37,6 +37,11 @@ enum AcquisitionType {
   DONATION
 }
 
+enum BullType {
+  GAUSHALA
+  AI
+}
+
 enum CowBreed {
   Gir
   Sahiwal
@@ -112,6 +117,7 @@ model Animal {
   retiredDate     DateTime?
 
   // Bull Specific / Pedigree
+  bullType        BullType?
   bullView        String?
   motherMilk      Float?
   grandmotherMilk Float?

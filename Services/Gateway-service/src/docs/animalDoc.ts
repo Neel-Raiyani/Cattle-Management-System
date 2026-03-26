@@ -74,6 +74,10 @@
  *           type: integer
  *           minimum: 0
  *           description: Number of times the cow has given birth.
+ *         bullType:
+ *           type: string
+ *           enum: [GAUSHALA, AI]
+ *           description: Type of bull — GAUSHALA (resident) or AI (artificial insemination). Null for females.
  *         bullView:
  *           type: string
  *           description: Specific breeding classification or characteristics for bulls.
@@ -222,6 +226,7 @@
  *         cowGroupId: { type: string, format: mongo-id, description: 'ObjectId reference to CowGroup' }
  *         birthDate: { type: string, format: date, example: '2023-01-01' }
  *         parity: { type: integer, minimum: 0, default: 0 }
+ *         bullType: { type: string, enum: [GAUSHALA, AI], description: 'Null for females' }
  *         bullView: { type: string }
  *         motherMilk: { type: number, minimum: 0 }
  *         grandmotherMilk: { type: number, minimum: 0 }
@@ -802,6 +807,15 @@
  *                 success: { type: boolean, example: true }
  *                 message: { type: string, example: 'Animal registered successfully' }
  *                 animal: { $ref: '#/components/schemas/Animal' }
+ *       400:
+ *         description: Validation error — parity > 0 not allowed for animals younger than 12 months.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 errorCode: { type: string, example: 'INVALID_PARITY_AGE' }
+ *                 message: { type: string, example: 'Parity cannot be greater than 0 for an animal younger than 12 months' }
  */
 
 /**
@@ -871,6 +885,12 @@
  *           type: string
  *           format: mongo-id
  *         description: Filter by cow group ObjectId.
+ *       - in: query
+ *         name: bullType
+ *         schema:
+ *           type: string
+ *           enum: [GAUSHALA, AI]
+ *         description: Filter by bull type — GAUSHALA or AI.
  *       - in: query
  *         name: search
  *       - in: query
@@ -999,4 +1019,13 @@
  *                 success: { type: boolean, example: true }
  *                 message: { type: string, example: 'Animal updated successfully' }
  *                 animal: { $ref: '#/components/schemas/Animal' }
+ *       400:
+ *         description: Validation error — parity > 0 not allowed for animals younger than 12 months.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 errorCode: { type: string, example: 'INVALID_PARITY_AGE' }
+ *                 message: { type: string, example: 'Parity cannot be greater than 0 for an animal younger than 12 months' }
  */

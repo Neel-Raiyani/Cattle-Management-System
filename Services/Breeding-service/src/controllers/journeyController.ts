@@ -515,19 +515,30 @@ export const getBullsForDropdown = async (req: AuthRequest, res: Response, next:
             return res.status(401).json({ message: 'Gaushala ID missing' });
         }
 
+        const { pregnancyType } = req.query;
+
         const now = new Date();
         const twelveMonthsAgo = new Date(now);
         twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
+        const where: any = {
+            gaushalaId,
+            gender: 'MALE',
+            isRetired: false,
+            isActive: true,
+            birthDate: { lte: twelveMonthsAgo }
+        };
+
+        // Filter bulls based on pregnancy type
+        if (pregnancyType === 'AI') {
+            where.bullType = 'AI';
+        } else if (pregnancyType === 'NATURAL') {
+            where.bullType = 'GAUSHALA';
+        }
+
         // Bulls that are MALE, NOT retired, and NOT calves (>= 12 months)
         const bulls = await prisma.animal.findMany({
-            where: {
-                gaushalaId,
-                gender: 'MALE',
-                isRetired: false,
-                isActive: true,
-                birthDate: { lte: twelveMonthsAgo }
-            },
+            where,
             select: {
                 id: true,
                 tagNumber: true,

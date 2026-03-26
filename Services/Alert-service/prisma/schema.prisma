@@ -94,6 +94,11 @@ enum CowBreed {
   Brown_Swiss
 }
 
+enum BullType {
+  GAUSHALA
+  AI
+}
+
 // ───────────────────────── Animal (Shadow) ─────────────────────────
 
 model Animal {

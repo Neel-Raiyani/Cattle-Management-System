@@ -15,7 +15,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
         const {
             name, tagNumber, animalNumber, gender,
             cowBreed, cowGroupId, birthDate,
-            parity,
+            parity, bullType,
             bullView, motherMilk, grandmotherMilk, isHandicapped, handicapReason,
             acquisitionType, purchaseDate, purchasedFrom, purchasePrice, ownerName, ownerMobile,
             photoUrl,
@@ -34,6 +34,15 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
         let autoHeifer = false;
 
         if (gender === 'FEMALE') {
+            // Cross-validate: parity > 0 is impossible for animals under 12 months
+            if (parityValue > 0 && now < adultDate) {
+                throw new AppError(
+                    'Parity cannot be greater than 0 for an animal younger than 12 months',
+                    400,
+                    'INVALID_PARITY_AGE'
+                );
+            }
+
             if (parityValue > 0) {
                 autoLactating = true;
                 autoHeifer = false;
@@ -70,6 +79,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
                 isDryOff: false,
                 isHeifer: autoHeifer,
                 isRetired: false,
+                bullType: gender === 'MALE' ? (bullType || null) : null,
                 bullView: bullView || null,
                 motherMilk: motherMilk ?? null,
                 grandmotherMilk: grandmotherMilk ?? null,
@@ -230,6 +240,11 @@ export const getBulls = async (req: AuthRequest, res: Response, next: NextFuncti
             where.cowGroupId = cowGroupId as string;
         }
 
+        const { bullType: bullTypeFilter } = req.query;
+        if (bullTypeFilter) {
+            where.bullType = bullTypeFilter as string;
+        }
+
         const [animalsList, total] = await Promise.all([
             prisma.animal.findMany({
                 where,
@@ -340,7 +355,7 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
         const {
             name, tagNumber, animalNumber, gender,
             cowBreed, cowGroupId, birthDate,
-            parity,
+            parity, bullType,
             bullView, motherMilk, grandmotherMilk, isHandicapped, handicapReason,
             acquisitionType, purchaseDate, purchasedFrom, purchasePrice, ownerName, ownerMobile,
             photoUrl,
@@ -366,6 +381,7 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
         if (gender !== undefined) updateData.gender = gender;
         if (cowBreed !== undefined) updateData.cowBreed = cowBreed;
         if (cowGroupId !== undefined) updateData.cowGroupId = cowGroupId;
+        if (bullType !== undefined) updateData.bullType = bullType;
 
         // Automatic Logic for Dates and Statuses
         const finalBirthDate = birthDate !== undefined ? new Date(birthDate) : existingAnimal.birthDate;
@@ -384,6 +400,15 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
             const currentAdultDate = updateData.adultDate || existingAnimal.adultDate;
             const now = new Date();
             const parityValue = finalParity ?? 0;
+
+            // Cross-validate: parity > 0 is impossible for animals under 12 months
+            if (parityValue > 0 && currentAdultDate && now < new Date(currentAdultDate)) {
+                throw new AppError(
+                    'Parity cannot be greater than 0 for an animal younger than 12 months',
+                    400,
+                    'INVALID_PARITY_AGE'
+                );
+            }
 
             if (parityValue > 0) {
                 updateData.isLactating = true;

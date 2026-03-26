@@ -63,6 +63,7 @@ export const registerAnimalValidation = [
     body('motherId').optional().isMongoId().withMessage('Mother ID must be a valid Mongo ID'),
     body('fatherId').optional().isMongoId().withMessage('Father ID must be a valid Mongo ID'),
     body('cowGroupId').optional().isMongoId().withMessage('Cow group ID must be a valid Mongo ID'),
+    body('bullType').optional().isIn(['GAUSHALA', 'AI']).withMessage('Bull type must be GAUSHALA or AI'),
     validate
 ];
 
@@ -91,6 +92,7 @@ export const updateAnimalValidation = [
     body('handicapReason').optional().isString().withMessage('Handicap reason must be a string'),
     body('parity').optional().isInt({ min: 0 }).withMessage('Parity must be a non-negative integer'),
     body('cowGroupId').optional().isMongoId().withMessage('Cow group ID must be a valid Mongo ID'),
+    body('bullType').optional().isIn(['GAUSHALA', 'AI']).withMessage('Bull type must be GAUSHALA or AI'),
     body('birthDate').optional().isISO8601().withMessage('Birth date must be a valid ISO 8601 date'),
     body('motherMilk').optional().isFloat({ min: 0 }).withMessage('Mother milk must be a positive number'),
     body('grandmotherMilk').optional().isFloat({ min: 0 }).withMessage('Grandmother milk must be a positive number'),

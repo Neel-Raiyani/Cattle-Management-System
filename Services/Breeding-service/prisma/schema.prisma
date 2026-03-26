@@ -61,6 +61,11 @@ enum AcquisitionType {
   DONATION
 }
 
+enum BullType {
+  GAUSHALA
+  AI
+}
+
 enum CowBreed {
   Gir
   Sahiwal
@@ -127,6 +132,7 @@ model Animal {
   isHeifer        Boolean   @default(false)
   isRetired       Boolean   @default(false)
 
+  bullType        BullType?
   bullView        String?
   motherMilk      Float?
   grandmotherMilk Float?

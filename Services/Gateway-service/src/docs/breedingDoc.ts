@@ -786,12 +786,18 @@
  * /api/breeding/bulls/eligible:
  *   get:
  *     summary: Get Breeding Bulls
- *     description: Returns a list of bulls available for NATUAL breeding selection.
+ *     description: Returns a list of bulls available for breeding selection, filtered by pregnancy type.
  *     tags: [Breeding Service]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/GaushalaIdHeader'
+ *       - in: query
+ *         name: pregnancyType
+ *         schema:
+ *           type: string
+ *           enum: [AI, NATURAL]
+ *         description: Filter bulls by pregnancy type. AI returns AI bulls, NATURAL returns Gaushala bulls.
  *     responses:
  *       200:
  *         description: List of bulls for dropdown.
