@@ -12,6 +12,7 @@ import '../bloc/cattle_bloc.dart';
 import '../bloc/cattle_event.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/media_file_utils.dart';
 
 class EditBullDetailsScreen extends StatefulWidget {
   final Cattle cattle;
@@ -127,7 +128,7 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
       final fileName = imageFile.path
           .split(Platform.isWindows ? '\\' : '/')
           .last;
-      const contentType = 'image/jpeg';
+      final contentType = resolveMimeTypeFromFileName(fileName);
 
       final presignedData = await sl<ApiService>().getPresignedUrl(
         fileName: fileName,
@@ -135,7 +136,8 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
         type: 'PHOTO',
       );
       final uploadUrl = presignedData['uploadUrl'] as String?;
-      final key = presignedData['key'] as String?;
+      final key =
+          presignedData['viewUrl'] as String? ?? presignedData['key'] as String?;
 
       if (uploadUrl == null || key == null) return null;
 

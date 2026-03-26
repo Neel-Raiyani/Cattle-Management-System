@@ -25,6 +25,10 @@ class ApiClient {
   final Duration _cacheTTL = const Duration(minutes: 5);
   static const int _maxGetRetries = 2;
 
+  bool _isNonCacheableGet(String path) {
+    return path == '/api/animal/media/presigned-url';
+  }
+
   void _clearGetCache() {
     _cache.clear();
     _cacheTime.clear();
@@ -61,7 +65,7 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           // Cache check for GET requests
-          if (options.method == 'GET') {
+          if (options.method == 'GET' && !_isNonCacheableGet(options.path)) {
             final cacheKey = "${options.path}${options.queryParameters}";
             final cachedResponse = _cache[cacheKey];
             final cachedTime = _cacheTime[cacheKey];
@@ -89,6 +93,7 @@ class ApiClient {
         onResponse: (response, handler) {
           // Record successful GET responses into memory cache
           if (response.requestOptions.method == 'GET' &&
+              !_isNonCacheableGet(response.requestOptions.path) &&
               response.statusCode == 200) {
             final cacheKey =
                 "${response.requestOptions.path}${response.requestOptions.queryParameters}";
@@ -238,6 +243,18 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
+    if (_isNonCacheableGet(path)) {
+      try {
+        return await _executeGetWithRetry(
+          path,
+          queryParameters: queryParameters,
+          options: options,
+        );
+      } on DioException catch (e) {
+        throw _handleDioError(e);
+      }
+    }
+
     final cacheKey =
         '$path${queryParameters ?? const <String, dynamic>{}}${options?.responseType ?? ResponseType.json}';
 

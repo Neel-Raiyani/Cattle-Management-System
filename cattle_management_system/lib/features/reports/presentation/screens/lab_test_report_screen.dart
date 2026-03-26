@@ -91,17 +91,32 @@ class _AnimalWiseLabTestReportScreenState
   }
 
   Future<void> _loadAnimals() async {
-    setState(() => _isLoadingAnimals = true);
+    setState(() {
+      _isLoadingAnimals = true;
+      _records = [];
+    });
     try {
       final data = _animalType == 'Cow'
           ? await sl<ApiService>().getCows(limit: 500)
           : await sl<ApiService>().getBulls(limit: 500);
       if (!mounted) return;
+      final animals = data
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+      final hasSelectedAnimal = _selectedAnimalId != null &&
+          animals.any(
+            (animal) =>
+                (animal['id'] ?? animal['_id'])?.toString() == _selectedAnimalId,
+          );
       setState(() {
-        _animals = data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _animals = animals;
+        if (!hasSelectedAnimal) {
+          _selectedAnimalId = null;
+        }
         _isLoadingAnimals = false;
       });
-      if (_selectedAnimalId != null) {
+      if (hasSelectedAnimal && _selectedAnimalId != null) {
         await _loadRecords();
       }
     } catch (e) {
@@ -112,7 +127,15 @@ class _AnimalWiseLabTestReportScreenState
   }
 
   Future<void> _loadRecords() async {
-    if (_selectedAnimalId == null) return;
+    if (_selectedAnimalId == null || _selectedAnimalId!.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _records = [];
+          _isLoadingRecords = false;
+        });
+      }
+      return;
+    }
     setState(() => _isLoadingRecords = true);
     try {
       final data = await sl<ApiService>().getLabReport(animalId: _selectedAnimalId);
@@ -136,6 +159,8 @@ class _AnimalWiseLabTestReportScreenState
               animal?['_id']?.toString() == _selectedAnimalId,
           orElse: () => null,
         );
+    final hasExplicitSelection =
+        _selectedAnimalId != null && _selectedAnimalId!.trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -203,14 +228,16 @@ class _AnimalWiseLabTestReportScreenState
               ],
             ),
           ),
-          if (selectedAnimal != null)
+          if (hasExplicitSelection && selectedAnimal != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _AnimalHeaderCard(animal: selectedAnimal),
             ),
-          if (selectedAnimal != null) const SizedBox(height: 12),
+          if (hasExplicitSelection && selectedAnimal != null) const SizedBox(height: 12),
           Expanded(
-            child: _isLoadingRecords
+            child: !hasExplicitSelection
+                ? const _NoDataFound()
+                : _isLoadingRecords
                 ? const Center(child: CircularProgressIndicator())
                 : _records.isEmpty
                     ? const _NoDataFound()
@@ -835,13 +862,25 @@ class _NoDataFound extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(
-        'No Data Found',
-        style: GoogleFonts.poppins(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: Colors.grey,
-        ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/icons/no_data_found.png',
+            width: 150,
+            height: 150,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No Data Found',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
+            ),
+          ),
+        ],
       ),
     );
   }

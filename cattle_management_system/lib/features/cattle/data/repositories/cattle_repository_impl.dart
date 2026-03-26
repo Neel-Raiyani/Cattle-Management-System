@@ -203,8 +203,14 @@ class CattleRepositoryImpl implements CattleRepository {
       try {
         final newCattle = await remoteDataSource.addCattle(cattle);
         // Refresh full cache after add
-        await getAllCattle();
-        return Right(newCattle);
+        final refreshed = await getAllCattle();
+        return refreshed.fold(
+          (_) => Right(newCattle),
+          (items) {
+            final index = items.indexWhere((item) => item.id == newCattle.id);
+            return Right(index == -1 ? newCattle : items[index]);
+          },
+        );
       } on ServerException catch (e) {
         return Left(ServerFailure(e.message));
       } on Exception catch (e) {
@@ -221,8 +227,14 @@ class CattleRepositoryImpl implements CattleRepository {
       try {
         final updatedCattle = await remoteDataSource.updateCattle(cattle);
         // Refresh full cache after update
-        await getAllCattle();
-        return Right(updatedCattle);
+        final refreshed = await getAllCattle();
+        return refreshed.fold(
+          (_) => Right(updatedCattle),
+          (items) {
+            final index = items.indexWhere((item) => item.id == updatedCattle.id);
+            return Right(index == -1 ? updatedCattle : items[index]);
+          },
+        );
       } on ServerException catch (e) {
         return Left(ServerFailure(e.message));
       } catch (e) {

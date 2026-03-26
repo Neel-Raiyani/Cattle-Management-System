@@ -16,6 +16,7 @@ import '../../../cow_group/presentation/bloc/cow_group_bloc.dart';
 import '../../../cow_group/presentation/bloc/cow_group_event.dart';
 import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../../core/utils/app_feedback.dart';
+import '../../../../core/utils/media_file_utils.dart';
 
 class AddAiBullScreen extends StatefulWidget {
   const AddAiBullScreen({super.key});
@@ -59,7 +60,7 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
       final fileName = imageFile.path
           .split(Platform.isWindows ? '\\' : '/')
           .last;
-      const contentType = 'image/jpeg';
+      final contentType = resolveMimeTypeFromFileName(fileName);
 
       final presignedData = await sl<ApiService>().getPresignedUrl(
         fileName: fileName,
@@ -67,7 +68,8 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
         type: 'PHOTO',
       );
       final uploadUrl = presignedData['uploadUrl'] as String?;
-      final key = presignedData['key'] as String?;
+      final key =
+          presignedData['viewUrl'] as String? ?? presignedData['key'] as String?;
 
       if (uploadUrl == null || key == null) return null;
 

@@ -51,6 +51,13 @@ class CattleModel extends Cattle {
   });
 
   factory CattleModel.fromJson(Map<String, dynamic> json) {
+    final mediaMap = json['media'] is Map
+        ? Map<String, dynamic>.from(json['media'] as Map)
+        : json['animalMedia'] is Map
+            ? Map<String, dynamic>.from(json['animalMedia'] as Map)
+            : json['photo'] is Map
+                ? Map<String, dynamic>.from(json['photo'] as Map)
+                : <String, dynamic>{};
     final birthDateRaw = json['birthDate'] ??
         json['dateOfBirth'] ??
         json['dob'] ??
@@ -60,7 +67,13 @@ class CattleModel extends Cattle {
     final imageUrlRaw = json['viewUrl'] ??
         json['imageUrl'] ??
         json['photoUrl'] ??
-        json['photo'];
+        (json['photo'] is String ? json['photo'] : null) ??
+        mediaMap['viewUrl'] ??
+        mediaMap['imageUrl'] ??
+        mediaMap['photoUrl'] ??
+        mediaMap['url'] ??
+        mediaMap['location'] ??
+        mediaMap['path'];
     DateTime _parseDate(dynamic val) {
       if (val == null) return DateTime.now();
       final dateStr = val.toString();

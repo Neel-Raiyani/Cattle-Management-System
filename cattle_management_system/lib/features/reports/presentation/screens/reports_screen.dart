@@ -22,12 +22,13 @@ class ReportsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: const Color(0xFF99AA5A)),
             ),
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
@@ -49,7 +50,8 @@ class ReportsScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
           _ReportTile(
-            icon: 'C',
+            iconWidget: Image.asset('assets/icons/mother_cow.png', width: 26, height: 26, fit: BoxFit.contain),
+            iconBgColor: const Color(0xFFF6F8EC),
             label: context.tr.cowReport,
             onTap: () => Navigator.push(
               context,
@@ -57,7 +59,8 @@ class ReportsScreen extends StatelessWidget {
             ),
           ),
           _ReportTile(
-            icon: 'B',
+            iconWidget: Image.asset('assets/icons/father_cow.png', width: 26, height: 26, fit: BoxFit.contain),
+            iconBgColor: const Color(0xFFF7F1EB),
             label: context.tr.bullReport,
             onTap: () => Navigator.push(
               context,
@@ -65,7 +68,8 @@ class ReportsScreen extends StatelessWidget {
             ),
           ),
           _ReportTile(
-            icon: 'M',
+            iconWidget: Image.asset('assets/icons/milk_bottle.png', width: 26, height: 26, fit: BoxFit.contain),
+            iconBgColor: const Color(0xFFFFF8E7),
             label: context.tr.milkReport,
             onTap: () => Navigator.push(
               context,
@@ -73,7 +77,8 @@ class ReportsScreen extends StatelessWidget {
             ),
           ),
           _ReportTile(
-            icon: 'H',
+            iconWidget: Image.asset('assets/icons/heat_record_report.png', width: 26, height: 26, fit: BoxFit.contain),
+            iconBgColor: const Color(0xFFFFF0F5),
             label: context.tr.heatRecordReport,
             onTap: () => Navigator.push(
               context,
@@ -81,7 +86,8 @@ class ReportsScreen extends StatelessWidget {
             ),
           ),
           _ReportTile(
-            icon: 'P',
+            iconWidget: Image.asset('assets/icons/pregnancy_report.png', width: 26, height: 26, fit: BoxFit.contain),
+            iconBgColor: const Color(0xFFE8FAF0),
             label: context.tr.pregnancyReport,
             onTap: () => Navigator.push(
               context,
@@ -91,7 +97,8 @@ class ReportsScreen extends StatelessWidget {
             ),
           ),
           _ReportTile(
-            icon: 'D',
+            iconWidget: Image.asset('assets/icons/deworming.png', width: 26, height: 26, fit: BoxFit.contain),
+            iconBgColor: const Color(0xFFF3F7EC),
             label: context.tr.dewormingReport,
             onTap: () => Navigator.push(
               context,
@@ -101,7 +108,8 @@ class ReportsScreen extends StatelessWidget {
             ),
           ),
           _ReportTile(
-            icon: 'Md',
+            iconWidget: Image.asset('assets/icons/medical.png', width: 26, height: 26, fit: BoxFit.contain),
+            iconBgColor: const Color(0xFFFFEBEB),
             label: context.tr.medicalReport,
             onTap: () => Navigator.push(
               context,
@@ -109,7 +117,8 @@ class ReportsScreen extends StatelessWidget {
             ),
           ),
           _ReportTile(
-            icon: 'V',
+            iconWidget: Image.asset('assets/icons/vaccine.png', width: 26, height: 26, fit: BoxFit.contain),
+            iconBgColor: const Color(0xFFEDF3FF),
             label: context.tr.vaccinationReport,
             onTap: () => Navigator.push(
               context,
@@ -119,7 +128,8 @@ class ReportsScreen extends StatelessWidget {
             ),
           ),
           _ReportTile(
-            icon: 'L',
+            iconWidget: const Icon(Icons.science_rounded, color: Colors.indigo, size: 26),
+            iconBgColor: const Color(0xFFF0F2FD),
             label: context.tr.labTestingReport,
             onTap: () => Navigator.push(
               context,
@@ -145,12 +155,14 @@ class ReportsScreen extends StatelessWidget {
 }
 
 class _ReportTile extends StatelessWidget {
-  final String icon;
+  final Widget iconWidget;
+  final Color iconBgColor;
   final String label;
   final VoidCallback onTap;
 
   const _ReportTile({
-    required this.icon,
+    required this.iconWidget,
+    required this.iconBgColor,
     required this.label,
     required this.onTap,
   });
@@ -164,49 +176,50 @@ class _ReportTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.10),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: Colors.grey.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        border: Border.all(color: Colors.grey.withOpacity(0.08)),
       ),
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         leading: Container(
-          width: 44,
-          height: 44,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF5F6F7),
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: iconBgColor,
             shape: BoxShape.circle,
           ),
           child: Center(
-            child: Text(
-              icon,
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF99AA5A),
-              ),
-            ),
+            child: iconWidget,
           ),
         ),
         title: Text(
           label,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
-            fontSize: 15,
+            fontSize: 16,
+            color: Colors.black,
           ),
         ),
         trailing: Container(
-          width: 30,
-          height: 30,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF5F6F7),
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Colors.white,
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.12),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+          child: const Icon(Icons.chevron_right, size: 20, color: Colors.black54),
         ),
       ),
     );

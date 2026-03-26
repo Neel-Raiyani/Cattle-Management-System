@@ -1,6 +1,12 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection_container.dart';
@@ -37,7 +43,10 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
   String _selectedResult = 'POSITIVE';
   bool _isSubmitting = false;
   bool _isLoadingLabTests = true;
+  bool _isUploadingAttachment = false;
   String? _labTestLoadError;
+  File? _selectedAttachment;
+  String? _uploadedAttachmentKey;
   List<Map<String, dynamic>> _labTests = [];
 
   static const List<String> _results = ['POSITIVE', 'NEGATIVE'];
@@ -86,6 +95,107 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
     _otherLabTestCtrl.dispose();
     _remarkCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAttachment() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
+      );
+      if (result == null || result.files.isEmpty) return;
+      final path = result.files.single.path;
+      if (path == null || path.isEmpty) {
+        AppFeedback.showError(context, 'Unable to read selected attachment.');
+        return;
+      }
+      setState(() {
+        _selectedAttachment = File(path);
+        _uploadedAttachmentKey = null;
+      });
+    } on MissingPluginException {
+      await _pickImageAttachmentFallback();
+    } catch (e) {
+      AppFeedback.showError(
+        context,
+        'Unable to select attachment: ${e.toString().replaceFirst('Exception: ', '')}',
+      );
+    }
+  }
+
+  void _removeAttachment() {
+    setState(() {
+      _selectedAttachment = null;
+      _uploadedAttachmentKey = null;
+    });
+  }
+
+  Future<String?> _uploadAttachmentAndGetKey(File file) async {
+    setState(() => _isUploadingAttachment = true);
+    try {
+      final fileName = file.path.split(Platform.pathSeparator).last;
+      final extension = fileName.split('.').last.toLowerCase();
+      final contentType = switch (extension) {
+        'pdf' => 'application/pdf',
+        'jpg' || 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'doc' => 'application/msword',
+        'docx' =>
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        _ => 'application/octet-stream',
+      };
+
+      final presignedData = await sl<ApiService>().getPresignedUrl(
+        fileName: fileName,
+        contentType: contentType,
+        type: 'DOC',
+      );
+      final uploadUrl = presignedData['uploadUrl']?.toString();
+      final key =
+          presignedData['viewUrl']?.toString() ?? presignedData['key']?.toString();
+      if (uploadUrl == null || uploadUrl.isEmpty || key == null || key.isEmpty) {
+        throw Exception('Attachment upload session could not be created.');
+      }
+
+      final fileBytes = await file.readAsBytes();
+      final response = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {'Content-Type': contentType},
+        body: fileBytes,
+      );
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Attachment upload failed with status ${response.statusCode}.');
+      }
+      return key;
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingAttachment = false);
+      }
+    }
+  }
+
+  Future<void> _pickImageAttachmentFallback() async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+      );
+      if (picked == null) return;
+      setState(() {
+        _selectedAttachment = File(picked.path);
+        _uploadedAttachmentKey = null;
+      });
+      if (!mounted) return;
+      AppFeedback.showWarning(
+        context,
+        'Document picker is not available in the current build. Image attachment was opened as a fallback. Run flutter pub get and do a full restart to enable PDF/DOC selection.',
+      );
+    } catch (e) {
+      AppFeedback.showError(
+        context,
+        'Attachment picker is not available. Run flutter pub get and do a full restart.',
+      );
+    }
   }
 
   Future<void> _loadLabTests() async {
@@ -229,6 +339,12 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
         resolvedLabTestId = _selectedLabTestId!;
       }
 
+      String? attachmentKey = _uploadedAttachmentKey;
+      if (_selectedAttachment != null && (attachmentKey == null || attachmentKey.isEmpty)) {
+        attachmentKey = await _uploadAttachmentAndGetKey(_selectedAttachment!);
+        _uploadedAttachmentKey = attachmentKey;
+      }
+
       if (widget.existingRecord == null) {
         await sl<ApiService>().addLabRecord(
           animalId: _selectedAnimal!.id,
@@ -236,6 +352,7 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
           sampleDate: _sampleDate,
           resultDate: _resultDate,
           result: _selectedResult,
+          attachmentUrl: attachmentKey,
           remark: _remarkCtrl.text.trim().isEmpty ? null : _remarkCtrl.text.trim(),
         );
       } else {
@@ -245,6 +362,7 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
           sampleDate: _sampleDate,
           resultDate: _resultDate,
           result: _selectedResult,
+          attachmentUrl: attachmentKey,
           remark: _remarkCtrl.text.trim().isEmpty ? null : _remarkCtrl.text.trim(),
         );
       }
@@ -396,6 +514,9 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
                   }
                 },
               ),
+              const SizedBox(height: 16),
+              _buildLabel('Result Attachment'),
+              _buildAttachmentPicker(),
               const SizedBox(height: 16),
               _buildLabel('Remark'),
               _buildTextField(
@@ -671,6 +792,83 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentPicker() {
+    final attachmentName = _selectedAttachment?.path.split(Platform.pathSeparator).last;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F6F7),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_upload_outlined, color: Colors.grey, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            attachmentName == null ? 'Upload Attachment' : attachmentName,
+            style: GoogleFonts.inter(
+              color: Colors.grey.shade700,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (_isUploadingAttachment) ...[
+            const SizedBox(height: 12),
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF99AA5A),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: _isSubmitting ? null : _pickAttachment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF99AA5A),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: Text(
+                    attachmentName == null ? 'Select Attachment' : 'Change Attachment',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                if (attachmentName != null)
+                  TextButton(
+                    onPressed: _isSubmitting ? null : _removeAttachment,
+                    child: Text(
+                      'Remove',
+                      style: GoogleFonts.poppins(
+                        color: Colors.red.shade400,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

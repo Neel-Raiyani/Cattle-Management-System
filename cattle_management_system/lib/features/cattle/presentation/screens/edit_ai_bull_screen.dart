@@ -11,6 +11,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../domain/entities/cattle.dart';
 import '../bloc/cattle_bloc.dart';
 import '../bloc/cattle_event.dart';
+import '../../../../core/utils/media_file_utils.dart';
 
 class EditAiBullScreen extends StatefulWidget {
   final Cattle cattle;
@@ -88,7 +89,7 @@ class _EditAiBullScreenState extends State<EditAiBullScreen> {
       final fileName = imageFile.path
           .split(Platform.isWindows ? '\\' : '/')
           .last;
-      const contentType = 'image/jpeg';
+      final contentType = resolveMimeTypeFromFileName(fileName);
 
       final presignedData = await sl<ApiService>().getPresignedUrl(
         fileName: fileName,
@@ -96,7 +97,8 @@ class _EditAiBullScreenState extends State<EditAiBullScreen> {
         type: 'PHOTO',
       );
       final uploadUrl = presignedData['uploadUrl'] as String?;
-      final key = presignedData['key'] as String?;
+      final key =
+          presignedData['viewUrl'] as String? ?? presignedData['key'] as String?;
 
       if (uploadUrl == null || key == null) return null;
 

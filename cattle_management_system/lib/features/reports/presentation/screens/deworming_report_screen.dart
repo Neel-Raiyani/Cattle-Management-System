@@ -2,191 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-// ============================================================
-// CONSTANTS & COLORS
-// ============================================================
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/utils/app_feedback.dart';
+
 const _kOlive = Color(0xFF99AA5A);
 const _kLightGrey = Color(0xFFF5F6F7);
-
-class _NoDataFound extends StatelessWidget {
-  const _NoDataFound();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset('assets/icons/no_data_found.png', width: 200),
-          const SizedBox(height: 16),
-          Text(
-            'No Data Found',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// MODELS
-// ============================================================
-
-class _DewormingRecord {
-  final DateTime date;
-  final String medicine; // e.g. "Panacure 3gm (MSD)"
-  final String doctor; // e.g. "Dr. uday"
-  final String age; // e.g. "-"
-  final String lastDose; // e.g. "-"
-  final DateTime nextDose;
-  final String dosage; // e.g. "Tablet (1 Qty.)"
-
-  const _DewormingRecord({
-    required this.date,
-    required this.medicine,
-    required this.doctor,
-    this.age = '-',
-    this.lastDose = '-',
-    required this.nextDose,
-    this.dosage = 'Tablet (1 Qty.)',
-  });
-}
-
-class _DewormingAnimal {
-  final String name;
-  final String tagNo;
-  final String no;
-  final String type; // 'Cow' or 'Bull'
-  final String imagePath;
-  final List<_DewormingRecord> records;
-
-  const _DewormingAnimal({
-    required this.name,
-    required this.tagNo,
-    required this.no,
-    required this.type,
-    required this.imagePath,
-    required this.records,
-  });
-}
-
-// ============================================================
-// MOCK DATA
-// ============================================================
-
-final _dewormingAnimals = <_DewormingAnimal>[
-  _DewormingAnimal(
-    name: 'ક્રિષ્ના',
-    tagNo: '106',
-    no: '0005',
-    type: 'Cow',
-    imagePath: 'assets/icons/cow_and_calf.png',
-    records: [
-      _DewormingRecord(
-        date: DateTime(2025, 9, 4),
-        medicine: 'Panacure 3gm (MSD)',
-        doctor: 'Dr. uday',
-        nextDose: DateTime(2026, 1, 4),
-      ),
-      _DewormingRecord(
-        date: DateTime(2025, 12, 30),
-        medicine: 'MSD Panacur Boli',
-        doctor: 'Self',
-        nextDose: DateTime(2026, 3, 30),
-      ),
-      _DewormingRecord(
-        date: DateTime(2025, 9, 4),
-        medicine: 'Panacure 3gm (MSD)',
-        doctor: 'Dr. uday',
-        nextDose: DateTime(2026, 1, 4),
-      ),
-    ],
-  ),
-  _DewormingAnimal(
-    name: 'મેઘા',
-    tagNo: '101',
-    no: '0001',
-    type: 'Cow',
-    imagePath: 'assets/icons/cow_and_calf.png',
-    records: [
-      _DewormingRecord(
-        date: DateTime(2025, 9, 4),
-        medicine: 'Panacure 3gm (MSD)',
-        doctor: 'Dr. uday',
-        nextDose: DateTime(2026, 1, 4),
-      ),
-    ],
-  ),
-  _DewormingAnimal(
-    name: 'અશ્વિની',
-    tagNo: '103',
-    no: '0002',
-    type: 'Cow',
-    imagePath: 'assets/icons/cow_and_calf.png',
-    records: [
-      _DewormingRecord(
-        date: DateTime(2025, 9, 4),
-        dosage: 'Tablet (1.5 Qty.)',
-        medicine: 'Panacure 3gm (MSD)',
-        doctor: 'Dr. uday',
-        nextDose: DateTime(2026, 1, 4),
-      ),
-    ],
-  ),
-  _DewormingAnimal(
-    name: 'રાજા',
-    tagNo: '201',
-    no: '0010',
-    type: 'Bull',
-    imagePath: 'assets/icons/father_cow.png',
-    records: [
-      _DewormingRecord(
-        date: DateTime(2025, 9, 10),
-        medicine: 'Dewormer Max',
-        doctor: 'Dr. uday',
-        nextDose: DateTime(2026, 1, 10),
-      ),
-    ],
-  ),
-];
-
-// ============================================================
-// HELPERS
-// ============================================================
-
-BoxDecoration _cardDeco() => BoxDecoration(
-  color: Colors.white,
-  borderRadius: BorderRadius.circular(14),
-  boxShadow: [
-    BoxShadow(
-      color: Colors.grey.withOpacity(0.08),
-      blurRadius: 8,
-      offset: const Offset(0, 3),
-    ),
-  ],
-  border: Border.all(color: Colors.grey.withOpacity(0.12)),
-);
-
-Widget _circleBack(BuildContext context) => GestureDetector(
-  onTap: () => Navigator.pop(context),
-  child: Container(
-    margin: const EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      border: Border.all(color: Colors.grey.shade300),
-    ),
-    child: const Icon(Icons.arrow_back, size: 20, color: Colors.black),
-  ),
-);
-
-// ============================================================
-// 1. DEWORMING REPORT HUB
-// ============================================================
 
 class DewormingReportHubScreen extends StatelessWidget {
   const DewormingReportHubScreen({super.key});
@@ -213,12 +34,7 @@ class DewormingReportHubScreen extends StatelessWidget {
         children: [
           _HubTile(
             label: 'Animal Wise Deworming Report',
-            leadingIcon: Image.asset(
-              'assets/icons/mother_cow.png',
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.pets, color: _kOlive),
-            ),
+            icon: Icons.pets,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -226,13 +42,10 @@ class DewormingReportHubScreen extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 12),
           _HubTile(
             label: 'Date Wise Deworming Dose Report',
-            leadingIcon: const Icon(
-              Icons.calendar_month_rounded,
-              color: Color(0xFF5B8FD4),
-              size: 28,
-            ),
+            icon: Icons.calendar_month_rounded,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -246,45 +59,6 @@ class DewormingReportHubScreen extends StatelessWidget {
   }
 }
 
-class _HubTile extends StatelessWidget {
-  final String label;
-  final Widget? leadingIcon;
-  final VoidCallback onTap;
-  const _HubTile({required this.label, required this.onTap, this.leadingIcon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: _cardDeco(),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        onTap: onTap,
-        leading: leadingIcon != null
-            ? SizedBox(width: 36, height: 36, child: leadingIcon)
-            : null,
-        title: Text(
-          label,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        trailing: Container(
-          width: 30,
-          height: 30,
-          decoration: const BoxDecoration(
-            color: _kLightGrey,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// 2. ANIMAL WISE DEWORMING REPORT
-// ============================================================
-
 class AnimalWiseDewormingReportScreen extends StatefulWidget {
   const AnimalWiseDewormingReportScreen({super.key});
 
@@ -295,35 +69,80 @@ class AnimalWiseDewormingReportScreen extends StatefulWidget {
 
 class _AnimalWiseDewormingReportScreenState
     extends State<AnimalWiseDewormingReportScreen> {
-  String? _selectedType; // 'Cow' or 'Bull'
-  _DewormingAnimal? _selectedAnimal;
-  bool _showTypeDropdown = false;
-  bool _showAnimalDropdown = false;
-
-  final _searchCtrl = TextEditingController();
-  String _searchQ = '';
+  String _animalType = 'COW';
+  List<Map<String, dynamic>> _animals = [];
+  String? _selectedAnimalId;
+  List<Map<String, dynamic>> _records = [];
+  bool _isLoadingAnimals = true;
+  bool _isLoadingRecords = false;
 
   @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _loadAnimals();
   }
 
-  List<_DewormingAnimal> get _filteredAnimals {
-    var list = _dewormingAnimals;
-    if (_selectedType != null) {
-      list = list.where((a) => a.type == _selectedType).toList();
+  Future<void> _loadAnimals() async {
+    setState(() {
+      _isLoadingAnimals = true;
+      _selectedAnimalId = null;
+      _records = [];
+    });
+    try {
+      final data = await sl<ApiService>().getDewormingReportDropdown(
+        type: _animalType,
+      );
+      if (!mounted) return;
+      setState(() {
+        _animals = data
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        _isLoadingAnimals = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingAnimals = false);
+      AppFeedback.showError(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+      );
     }
-    if (_searchQ.isNotEmpty) {
-      list = list
-          .where((a) => a.name.toLowerCase().contains(_searchQ.toLowerCase()))
-          .toList();
+  }
+
+  Future<void> _loadRecords() async {
+    if (_selectedAnimalId == null || _selectedAnimalId!.isEmpty) return;
+    setState(() => _isLoadingRecords = true);
+    try {
+      final data = await sl<ApiService>().getDewormingReport(
+        animalId: _selectedAnimalId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _records = data
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        _isLoadingRecords = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingRecords = false);
+      AppFeedback.showError(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+      );
     }
-    return list;
   }
 
   @override
   Widget build(BuildContext context) {
+    final selectedAnimal = _animals.cast<Map<String, dynamic>?>().firstWhere(
+          (animal) =>
+              (animal?['id'] ?? animal?['_id'])?.toString() == _selectedAnimalId,
+          orElse: () => null,
+        );
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -341,250 +160,75 @@ class _AnimalWiseDewormingReportScreenState
       ),
       body: Column(
         children: [
-          // ── Dropdown Selectors ───────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Animal Type Dropdown
                 Expanded(
-                  child: _CustomDropdown(
-                    label: _selectedType ?? 'Animal Type',
-                    isOpen: _showTypeDropdown,
-                    onTap: () => setState(() {
-                      _showTypeDropdown = !_showTypeDropdown;
-                      _showAnimalDropdown = false;
-                    }),
+                  child: _SimpleDropdown<String>(
+                    value: _animalType,
+                    hint: 'Animal Type',
+                    items: const ['COW', 'BULL'],
+                    labelBuilder: (value) => value == 'COW' ? 'Cow' : 'Bull',
+                    onChanged: (value) async {
+                      if (value == null) return;
+                      setState(() => _animalType = value);
+                      await _loadAnimals();
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Select Animal Dropdown
                 Expanded(
-                  child: _CustomDropdown(
-                    label: _selectedAnimal?.name ?? 'Select Animal',
-                    isOpen: _showAnimalDropdown,
-                    onTap: () => setState(() {
-                      _showAnimalDropdown = !_showAnimalDropdown;
-                      _showTypeDropdown = false;
-                      _searchQ = '';
-                      _searchCtrl.clear();
-                    }),
+                  child: _SimpleDropdown<String>(
+                    value: _selectedAnimalId,
+                    hint: _isLoadingAnimals ? 'Loading...' : 'Select Animal',
+                    items: _animals
+                        .map((animal) =>
+                            (animal['id'] ?? animal['_id'] ?? '').toString())
+                        .where((id) => id.isNotEmpty)
+                        .toList(),
+                    labelBuilder: (id) {
+                      final animal = _animals.firstWhere(
+                        (item) => (item['id'] ?? item['_id']).toString() == id,
+                        orElse: () => <String, dynamic>{},
+                      );
+                      final name = animal['name']?.toString() ?? 'Unknown';
+                      final tag = animal['tagNumber']?.toString() ?? '';
+                      return tag.isEmpty ? name : '$name ($tag)';
+                    },
+                    onChanged: (value) async {
+                      setState(() => _selectedAnimalId = value);
+                      await _loadRecords();
+                    },
                   ),
                 ),
               ],
             ),
           ),
-
-          // ── Dropdown Overlays (Mocked as widgets in the column) ──
-          if (_showTypeDropdown)
-            Flexible(
-              child: _DropdownListOverlay(
-                items: const ['Cow', 'Bull'],
-                onSelect: (val) => setState(() {
-                  _selectedType = val;
-                  _showTypeDropdown = false;
-                  _selectedAnimal = null; // Reset animal when type changes
-                }),
-              ),
-            )
-          else if (_showAnimalDropdown)
-            Flexible(
-              child: _DropdownListOverlay(
-                items: _filteredAnimals.map((a) => a.name).toList(),
-                hasSearch: true,
-                searchCtrl: _searchCtrl,
-                onSearchChanged: (v) => setState(() => _searchQ = v),
-                onSelect: (name) => setState(() {
-                  _selectedAnimal = _dewormingAnimals.firstWhere(
-                    (a) => a.name == name,
-                  );
-                  _showAnimalDropdown = false;
-                }),
-              ),
-            ),
-
-          // ── Content ──────────────────────────────────────────
-          if (!_showTypeDropdown && !_showAnimalDropdown)
-            Expanded(
-              child: _selectedAnimal == null
-                  ? const SizedBox.shrink()
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: _selectedAnimal!.records.isEmpty
-                          ? const _NoDataFound()
-                          : Column(
-                              children: [
-                                _AnimalProfileCard(animal: _selectedAnimal!),
-                                const SizedBox(height: 16),
-                                ..._selectedAnimal!.records.map(
-                                  (r) => _DewormingRecordCard(record: r),
-                                ),
-                              ],
-                            ),
-                    ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CustomDropdown extends StatelessWidget {
-  final String label;
-  final bool isOpen;
-  final VoidCallback onTap;
-
-  const _CustomDropdown({
-    required this.label,
-    required this.isOpen,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: _kLightGrey,
-          borderRadius: BorderRadius.circular(10),
-          border: isOpen ? Border.all(color: Colors.grey.shade400) : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Text(
-                label,
-                style: GoogleFonts.inter(fontSize: 13, color: Colors.black87),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Icon(
-              Icons.keyboard_arrow_down,
-              size: 18,
-              color: Colors.grey.shade600,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DropdownListOverlay extends StatelessWidget {
-  final List<String> items;
-  final Function(String) onSelect;
-  final bool hasSearch;
-  final TextEditingController? searchCtrl;
-  final ValueChanged<String>? onSearchChanged;
-
-  const _DropdownListOverlay({
-    required this.items,
-    required this.onSelect,
-    this.hasSearch = false,
-    this.searchCtrl,
-    this.onSearchChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.45,
-      ),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10),
-        ],
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (hasSearch)
+          if (selectedAnimal != null)
             Padding(
-              padding: const EdgeInsets.all(12),
-              child: Container(
-                height: 48,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F6F7),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.search, size: 22, color: Colors.grey.shade400),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: searchCtrl,
-                        autofocus: true,
-                        onChanged: onSearchChanged,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.black87,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Search here...',
-                          hintStyle: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.grey.shade400,
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          isDense: true,
-                          fillColor: Colors.transparent,
-                          filled: true,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _AnimalHeaderCard(animal: selectedAnimal),
             ),
-          Flexible(
-            child: items.isEmpty
-                ? const SingleChildScrollView(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: _NoDataFound(),
-                    ),
-                  )
-                : ListView.separated(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
-                    itemCount: items.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (ctx, i) => InkWell(
-                      onTap: () => onSelect(items[i]),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        child: Center(
-                          child: Text(
-                            items[i],
-                            style: GoogleFonts.poppins(fontSize: 14),
-                          ),
-                        ),
+          if (selectedAnimal != null) const SizedBox(height: 12),
+          Expanded(
+            child: _isLoadingRecords
+                ? const Center(child: CircularProgressIndicator())
+                : _records.isEmpty
+                    ? const _NoDataFound()
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                        itemCount: _records.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (_, index) =>
+                            _DewormingRecordCard(record: _records[index]),
                       ),
-                    ),
-                  ),
           ),
         ],
       ),
     );
   }
 }
-
-// ============================================================
-// 3. DATE WISE DEWORMING DOSE REPORT
-// ============================================================
 
 class DateWiseDewormingDoseReportScreen extends StatefulWidget {
   const DateWiseDewormingDoseReportScreen({super.key});
@@ -596,22 +240,63 @@ class DateWiseDewormingDoseReportScreen extends StatefulWidget {
 
 class _DateWiseDewormingDoseReportScreenState
     extends State<DateWiseDewormingDoseReportScreen> {
-  DateTime _fromDate = DateTime(2025, 6, 30);
-  DateTime _toDate = DateTime(2025, 12, 30);
+  DateTime _fromDate = DateTime.now().subtract(const Duration(days: 180));
+  DateTime _toDate = DateTime.now();
+  List<Map<String, dynamic>> _records = [];
+  bool _isLoading = true;
 
-  List<_DewormingAnimal> get _filtered {
-    return _dewormingAnimals.where((a) {
-      return a.records.any(
-        (r) => !r.date.isBefore(_fromDate) && !r.date.isAfter(_toDate),
+  @override
+  void initState() {
+    super.initState();
+    _loadRecords();
+  }
+
+  Future<void> _loadRecords() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await sl<ApiService>().getDewormingReport(
+        from: _fromDate,
+        to: _toDate,
       );
-    }).toList();
+      if (!mounted) return;
+      setState(() {
+        _records = data
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      AppFeedback.showError(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  Future<void> _pickDate(bool isFrom) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isFrom ? _fromDate : _toDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isFrom) {
+        _fromDate = picked;
+        if (_toDate.isBefore(_fromDate)) _toDate = _fromDate;
+      } else {
+        _toDate = picked;
+      }
+    });
+    await _loadRecords();
   }
 
   @override
   Widget build(BuildContext context) {
-    final cows = _filtered;
-    final fmt = DateFormat('dd MMM, yyyy');
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -623,157 +308,47 @@ class _DateWiseDewormingDoseReportScreenState
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.bold,
-            fontSize: 16,
+            fontSize: 18,
           ),
         ),
       ),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Expanded(
-                  child: Material(
-                    color: _kLightGrey,
-                    borderRadius: BorderRadius.circular(10),
-                    child: InkWell(
-                      onTap: () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          initialDate: _fromDate,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                          builder: (ctx, child) => Theme(
-                            data: Theme.of(ctx).copyWith(
-                              colorScheme: const ColorScheme.light(
-                                primary: _kOlive,
-                              ),
-                            ),
-                            child: child!,
-                          ),
-                        );
-                        if (d != null) {
-                          setState(() {
-                            _fromDate = d;
-                            if (_toDate.isBefore(_fromDate))
-                              _toDate = _fromDate;
-                          });
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(10),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              fmt.format(_fromDate),
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const Icon(
-                              Icons.calendar_month_rounded,
-                              size: 16,
-                              color: _kOlive,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  child: _DateField(
+                    date: _fromDate,
+                    onTap: () => _pickDate(true),
                   ),
                 ),
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    'to',
-                    style: TextStyle(color: Colors.grey, fontSize: 13),
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('to'),
                 ),
                 Expanded(
-                  child: Material(
-                    color: _kLightGrey,
-                    borderRadius: BorderRadius.circular(10),
-                    child: InkWell(
-                      onTap: () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          initialDate: _toDate,
-                          firstDate: _fromDate,
-                          lastDate: DateTime(2100),
-                          builder: (ctx, child) => Theme(
-                            data: Theme.of(ctx).copyWith(
-                              colorScheme: const ColorScheme.light(
-                                primary: _kOlive,
-                              ),
-                            ),
-                            child: child!,
-                          ),
-                        );
-                        if (d != null) setState(() => _toDate = d);
-                      },
-                      borderRadius: BorderRadius.circular(10),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              fmt.format(_toDate),
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const Icon(
-                              Icons.calendar_month_rounded,
-                              size: 16,
-                              color: _kOlive,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  child: _DateField(
+                    date: _toDate,
+                    onTap: () => _pickDate(false),
                   ),
                 ),
               ],
             ),
           ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Total ${cows.length} Animal',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-
           Expanded(
-            child: cows.isEmpty
-                ? const _NoDataFound()
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: cows.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (ctx, i) {
-                      final c = cows[i];
-                      // For showing in "Date Wise", we pick the latest record in range or just first one
-                      final r = c.records.first;
-                      return _DateWiseAnimalDewormingCard(animal: c, record: r);
-                    },
-                  ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _records.isEmpty
+                    ? const _NoDataFound()
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                        itemCount: _records.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (_, index) =>
+                            _DewormingRecordCard(record: _records[index]),
+                      ),
           ),
         ],
       ),
@@ -781,82 +356,91 @@ class _DateWiseDewormingDoseReportScreenState
   }
 }
 
-// ============================================================
-// CARDS & COMPONENTS
-// ============================================================
+class _HubTile extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
 
-class _AnimalProfileCard extends StatelessWidget {
-  final _DewormingAnimal animal;
-  const _AnimalProfileCard({required this.animal});
+  const _HubTile({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Icon(icon, color: _kOlive),
+        title: Text(
+          label,
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      ),
+    );
+  }
+}
+
+class _AnimalHeaderCard extends StatelessWidget {
+  final Map<String, dynamic> animal;
+
+  const _AnimalHeaderCard({required this.animal});
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = (animal['imageUrl'] ??
+            animal['viewUrl'] ??
+            animal['photoUrl'] ??
+            animal['photo'])
+        ?.toString();
+
+    return Container(
       padding: const EdgeInsets.all(12),
-      decoration: _cardDeco(),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              animal.imagePath,
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: _kLightGrey,
-                width: 80,
-                height: 80,
-                child: const Icon(Icons.pets),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
+          _animalImage(imageUrl, width: 60, height: 60),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  animal.name,
+                  animal['name']?.toString() ?? 'Unknown',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F1DC),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFD4B96A)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.sell_outlined,
-                        size: 11,
-                        color: Color(0xFFB8942C),
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        'Tag No.: ${animal.tagNo}',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFFB8942C),
-                        ),
-                      ),
-                    ],
+                    fontSize: 18,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'No. : ${animal.no}',
+                  'Tag No : ${animal['tagNumber'] ?? '-'}',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.brown,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'No. : ${animal['animalNumber'] ?? animal['serialNumber'] ?? '-'}',
                   style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
                 ),
               ],
@@ -869,207 +453,92 @@ class _AnimalProfileCard extends StatelessWidget {
 }
 
 class _DewormingRecordCard extends StatelessWidget {
-  final _DewormingRecord record;
+  final Map<String, dynamic> record;
+
   const _DewormingRecordCard({required this.record});
 
   @override
   Widget build(BuildContext context) {
-    final fmt = DateFormat('dd MMM, yyyy');
+    final animal = record['animal'] is Map
+        ? Map<String, dynamic>.from(record['animal'] as Map)
+        : <String, dynamic>{};
+    final imageUrl = (animal['imageUrl'] ??
+            record['imageUrl'] ??
+            animal['viewUrl'] ??
+            animal['photoUrl'] ??
+            record['photo'])
+        ?.toString();
+    final animalType = (() {
+      final gender = (animal['gender'] ?? record['gender'] ?? '').toString().toUpperCase();
+      return gender.startsWith('M') ? 'Bull' : 'Cow';
+    })();
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: _cardDeco(),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: _kLightGrey,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      fmt.format(record.date),
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.calendar_month, size: 14),
-                  ],
-                ),
-              ),
-              Text(
-                record.dosage,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _kOlive,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _DetailLine(icon: Icons.pets, label: 'Age:', value: record.age),
-          _DetailLine(
-            icon: Icons.business,
-            label: 'Company Name:',
-            value: record.medicine,
-          ),
-          _DetailLine(
-            icon: Icons.person,
-            label: 'Doctor Name:',
-            value: record.doctor,
-          ),
-          _DetailLine(
-            icon: Icons.calendar_today_outlined,
-            label: 'Last Dose Date:',
-            value: record.lastDose,
-          ),
-          _DetailLine(
-            icon: Icons.update,
-            label: 'Next Dose Date:',
-            value: fmt.format(record.nextDose),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
       ),
-    );
-  }
-}
-
-class _DateWiseAnimalDewormingCard extends StatelessWidget {
-  final _DewormingAnimal animal;
-  final _DewormingRecord record;
-  const _DateWiseAnimalDewormingCard({
-    required this.animal,
-    required this.record,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final fmt = DateFormat('dd MMM, yyyy');
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: _cardDeco(),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: _kLightGrey,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      fmt.format(record.date),
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.calendar_month, size: 14),
-                  ],
-                ),
-              ),
+              _infoChip(_formatDate(record['doseDate'] ?? record['date'])),
+              const Spacer(),
               Text(
-                record.dosage,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                _formatDoseLabel(record),
+                style: GoogleFonts.poppins(
                   color: _kOlive,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Inner Animal Card
+          const SizedBox(height: 14),
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade100),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
             ),
             child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    animal.imagePath,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+                _animalImage(imageUrl, width: 70, height: 70),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            animal.name,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '- ${animal.type}',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        '${animal['name'] ?? record['name'] ?? '-'} - $animalType',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF5F1DC),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: const Color(0xFFD4B96A),
-                              ),
-                            ),
-                            child: Text(
-                              'Tag No.: ${animal.tagNo}',
-                              style: GoogleFonts.inter(
-                                fontSize: 9,
-                                color: const Color(0xFFB8942C),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                          _tagChip(
+                            'Tag No : ${(animal['tagNumber'] ?? record['tagno'] ?? record['tagNumber'] ?? '-')}',
                           ),
-                          const SizedBox(width: 8),
                           Text(
-                            'No. : ${animal.no}',
+                            'No. : ${animal['animalNumber'] ?? record['animalNo'] ?? record['animalNumber'] ?? record['serialNumber'] ?? '-'}',
                             style: GoogleFonts.inter(
-                              fontSize: 9,
+                              fontSize: 13,
                               color: Colors.grey,
                             ),
                           ),
@@ -1082,26 +551,23 @@ class _DateWiseAnimalDewormingCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _DetailLine(icon: Icons.pets, label: 'Age:', value: record.age),
-          _DetailLine(
-            icon: Icons.business,
-            label: 'Company Name:',
-            value: record.medicine,
+          _detailRow('Age', record['age']?.toString() ?? '-'),
+          _detailRow(
+            'Company Name',
+            (record['companyName'] ?? record['medicineName'] ?? record['drugName'] ?? '-')
+                .toString(),
           ),
-          _DetailLine(
-            icon: Icons.person,
-            label: 'Doctor Name:',
-            value: record.doctor,
+          _detailRow(
+            'Doctor Name',
+            (record['doctorName'] ?? record['vetName'] ?? '-').toString(),
           ),
-          _DetailLine(
-            icon: Icons.calendar_today_outlined,
-            label: 'Last Dose Date:',
-            value: record.lastDose,
+          _detailRow(
+            'Last Dose Date',
+            _formatDate(record['lastDoseDate']),
           ),
-          _DetailLine(
-            icon: Icons.update,
-            label: 'Next Dose Date:',
-            value: fmt.format(record.nextDose),
+          _detailRow(
+            'Next Dose Date',
+            _formatDate(record['nextDoseDate']),
           ),
         ],
       ),
@@ -1109,51 +575,255 @@ class _DateWiseAnimalDewormingCard extends StatelessWidget {
   }
 }
 
-class _DetailLine extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  const _DetailLine({
-    required this.icon,
-    required this.label,
+Widget _animalImage(String? path, {double width = 70, double height = 70}) {
+  final fallback = Container(
+    width: width,
+    height: height,
+    color: Colors.grey.shade200,
+    child: const Icon(Icons.pets, color: Colors.grey),
+  );
+  if (path != null && path.startsWith('http')) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.network(
+        path,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+      ),
+    );
+  }
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(10),
+    child: Image.asset(
+      'assets/icons/cow_and_calf.png',
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => fallback,
+    ),
+  );
+}
+
+Widget _infoChip(String label) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: _kLightGrey,
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        const SizedBox(width: 8),
+        const Icon(Icons.calendar_today, size: 16),
+      ],
+    ),
+  );
+}
+
+Widget _tagChip(String text) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF7D6),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0xFFD4B96A)),
+    ),
+    child: Text(
+      text,
+      style: GoogleFonts.poppins(
+        fontSize: 13,
+        color: const Color(0xFFB18400),
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+}
+
+Widget _detailRow(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: const BoxDecoration(
+            color: Color(0xFFECEFFD),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.info_outline, color: Color(0xFF6C63FF), size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$label:',
+                style: GoogleFonts.inter(fontSize: 14, color: Colors.grey),
+              ),
+              Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _SimpleDropdown<T> extends StatelessWidget {
+  final T? value;
+  final String hint;
+  final List<T> items;
+  final String Function(T value) labelBuilder;
+  final ValueChanged<T?> onChanged;
+
+  const _SimpleDropdown({
     required this.value,
+    required this.hint,
+    required this.items,
+    required this.labelBuilder,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: const BoxDecoration(
-              color: Color(0xFFEEF2FF),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 14, color: const Color(0xFF4F46E5)),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: _kLightGrey,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          isExpanded: true,
+          hint: Text(
+            hint,
+            style: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
           ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(fontSize: 10, color: Colors.grey),
-              ),
-              Text(
-                value,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+          items: items
+              .map(
+                (item) => DropdownMenuItem<T>(
+                  value: item,
+                  child: Text(
+                    labelBuilder(item),
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(fontSize: 14),
+                  ),
                 ),
-              ),
-            ],
+              )
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  final DateTime date;
+  final VoidCallback onTap;
+
+  const _DateField({required this.date, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: _kLightGrey,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              DateFormat('dd MMM, yyyy').format(date),
+              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+            const Icon(Icons.calendar_month_rounded, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoDataFound extends StatelessWidget {
+  const _NoDataFound();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/icons/no_data_found.png',
+            width: 150,
+            height: 150,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No Data Found',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+Widget _circleBack(BuildContext context) => GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        margin: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: const Icon(Icons.arrow_back, size: 20, color: Colors.black),
+      ),
+    );
+
+String _formatDate(dynamic value) {
+  if (value == null) return '-';
+  final parsed = DateTime.tryParse(value.toString());
+  if (parsed == null) return '-';
+  return DateFormat('dd MMM, yyyy').format(parsed.toLocal());
+}
+
+String _formatDoseLabel(Map<String, dynamic> record) {
+  final doseType = (record['doseType'] ?? '-').toString().toUpperCase();
+  final quantity = (record['quantity'] ?? '').toString().trim();
+  final displayDose = doseType == 'INJECTION'
+      ? 'Injection'
+      : doseType == 'TABLET'
+          ? 'Tablet'
+          : doseType;
+  if (quantity.isEmpty) return displayDose;
+  return '$displayDose ($quantity)';
 }

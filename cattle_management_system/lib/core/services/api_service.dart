@@ -630,7 +630,7 @@ class ApiService {
 
   /// GET /api/animal/breeds — Fetch available cow breeds
   Future<List<String>> getBreeds() async {
-    final List<String> fallbackBreeds = [
+    return const [
       'Gir',
       'Sahiwal',
       'Red_Sindhi',
@@ -656,37 +656,12 @@ class ApiService {
       'Gaolao',
       'Gangatiri',
       'Siri',
+      'Motu',
+      'Vechur',
+      'Jersey',
+      'Holstein_Friesian',
+      'Brown_Swiss',
     ];
-
-    try {
-      final data = await _get('/api/animal/breeds', {});
-      debugPrint('[API] breeds raw response: $data');
-
-      List<String> results = [];
-      if (data is List) {
-        results = data.map((e) => e.toString()).toList();
-      } else if (data is Map) {
-        if (data.containsKey('breeds') && data['breeds'] is List) {
-          results = (data['breeds'] as List).map((e) => e.toString()).toList();
-        } else if (data.containsKey('data')) {
-          final innerData = data['data'];
-          if (innerData is List) {
-            results = innerData.map((e) => e.toString()).toList();
-          } else if (innerData is Map && innerData.containsKey('breeds')) {
-            results = (innerData['breeds'] as List)
-                .map((e) => e.toString())
-                .toList();
-          }
-        }
-      }
-
-      if (results.isNotEmpty) return results;
-    } catch (e) {
-      debugPrint('[API] Error in getBreeds: $e');
-    }
-
-    // Return fallback breeds if API fails or returns empty
-    return fallbackBreeds;
   }
 
   Future<Map<String, dynamic>> addCowGroup(String name) async {
@@ -854,7 +829,13 @@ class ApiService {
     final params = <String, dynamic>{};
     if (type != null) params['type'] = type;
     final data = await _get('/api/health/reports/deworming/dropdown', params);
-    return data is List ? data : (data['data'] as List? ?? []);
+    final items = _extractList(
+      data,
+      primaryKeys: const ['data', 'items', 'list', 'records', 'animals'],
+    );
+    return await _filterAnimalsForVisibleGaushala(
+      items.map(_normalizeAnimalSummaryItem).toList(),
+    );
   }
 
   /// POST /api/health/deworming
@@ -1234,13 +1215,27 @@ class ApiService {
       'contentType': contentType,
       'type': type,
     });
-    if (response is Map<String, dynamic>) {
-      if (response.containsKey('data')) {
-        return response['data'] as Map<String, dynamic>;
-      }
-      return response;
-    }
-    return {};
+    final raw = response is Map<String, dynamic>
+        ? (response.containsKey('data') && response['data'] is Map
+            ? Map<String, dynamic>.from(response['data'] as Map)
+            : Map<String, dynamic>.from(response))
+        : <String, dynamic>{};
+
+    raw['uploadUrl'] =
+        raw['uploadUrl']?.toString() ??
+        raw['presignedUrl']?.toString() ??
+        raw['url']?.toString();
+    raw['viewUrl'] =
+        raw['viewUrl']?.toString() ??
+        raw['fileUrl']?.toString() ??
+        raw['photoUrl']?.toString() ??
+        raw['attachmentUrl']?.toString();
+
+    // Older callers expect `key`. For Animal Service uploads the live contract
+    // returns `viewUrl`, so keep `key` aliased to the final storable URL.
+    raw['key'] = raw['key']?.toString() ?? raw['viewUrl']?.toString();
+
+    return raw;
   }
 
   /// GET /api/media/folders?type=PHOTO|VIDEO

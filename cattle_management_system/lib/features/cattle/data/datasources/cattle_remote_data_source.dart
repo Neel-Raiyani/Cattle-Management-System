@@ -19,6 +19,12 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
 
   CattleRemoteDataSourceImpl(this.apiClient);
 
+  bool _isRenderableImageUrl(String? value) {
+    if (value == null || value.trim().isEmpty) return false;
+    final normalized = value.trim().toLowerCase();
+    return normalized.startsWith('http://') || normalized.startsWith('https://');
+  }
+
   bool _isVisibleAnimalJson(Map<String, dynamic> item) {
     final status = (item['status'] ?? item['animalStatus'] ?? '')
         .toString()
@@ -285,6 +291,32 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
       if (combinedData['gender'] == null) {
         combinedData['gender'] = cattle.gender;
       }
+      if ((!_isRenderableImageUrl(combinedData['viewUrl']?.toString()) &&
+              !_isRenderableImageUrl(combinedData['imageUrl']?.toString()) &&
+              !_isRenderableImageUrl(combinedData['photoUrl']?.toString())) &&
+          _isRenderableImageUrl(cattle.imageUrl)) {
+        combinedData['photoUrl'] = cattle.imageUrl;
+        combinedData['imageUrl'] = cattle.imageUrl;
+        combinedData['viewUrl'] = cattle.imageUrl;
+      }
+      final createdId =
+          combinedData['_id']?.toString() ?? combinedData['id']?.toString() ?? '';
+      if (createdId.isNotEmpty) {
+        try {
+          final fetched = await getCattleById(createdId);
+          if (!_isRenderableImageUrl(fetched.imageUrl) &&
+              _isRenderableImageUrl(cattle.imageUrl)) {
+            return CattleModel.fromJson(
+              Map<String, dynamic>.from(fetched.toJson())
+                ..['id'] = fetched.id
+                ..['photoUrl'] = cattle.imageUrl
+                ..['imageUrl'] = cattle.imageUrl
+                ..['viewUrl'] = cattle.imageUrl,
+            );
+          }
+          return fetched;
+        } catch (_) {}
+      }
       return CattleModel.fromJson(combinedData);
     } catch (e) {
       if (e is ServerException) rethrow;
@@ -367,6 +399,32 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
       // Ensure gender remains correct
       if (combinedData['gender'] == null) {
         combinedData['gender'] = cattle.gender;
+      }
+      if ((!_isRenderableImageUrl(combinedData['viewUrl']?.toString()) &&
+              !_isRenderableImageUrl(combinedData['imageUrl']?.toString()) &&
+              !_isRenderableImageUrl(combinedData['photoUrl']?.toString())) &&
+          _isRenderableImageUrl(cattle.imageUrl)) {
+        combinedData['photoUrl'] = cattle.imageUrl;
+        combinedData['imageUrl'] = cattle.imageUrl;
+        combinedData['viewUrl'] = cattle.imageUrl;
+      }
+      final updatedId =
+          combinedData['_id']?.toString() ?? combinedData['id']?.toString() ?? cattle.id;
+      if (updatedId.isNotEmpty) {
+        try {
+          final fetched = await getCattleById(updatedId);
+          if (!_isRenderableImageUrl(fetched.imageUrl) &&
+              _isRenderableImageUrl(cattle.imageUrl)) {
+            return CattleModel.fromJson(
+              Map<String, dynamic>.from(fetched.toJson())
+                ..['id'] = fetched.id
+                ..['photoUrl'] = cattle.imageUrl
+                ..['imageUrl'] = cattle.imageUrl
+                ..['viewUrl'] = cattle.imageUrl,
+            );
+          }
+          return fetched;
+        } catch (_) {}
       }
       return CattleModel.fromJson(combinedData);
     } catch (e) {
