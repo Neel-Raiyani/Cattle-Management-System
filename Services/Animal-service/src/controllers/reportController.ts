@@ -255,10 +255,16 @@ export const exportCowsExcel = async (req: AuthRequest, res: Response, next: Nex
 
         const cows = await prisma.animal.findMany({
             where,
+            include: { cowGroup: { select: { name: true } } },
             orderBy: { tagNumber: 'asc' }
         });
 
-        await generateCowReport(res, cows as any, filter as string);
+        const mappedCows = cows.map(cow => ({
+            ...cow,
+            cowGroupName: cow.cowGroup?.name || undefined
+        }));
+
+        await generateCowReport(res, mappedCows as any, filter as string);
     } catch (error) {
         next(error);
     }

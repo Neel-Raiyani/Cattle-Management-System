@@ -38,10 +38,11 @@
  *           enum: [Gir, Sahiwal, Red_Sindhi, Tharparkar, Kankrej, Rathi, Punganur, Badri, Hallikar, Kangayam, Hariana, Mewati, Nagori, Nimadi, Malvi, Kherigarh, Amritmahal, Umblachery, Pulikulam, Bargur, Ongole, Red_Kandhari, Gaolao, Gangatiri, Siri, Motu, Vechur, Jersey, Holstein_Friesian, Brown_Swiss]
  *           example: Gir
  *           description: Breed designation.
- *         cowGroup:
+ *         cowGroupId:
  *           type: string
- *           example: 'Milk-Yielders'
- *           description: Logical group assignment for management purposes.
+ *           format: mongo-id
+ *           example: '507f1f77bcf86cd799439011'
+ *           description: ObjectId reference to a CowGroup record.
  *         birthDate:
  *           type: string
  *           format: date
@@ -218,7 +219,7 @@
  *         animalNumber: { type: string, example: 'C001' }
  *         gender: { type: string, enum: [MALE, FEMALE], example: FEMALE }
  *         cowBreed: { type: string, enum: [Gir, Sahiwal, Red_Sindhi, Tharparkar, Kankrej, Rathi, Punganur, Badri, Hallikar, Kangayam, Hariana, Mewati, Nagori, Nimadi, Malvi, Kherigarh, Amritmahal, Umblachery, Pulikulam, Bargur, Ongole, Red_Kandhari, Gaolao, Gangatiri, Siri, Motu, Vechur, Jersey, Holstein_Friesian, Brown_Swiss], example: Gir }
- *         cowGroup: { type: string, example: 'Milk-Yielders' }
+ *         cowGroupId: { type: string, format: mongo-id, description: 'ObjectId reference to CowGroup' }
  *         birthDate: { type: string, format: date, example: '2023-01-01' }
  *         parity: { type: integer, minimum: 0, default: 0 }
  *         bullView: { type: string }
@@ -251,7 +252,7 @@
  *         animalNumber: { type: string }
  *         gender: { type: string, enum: [MALE, FEMALE] }
  *         cowBreed: { type: string, enum: [Gir, Sahiwal, Red_Sindhi, Tharparkar, Kankrej, Rathi, Punganur, Badri, Hallikar, Kangayam, Hariana, Mewati, Nagori, Nimadi, Malvi, Kherigarh, Amritmahal, Umblachery, Pulikulam, Bargur, Ongole, Red_Kandhari, Gaolao, Gangatiri, Siri, Motu, Vechur, Jersey, Holstein_Friesian, Brown_Swiss] }
- *         cowGroup: { type: string }
+ *         cowGroupId: { type: string, format: mongo-id }
  *         birthDate: { type: string, format: date }
  *         parity: { type: integer, minimum: 0 }
  *         bullView: { type: string }
@@ -821,6 +822,12 @@
  *           enum: [all, lactating, heifer, pregnant, dryoff, retired, handicapped, calves]
  *         description: Lifecycle and production state filtering.
  *       - in: query
+ *         name: cowGroupId
+ *         schema:
+ *           type: string
+ *           format: mongo-id
+ *         description: Filter by cow group ObjectId.
+ *       - in: query
  *         name: search
  *       - in: query
  *         name: page
@@ -858,6 +865,12 @@
  *         schema:
  *           type: string
  *           enum: [all, retired, calf]
+ *       - in: query
+ *         name: cowGroupId
+ *         schema:
+ *           type: string
+ *           format: mongo-id
+ *         description: Filter by cow group ObjectId.
  *       - in: query
  *         name: search
  *       - in: query

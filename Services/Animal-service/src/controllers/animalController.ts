@@ -14,7 +14,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
 
         const {
             name, tagNumber, animalNumber, gender,
-            cowBreed, cowGroup, birthDate,
+            cowBreed, cowGroupId, birthDate,
             parity,
             bullView, motherMilk, grandmotherMilk, isHandicapped, handicapReason,
             acquisitionType, purchaseDate, purchasedFrom, purchasePrice, ownerName, ownerMobile,
@@ -61,7 +61,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
                 gender,
                 gaushalaId,
                 cowBreed: cowBreed || null,
-                cowGroup: cowGroup || null,
+                cowGroupId: cowGroupId || null,
                 birthDate: bDate,
                 adultDate,
                 isPregnant: false,
@@ -110,7 +110,7 @@ export const registerAnimal = async (req: AuthRequest, res: Response, next: Next
 export const getCows = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.gaushala?.id as string;
-        const { filter = 'all', search, page = '1', limit = '20' } = req.query;
+        const { filter = 'all', search, cowGroupId, page = '1', limit = '20' } = req.query;
 
         const pageNum = Math.max(1, parseInt(page as string) || 1);
         const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
@@ -139,6 +139,10 @@ export const getCows = async (req: AuthRequest, res: Response, next: NextFunctio
             ];
         }
 
+        if (cowGroupId) {
+            where.cowGroupId = cowGroupId as string;
+        }
+
         const [animalsList, total] = await Promise.all([
             prisma.animal.findMany({
                 where,
@@ -148,6 +152,9 @@ export const getCows = async (req: AuthRequest, res: Response, next: NextFunctio
                     id: true,
                     name: true,
                     tagNumber: true,
+                    cowBreed: true,
+                    cowGroupId: true,
+                    cowGroup: { select: { name: true } },
                     parity: true,
                     isHeifer: true,
                     isLactating: true,
@@ -195,7 +202,7 @@ export const getCows = async (req: AuthRequest, res: Response, next: NextFunctio
 export const getBulls = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.gaushala?.id as string;
-        const { filter = 'all', search, page = '1', limit = '20' } = req.query;
+        const { filter = 'all', search, cowGroupId, page = '1', limit = '20' } = req.query;
 
         const pageNum = Math.max(1, parseInt(page as string) || 1);
         const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
@@ -219,6 +226,10 @@ export const getBulls = async (req: AuthRequest, res: Response, next: NextFuncti
             ];
         }
 
+        if (cowGroupId) {
+            where.cowGroupId = cowGroupId as string;
+        }
+
         const [animalsList, total] = await Promise.all([
             prisma.animal.findMany({
                 where,
@@ -228,6 +239,9 @@ export const getBulls = async (req: AuthRequest, res: Response, next: NextFuncti
                     id: true,
                     name: true,
                     tagNumber: true,
+                    cowBreed: true,
+                    cowGroupId: true,
+                    cowGroup: { select: { name: true } },
                     parity: true,
                     birthDate: true,
                     adultDate: true,
@@ -325,7 +339,7 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
 
         const {
             name, tagNumber, animalNumber, gender,
-            cowBreed, cowGroup, birthDate,
+            cowBreed, cowGroupId, birthDate,
             parity,
             bullView, motherMilk, grandmotherMilk, isHandicapped, handicapReason,
             acquisitionType, purchaseDate, purchasedFrom, purchasePrice, ownerName, ownerMobile,
@@ -351,7 +365,7 @@ export const updateAnimal = async (req: AuthRequest, res: Response, next: NextFu
         if (animalNumber !== undefined) updateData.animalNumber = animalNumber;
         if (gender !== undefined) updateData.gender = gender;
         if (cowBreed !== undefined) updateData.cowBreed = cowBreed;
-        if (cowGroup !== undefined) updateData.cowGroup = cowGroup;
+        if (cowGroupId !== undefined) updateData.cowGroupId = cowGroupId;
 
         // Automatic Logic for Dates and Statuses
         const finalBirthDate = birthDate !== undefined ? new Date(birthDate) : existingAnimal.birthDate;

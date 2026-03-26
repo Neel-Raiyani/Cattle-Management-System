@@ -254,7 +254,7 @@ export const recordDelivery = async (req: AuthRequest, res: Response, next: Next
                         gender: calfGender,
                         gaushalaId,
                         cowBreed: calfBreed || mother.cowBreed || null,
-                        cowGroup: calfGroup || mother.cowGroup || null,
+                        cowGroupId: calfGroup || mother.cowGroupId || null,
                         birthDate: bDate,
                         adultDate,
                         acquisitionType: 'BIRTH',

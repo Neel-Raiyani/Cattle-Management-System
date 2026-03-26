@@ -8,7 +8,7 @@ export interface CowExcelData {
     animalNumber?: string;
     birthDate: Date;
     parity: number;
-    cowGroup?: string;
+    cowGroupName?: string;
     cowBreed?: string;
     isLactating: boolean;
     isPregnant: boolean;
@@ -60,7 +60,7 @@ export const generateCowReport = async (res: Response, data: CowExcelData[], pha
             { header: 'Birth Date', key: 'birthDate', width: 15 },
             { header: 'Age', key: 'age', width: 25 },
             { header: 'Parity', key: 'parity', width: 10 },
-            { header: 'Group', key: 'cowGroup', width: 20 },
+            { header: 'Group', key: 'cowGroupName', width: 20 },
             { header: 'Breed', key: 'cowBreed', width: 15 },
             { header: 'Lactating', key: 'isLactating', width: 12 },
             { header: 'Pregnant', key: 'isPregnant', width: 12 },
@@ -79,7 +79,7 @@ export const generateCowReport = async (res: Response, data: CowExcelData[], pha
                 birthDate: item.birthDate.toISOString().split('T')[0],
                 age: calculateAge(item.birthDate),
                 parity: item.parity,
-                cowGroup: item.cowGroup || '-',
+                cowGroupName: item.cowGroupName || '-',
                 cowBreed: item.cowBreed || '-',
                 isLactating: item.isLactating ? 'Yes' : 'No',
                 isPregnant: item.isPregnant ? 'Yes' : 'No',

@@ -75,6 +75,7 @@ model CowGroup {
   gaushalaId      String   @db.ObjectId
   name            String
   createdAt       DateTime @default(now())
+  animals         Animal[]
 
   @@unique([gaushalaId, name])
   @@map("cow_groups")
@@ -94,7 +95,8 @@ model Animal {
   cowBreed        CowBreed?
 
   // Group
-  cowGroup        String?
+  cowGroupId      String?   @db.ObjectId
+  cowGroup        CowGroup? @relation(fields: [cowGroupId], references: [id])
 
   // Dates
   birthDate       DateTime?

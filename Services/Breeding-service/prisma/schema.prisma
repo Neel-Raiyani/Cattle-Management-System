@@ -115,7 +115,7 @@ model Animal {
   gaushalaId      String   @db.ObjectId
   
   cowBreed        CowBreed?
-  cowGroup        String?
+  cowGroupId      String?   @db.ObjectId
 
   birthDate       DateTime?
   adultDate       DateTime?
