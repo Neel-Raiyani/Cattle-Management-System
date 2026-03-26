@@ -189,8 +189,9 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Generate 4-digit OTP (Mocked for now)
-        const otp = Math.floor(1000 + Math.random() * 9000).toString();
+        // ── Static OTP for development (uncomment the line below and remove static OTP when using Twilio) ──
+        // const otp = Math.floor(1000 + Math.random() * 9000).toString();
+        const otp = '1234'; // Static OTP for development
         const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
         await prisma.user.update({
@@ -199,13 +200,9 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
         });
 
         const message = `Your Smart Gaushala verification code is: ${otp}. Valid for 10 minutes.`;
-        const smsSent = await sendSMS(mobileNumber, message);
+        await sendSMS(mobileNumber, message); // Currently just logs, no actual SMS
 
-        if (!smsSent) {
-            return res.status(500).json({ message: 'Failed to send SMS' });
-        }
-
-        logger.info(`OTP generated and sent to ${mobileNumber}`);
+        logger.info(`Static OTP set for ${mobileNumber}`);
         res.status(200).json({ message: 'OTP sent successfully' });
     } catch (error) {
         next(error);
