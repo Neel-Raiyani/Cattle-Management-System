@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/utils/app_feedback.dart';
 import '../../../cattle/domain/entities/cattle.dart';
 
 class AddPregnancyScreen extends StatefulWidget {
@@ -130,7 +131,11 @@ class _AddPregnancyScreenState extends State<AddPregnancyScreen> {
       await sl<ApiService>().initiatePregnancy(
         animalId: _selectedCow!.id,
         conceiveDate: _selectedDate!,
-        pregnancyType: _pregnancyType.toUpperCase(),
+        pregnancyType: _pregnancyType == 'AI' ? 'AI' : 'NATURAL',
+        bullType: _pregnancyType == 'AI' ? 'AI' : 'GAUSHALA',
+        bullId: _pregnancyType == 'Natural' ? _selectedBullId : null,
+        serialNumber: _pregnancyType == 'AI' ? _serialCtrl.text.trim() : null,
+        companyName: _pregnancyType == 'AI' ? _companyCtrl.text.trim() : null,
       );
       if (mounted) {
         Navigator.pop(context, true);
@@ -146,12 +151,7 @@ class _AddPregnancyScreenState extends State<AddPregnancyScreen> {
 
   void _showError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF99AA5A),
-        content: Text(msg, style: GoogleFonts.inter(color: Colors.white)),
-      ),
-    );
+    AppFeedback.showError(context, msg);
   }
 
   DateTime? get _alertDay30 => _selectedDate?.add(const Duration(days: 30));

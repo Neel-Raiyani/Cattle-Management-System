@@ -243,7 +243,17 @@ class _DryOffScreenState extends State<DryOffScreen> {
         );
         return;
       }
-      await sl<ApiService>().deleteDryOff(id: id);
+      final targetRecord = [
+        ..._records,
+        ..._localRecords,
+      ].cast<DryOffRecord?>().firstWhere(
+            (record) => record?.id == id,
+            orElse: () => null,
+          );
+      final deleteId = targetRecord == null
+          ? id
+          : await _resolveDeleteId(targetRecord);
+      await sl<ApiService>().deleteDryOff(id: deleteId);
       if (!mounted) return;
       _localRecords.removeWhere((record) => record.id == id);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -263,6 +273,73 @@ class _DryOffScreenState extends State<DryOffScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
+  }
+
+  Future<String> _resolveDeleteId(DryOffRecord record) async {
+    if (record.id.isEmpty || record.id.startsWith('local_')) {
+      throw Exception('Dry off record id is missing.');
+    }
+
+    try {
+      final records = await sl<ApiService>().getDryOffReport(animalId: record.animalId);
+      final targetDate = DateFormat('yyyy-MM-dd').format(record.dryOffDate);
+
+      for (final item in records.whereType<Map>()) {
+        final raw = Map<String, dynamic>.from(item);
+        final rawAnimal =
+            raw['animal'] is Map
+                ? Map<String, dynamic>.from(raw['animal'] as Map)
+                : raw['animalId'] is Map
+                    ? Map<String, dynamic>.from(raw['animalId'] as Map)
+                    : <String, dynamic>{};
+        final rawDate = (raw['date'] ?? raw['dryOffDate'])?.toString();
+        final normalizedDate =
+            rawDate == null || rawDate.isEmpty
+                ? ''
+                : rawDate.split('T').first;
+        final rawAnimalId =
+            (raw['animalId'] is String ? raw['animalId'] : null)?.toString() ??
+            rawAnimal['id']?.toString() ??
+            rawAnimal['_id']?.toString() ??
+            '';
+        final rawTag =
+            (raw['tagNumber'] ??
+                    raw['tagNo'] ??
+                    raw['tagno'] ??
+                    rawAnimal['tagNumber'])
+                ?.toString() ??
+            '';
+
+        final matchesAnimal =
+            (record.animalId.isNotEmpty && rawAnimalId == record.animalId) ||
+            (record.cowTagNumber.trim().isNotEmpty &&
+                rawTag.trim().toLowerCase() ==
+                    record.cowTagNumber.trim().toLowerCase());
+        if (!matchesAnimal || normalizedDate != targetDate) {
+          continue;
+        }
+
+        final resolvedId =
+            raw['_id']?.toString() ??
+            raw['id']?.toString() ??
+            raw['dryOffId']?.toString() ??
+            raw['recordId']?.toString() ??
+            (raw['dryOff'] is Map
+                ? (raw['dryOff']['_id'] ?? raw['dryOff']['id'])?.toString()
+                : null) ??
+            (raw['record'] is Map
+                ? (raw['record']['_id'] ?? raw['record']['id'])?.toString()
+                : null) ??
+            '';
+        if (resolvedId.isNotEmpty) {
+          return resolvedId;
+        }
+      }
+    } catch (_) {
+      // Fall through to the current id when the refresh lookup fails.
+    }
+
+    return record.id;
   }
 
   void _openAddSheet({DryOffRecord? record}) async {

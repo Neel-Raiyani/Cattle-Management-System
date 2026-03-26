@@ -19,6 +19,89 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
 
   CattleRemoteDataSourceImpl(this.apiClient);
 
+  bool _isVisibleAnimalJson(Map<String, dynamic> item) {
+    final status = (item['status'] ?? item['animalStatus'] ?? '')
+        .toString()
+        .trim()
+        .toUpperCase();
+    final isRetired = item['isRetired'] == true;
+    return status != 'SOLD' &&
+        status != 'DEAD' &&
+        status != 'DONATED' &&
+        !isRetired;
+  }
+
+  Future<Map<String, Map<String, bool>>> _fetchJourneyStatusByAnimalId() async {
+    try {
+      final response = await apiClient.get('/api/breeding/journey/list');
+      final data = response.data;
+      final rawList = data is List
+          ? data
+          : (data is Map ? (data['data'] as List? ?? const []) : const []);
+      final result = <String, Map<String, bool>>{};
+
+      for (final raw in rawList.whereType<Map>()) {
+        final item = Map<String, dynamic>.from(raw);
+        final animal = item['animal'] is Map
+            ? Map<String, dynamic>.from(item['animal'] as Map)
+            : (item['animalId'] is Map
+                ? Map<String, dynamic>.from(item['animalId'] as Map)
+                : <String, dynamic>{});
+        final animalId =
+            (animal['id'] ??
+                    animal['_id'] ??
+                    (item['animalId'] is String ? item['animalId'] : item['cowId']))
+                ?.toString() ??
+            '';
+        if (animalId.isEmpty) continue;
+
+        final stage = item['currentStage']?.toString().toUpperCase() ?? '';
+        final isDelivered =
+            item['isDelivered'] == true ||
+            stage == 'DELIVERED' ||
+            stage == 'COMPLETED' ||
+            stage == 'CLOSED';
+        if (isDelivered) continue;
+
+        final existing = result[animalId] ?? {'isPregnant': false, 'isDryOff': false};
+        existing['isPregnant'] =
+            existing['isPregnant'] == true ||
+            item['isPregnant'] == true ||
+            stage == 'PD_CONFIRMED' ||
+            stage == 'DRY_OFF';
+        existing['isDryOff'] =
+            existing['isDryOff'] == true ||
+            item['isDryOff'] == true ||
+            stage == 'DRY_OFF';
+        result[animalId] = existing;
+      }
+
+      return result;
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Map<String, dynamic> _applyJourneyStatus(
+    Map<String, dynamic> item,
+    Map<String, Map<String, bool>> journeyStatusByAnimalId,
+  ) {
+    final updated = Map<String, dynamic>.from(item);
+    final animalId = (updated['id'] ?? updated['_id'])?.toString() ?? '';
+    final status = journeyStatusByAnimalId[animalId];
+    if (status == null) return updated;
+
+    updated['isPregnant'] = status['isPregnant'] == true;
+    updated['isDryOff'] = status['isDryOff'] == true;
+    if (status['isPregnant'] == true || status['isDryOff'] == true) {
+      updated['isHeifer'] = false;
+    }
+    if (status['isDryOff'] == true) {
+      updated['isLactating'] = false;
+    }
+    return updated;
+  }
+
   @override
   Future<List<CattleModel>> getAllCattle() async {
     try {
@@ -26,6 +109,7 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
         apiClient.get('/api/animal/cows'),
         apiClient.get('/api/animal/bulls'),
       ]);
+      final journeyStatusByAnimalId = await _fetchJourneyStatusByAnimalId();
       final responseCows = responses[0];
       final responseBulls = responses[1];
 
@@ -36,16 +120,19 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
           responseBulls.data['bulls'] ?? responseBulls.data['data'] ?? [];
 
       final cows = cowsData.map((e) {
-        final map = Map<String, dynamic>.from(e);
+        final map = _applyJourneyStatus(
+          Map<String, dynamic>.from(e),
+          journeyStatusByAnimalId,
+        );
         if (map['gender'] == null) map['gender'] = 'FEMALE';
         return CattleModel.fromJson(map);
-      }).toList();
+      }).where((item) => _isVisibleAnimalJson(item.toJson())).toList();
 
       final bulls = bullsData.map((e) {
         final map = Map<String, dynamic>.from(e);
         if (map['gender'] == null) map['gender'] = 'MALE';
         return CattleModel.fromJson(map);
-      }).toList();
+      }).where((item) => _isVisibleAnimalJson(item.toJson())).toList();
 
       // Deduplicate by ID and favor Bull endpoint data if it appears in both lists
       final Map<String, CattleModel> uniqueCattle = {};
@@ -72,10 +159,21 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
   Future<List<CattleModel>> getCows() async {
     try {
       final response = await apiClient.get('/api/animal/cows');
+      final journeyStatusByAnimalId = await _fetchJourneyStatusByAnimalId();
       // API returns { success: true, cows: [...], pagination: {...} }
       final List<dynamic> data =
           response.data['cows'] ?? response.data['data'] ?? [];
-      return data.map((e) => CattleModel.fromJson(e)).toList();
+      return data
+          .whereType<Map>()
+          .map(
+            (e) => _applyJourneyStatus(
+              Map<String, dynamic>.from(e),
+              journeyStatusByAnimalId,
+            ),
+          )
+          .where(_isVisibleAnimalJson)
+          .map(CattleModel.fromJson)
+          .toList();
     } catch (e) {
       if (e is ServerException) rethrow;
       if (e is DioException) {
@@ -97,7 +195,7 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
         final map = Map<String, dynamic>.from(e);
         if (map['gender'] == null) map['gender'] = 'MALE';
         return CattleModel.fromJson(map);
-      }).toList();
+      }).where((item) => _isVisibleAnimalJson(item.toJson())).toList();
     } catch (e) {
       if (e is ServerException) rethrow;
       if (e is DioException) {
@@ -166,6 +264,7 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
               ownerName: cattle.ownerName,
               ownerMobile: cattle.ownerMobile,
               retiredDate: cattle.retiredDate,
+              bullType: cattle.bullType,
               bullView: cattle.bullView,
               motherMilk: cattle.motherMilk,
               grandmotherMilk: cattle.grandmotherMilk,
@@ -245,6 +344,7 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
               ownerName: cattle.ownerName,
               ownerMobile: cattle.ownerMobile,
               retiredDate: cattle.retiredDate,
+              bullType: cattle.bullType,
               bullView: cattle.bullView,
               motherMilk: cattle.motherMilk,
               grandmotherMilk: cattle.grandmotherMilk,

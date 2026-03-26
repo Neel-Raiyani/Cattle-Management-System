@@ -17,6 +17,7 @@ import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../cow_group/presentation/bloc/cow_group_event.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddBullScreen extends StatefulWidget {
   const AddBullScreen({super.key});
@@ -91,6 +92,7 @@ class _AddBullScreenState extends State<AddBullScreen> {
   String _acquisitionSource = 'Birth';
   File? _selectedImage;
   bool _isUploading = false;
+  bool _isSubmitting = false;
   final List<String> _breeds = List<String>.from(_bullBreedOptions);
 
   // Live listing for dropdowns
@@ -198,6 +200,9 @@ class _AddBullScreenState extends State<AddBullScreen> {
     return BlocListener<CattleBloc, CattleState>(
       listener: (context, state) {
         if (state is CattleAdded) {
+          if (mounted) {
+            setState(() => _isSubmitting = false);
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Bull added successfully!'),
@@ -205,13 +210,14 @@ class _AddBullScreenState extends State<AddBullScreen> {
             ),
           );
           Navigator.pop(context);
-        } else if (state is CattleError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error adding bull: ${state.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+        } else if (state is CattleError || state is CattleActionError) {
+          if (mounted) {
+            setState(() => _isSubmitting = false);
+          }
+          final message = state is CattleError
+              ? state.message
+              : (state as CattleActionError).message;
+          AppFeedback.showError(context, message);
         }
       },
       child: Scaffold(
@@ -572,14 +578,14 @@ class _AddBullScreenState extends State<AddBullScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isUploading ? null : _submitForm,
+                    onPressed: (_isUploading || _isSubmitting) ? null : _submitForm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xff99AA5A),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(25),
                       ),
                     ),
-                    child: _isUploading
+                    child: (_isUploading || _isSubmitting)
                         ? const SizedBox(
                       width: 24,
                       height: 24,
@@ -843,11 +849,14 @@ class _AddBullScreenState extends State<AddBullScreen> {
   }
 
   void _submitForm() async {
+    if (_isSubmitting) return;
     if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter bull name')),
-      );
+      AppFeedback.showError(context, 'Please enter bull name');
       return;
+    }
+
+    if (mounted) {
+      setState(() => _isSubmitting = true);
     }
 
     String? photoKey;
@@ -929,6 +938,7 @@ class _AddBullScreenState extends State<AddBullScreen> {
       purchasePrice: double.tryParse(_priceController.text),
       ownerName: _ownerNameController.text,
       ownerMobile: _mobileController.text,
+      bullType: 'GAUSHALA',
     );
 
     if (mounted) {

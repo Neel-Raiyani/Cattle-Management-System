@@ -153,7 +153,7 @@ class ConceptionRecord {
   static String _normalizePregnancyType(String? value) {
     final normalized = value?.toUpperCase();
     if (normalized == 'AI') return 'AI';
-    if (normalized == 'NATURAL') return 'Natural';
+    if (normalized == 'NATURAL' || normalized == 'GAUSHALA') return 'Natural';
     return value == null || value.isEmpty ? 'Natural' : value;
   }
 }

@@ -297,7 +297,13 @@ class ApiService {
     if (from != null) params['from'] = from.toIso8601String().split('T')[0];
     if (to != null) params['to'] = to.toIso8601String().split('T')[0];
     final data = await _get('/api/breeding/reports/heat', params);
-    return data is List ? data : (data['data'] as List? ?? []);
+    final records = _extractList(
+      data,
+      primaryKeys: const ['data', 'records', 'items', 'list', 'result'],
+    );
+    return await _filterRecordsForVisibleAnimals(
+      records.map((record) => _normalizeAlertRecord(record)).toList(),
+    );
   }
 
   /// DELETE /api/breeding/heat/{id} — Delete heat record by ID (path param)
@@ -342,9 +348,12 @@ class ApiService {
   /// GET /api/breeding/dry-off?animalId=...
   Future<List<dynamic>> getDryOffReport({required String animalId}) async {
     final data = await _get('/api/breeding/dry-off', {'animalId': animalId});
-    return _extractList(
+    final records = _extractList(
       data,
       primaryKeys: const ['data', 'records', 'history', 'items', 'list'],
+    );
+    return await _filterRecordsForVisibleAnimals(
+      records.map((record) => _normalizeAlertRecord(record)).toList(),
     );
   }
 
@@ -378,11 +387,21 @@ class ApiService {
     required String animalId,
     required DateTime conceiveDate,
     required String pregnancyType, // 'NATURAL' or 'AI'
+    String? bullType, // 'GAUSHALA' or 'AI'
+    String? bullId,
+    String? serialNumber,
+    String? companyName,
   }) async {
     return await _post('/api/breeding/journey/initiate', {
       'animalId': animalId,
       'conceiveDate': conceiveDate.toIso8601String(),
       'pregnancyType': pregnancyType,
+      if (bullType != null && bullType.isNotEmpty) 'bullType': bullType,
+      if (bullId != null && bullId.isNotEmpty) 'bullId': bullId,
+      if (serialNumber != null && serialNumber.isNotEmpty)
+        'serialNumber': serialNumber,
+      if (companyName != null && companyName.isNotEmpty)
+        'companyName': companyName,
     });
   }
 
@@ -887,12 +906,44 @@ class ApiService {
   /// GET /api/health/lab/master
   Future<List<dynamic>> getLabTestTypes() async {
     final data = await _get('/api/health/lab/master', {});
-    return data is List ? data : (data['data'] as List? ?? []);
+    var items = _extractList(
+      data,
+      primaryKeys: const [
+        'data',
+        'items',
+        'list',
+        'records',
+        'masters',
+        'labtests',
+        'labTests',
+        'tests',
+      ],
+    );
+    if (items.isEmpty && data is Map && data['data'] is Map) {
+      items = _extractList(
+        Map<String, dynamic>.from(data['data'] as Map),
+        primaryKeys: const [
+          'items',
+          'list',
+          'records',
+          'masters',
+          'labtests',
+          'labTests',
+          'tests',
+        ],
+      );
+    }
+    return items.map(_normalizeLabTestMaster).toList();
   }
 
   /// POST /api/health/lab/master
   Future<Map<String, dynamic>> addLabTestType({required String name}) async {
     return await _post('/api/health/lab/master', {'name': name});
+  }
+
+  /// DELETE /api/health/lab/master/{id}
+  Future<Map<String, dynamic>> deleteLabTestType({required String id}) async {
+    return await _delete('/api/health/lab/master/$id', {});
   }
 
   /// GET /api/health/lab?animalId=...
@@ -904,7 +955,9 @@ class ApiService {
       data,
       primaryKeys: const ['data', 'records', 'items', 'list'],
     );
-    return await _filterRecordsForVisibleAnimals(records);
+    return await _filterRecordsForVisibleAnimals(
+      records.map((record) => _normalizeAlertRecord(record)).toList(),
+    );
   }
 
   /// POST /api/health/lab
@@ -926,6 +979,54 @@ class ApiService {
       if (attachmentUrl != null) 'attachmentUrl': attachmentUrl,
       if (remark != null) 'remark': remark,
     });
+  }
+
+  /// PUT /api/health/lab/{id}
+  Future<Map<String, dynamic>> updateLabRecord({
+    required String id,
+    required String labtestId,
+    required DateTime sampleDate,
+    DateTime? resultDate,
+    String? result,
+    String? attachmentUrl,
+    String? remark,
+  }) async {
+    return await _put('/api/health/lab/$id', {
+      'labtestId': labtestId,
+      'sampleDate': sampleDate.toIso8601String(),
+      if (resultDate != null) 'resultDate': resultDate.toIso8601String(),
+      if (result != null) 'result': result,
+      if (attachmentUrl != null) 'attachmentUrl': attachmentUrl,
+      if (remark != null) 'remark': remark,
+    });
+  }
+
+  /// DELETE /api/health/lab/{id}
+  Future<Map<String, dynamic>> deleteLabRecord({required String id}) async {
+    return await _delete('/api/health/lab/$id', {});
+  }
+
+  /// GET /api/health/reports/lab
+  Future<List<dynamic>> getLabReport({
+    String? animalId,
+    String? labtestId,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final params = <String, dynamic>{};
+    if (animalId != null && animalId.isNotEmpty) params['animalId'] = animalId;
+    if (labtestId != null && labtestId.isNotEmpty) params['labtestId'] = labtestId;
+    if (from != null) params['from'] = from.toIso8601String().split('T')[0];
+    if (to != null) params['to'] = to.toIso8601String().split('T')[0];
+
+    final data = await _get('/api/health/reports/lab', params);
+    final records = _extractList(
+      data,
+      primaryKeys: const ['data', 'records', 'items', 'list'],
+    );
+    return await _filterRecordsForVisibleAnimals(
+      records.map((record) => _normalizeAlertRecord(record)).toList(),
+    );
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1142,6 +1243,115 @@ class ApiService {
     return {};
   }
 
+  /// GET /api/media/folders?type=PHOTO|VIDEO
+  Future<List<Map<String, dynamic>>> getMediaFolders({
+    required String type,
+  }) async {
+    final response = await _get('/api/media/folders', {'type': type});
+    var items = _extractList(
+      response,
+      primaryKeys: const ['folders', 'data', 'items', 'list'],
+    );
+    if (items.isEmpty && response is Map && response['data'] is Map) {
+      items = _extractList(
+        Map<String, dynamic>.from(response['data'] as Map),
+        primaryKeys: const ['folders', 'items', 'list'],
+      );
+    }
+    return items.map(_normalizeMediaFolder).toList();
+  }
+
+  /// POST /api/media/folders
+  Future<Map<String, dynamic>> createMediaFolder({
+    required String name,
+    required String type,
+  }) async {
+    final response = await _post('/api/media/folders', {
+      'name': name,
+      'type': type,
+    });
+    final data = _extractMap(response);
+    return _normalizeMediaFolder(
+      data['folder'] is Map ? Map<String, dynamic>.from(data['folder'] as Map) : data,
+    );
+  }
+
+  /// PATCH /api/media/folders/{id}
+  Future<Map<String, dynamic>> renameMediaFolder({
+    required String id,
+    required String name,
+  }) async {
+    final response = await _patch('/api/media/folders/$id', {'name': name});
+    final data = _extractMap(response);
+    return _normalizeMediaFolder(
+      data['folder'] is Map ? Map<String, dynamic>.from(data['folder'] as Map) : data,
+    );
+  }
+
+  /// DELETE /api/media/folders/{id}
+  Future<Map<String, dynamic>> deleteMediaFolder({required String id}) async {
+    return await _delete('/api/media/folders/$id', {});
+  }
+
+  /// GET /api/media/gallery/upload-url
+  Future<Map<String, dynamic>> getGalleryUploadSession({
+    required String fileName,
+    required String fileType,
+  }) async {
+    final response = await _get('/api/media/gallery/upload-url', {
+      'fileName': fileName,
+      'fileType': fileType,
+    });
+    final data = _extractMap(response);
+    return data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'] as Map)
+        : data;
+  }
+
+  /// POST /api/media/gallery/items
+  Future<Map<String, dynamic>> registerGalleryItem({
+    required String folderId,
+    required String fileName,
+    required String originalName,
+    required String mimeType,
+    required int size,
+  }) async {
+    final response = await _post('/api/media/gallery/items', {
+      'folderId': folderId,
+      'fileName': fileName,
+      'originalName': originalName,
+      'mimeType': mimeType,
+      'size': size,
+    });
+    final data = _extractMap(response);
+    return _normalizeGalleryItem(
+      data['item'] is Map ? Map<String, dynamic>.from(data['item'] as Map) : data,
+    );
+  }
+
+  /// GET /api/media/gallery/folders/{folderId}/items
+  Future<List<Map<String, dynamic>>> getGalleryItems({
+    required String folderId,
+  }) async {
+    final response = await _get('/api/media/gallery/folders/$folderId/items', {});
+    var items = _extractList(
+      response,
+      primaryKeys: const ['items', 'galleryItems', 'data', 'list'],
+    );
+    if (items.isEmpty && response is Map && response['data'] is Map) {
+      items = _extractList(
+        Map<String, dynamic>.from(response['data'] as Map),
+        primaryKeys: const ['items', 'galleryItems', 'list'],
+      );
+    }
+    return items.map(_normalizeGalleryItem).toList();
+  }
+
+  /// DELETE /api/media/gallery/items/{id}
+  Future<Map<String, dynamic>> deleteGalleryItem({required String id}) async {
+    return await _delete('/api/media/gallery/items/$id', {});
+  }
+
   // Removed duplicate recordMedical, recordVaccination, recordDeworming methods.
   // Using addMedicalRecord, addVaccinationRecord, and addDewormingRecord instead.
 
@@ -1212,6 +1422,27 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> _put(String path, dynamic body) async {
+    try {
+      final response = await apiClient.put(path, data: body);
+      _clearAnimalCaches();
+      return response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : {'data': response.data};
+    } on DioException catch (e) {
+      _handleDioError(e, path);
+    } catch (e) {
+      if (e is ServerException ||
+          e is TimeoutException ||
+          e is NetworkException ||
+          e is AuthenticationException ||
+          e is PermissionException) {
+        rethrow;
+      }
+      throw ServerException('Failed to update $path', 500);
+    }
+  }
+
   Future<Map<String, dynamic>> _delete(
     String path,
     Map<String, dynamic> params,
@@ -1263,6 +1494,23 @@ class ApiService {
     return const [];
   }
 
+  Map<String, dynamic> _extractMap(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      if (data['data'] is Map) {
+        return Map<String, dynamic>.from(data['data'] as Map);
+      }
+      return Map<String, dynamic>.from(data);
+    }
+    if (data is Map) {
+      final mapped = Map<String, dynamic>.from(data);
+      if (mapped['data'] is Map) {
+        return Map<String, dynamic>.from(mapped['data'] as Map);
+      }
+      return mapped;
+    }
+    return <String, dynamic>{};
+  }
+
   Map<String, dynamic> _normalizeAnimalSummaryItem(Map<String, dynamic> item) {
     final animal = Map<String, dynamic>.from(item);
     animal['id'] = animal['id']?.toString() ?? animal['_id']?.toString() ?? '';
@@ -1299,6 +1547,90 @@ class ApiService {
         category['categoryName']?.toString() ??
         '';
     return category;
+  }
+
+  Map<String, dynamic> _normalizeLabTestMaster(Map<String, dynamic> item) {
+    final record = Map<String, dynamic>.from(item);
+    final nested =
+        record['labtest'] is Map
+            ? Map<String, dynamic>.from(record['labtest'] as Map)
+            : record['labTest'] is Map
+                ? Map<String, dynamic>.from(record['labTest'] as Map)
+                : record['master'] is Map
+                    ? Map<String, dynamic>.from(record['master'] as Map)
+                    : <String, dynamic>{};
+
+    final id =
+        record['id']?.toString() ??
+        record['_id']?.toString() ??
+        record['labtestId']?.toString() ??
+        record['labTestId']?.toString() ??
+        nested['id']?.toString() ??
+        nested['_id']?.toString() ??
+        '';
+    final name =
+        record['name']?.toString() ??
+        record['labtestName']?.toString() ??
+        record['labTestName']?.toString() ??
+        record['title']?.toString() ??
+        nested['name']?.toString() ??
+        nested['title']?.toString() ??
+        '';
+
+    return {
+      ...record,
+      'id': id,
+      'name': name,
+    };
+  }
+
+  Map<String, dynamic> _normalizeMediaFolder(Map<String, dynamic> item) {
+    final folder = Map<String, dynamic>.from(item);
+    folder['id'] = folder['id']?.toString() ?? folder['_id']?.toString() ?? '';
+    folder['name'] = folder['name']?.toString() ?? 'Untitled Folder';
+    folder['type'] =
+        folder['type']?.toString().toUpperCase() ??
+        folder['mediaType']?.toString().toUpperCase() ??
+        'PHOTO';
+    folder['itemCount'] = int.tryParse(
+          (folder['itemCount'] ?? folder['count'] ?? 0).toString(),
+        ) ??
+        0;
+    return folder;
+  }
+
+  Map<String, dynamic> _normalizeGalleryItem(Map<String, dynamic> item) {
+    final media = Map<String, dynamic>.from(item);
+    media['id'] = media['id']?.toString() ?? media['_id']?.toString() ?? '';
+    media['folderId'] =
+        media['folderId']?.toString() ??
+        (media['folder'] is Map
+            ? media['folder']['id']?.toString() ??
+                  media['folder']['_id']?.toString()
+            : null) ??
+        '';
+    media['fileName'] =
+        media['fileName']?.toString() ??
+        media['key']?.toString() ??
+        media['path']?.toString() ??
+        '';
+    media['originalName'] =
+        media['originalName']?.toString() ??
+        media['name']?.toString() ??
+        media['title']?.toString() ??
+        media['fileName']?.toString() ??
+        'Media';
+    media['mimeType'] =
+        media['mimeType']?.toString() ??
+        media['fileType']?.toString() ??
+        'application/octet-stream';
+    media['size'] = int.tryParse((media['size'] ?? 0).toString()) ?? 0;
+    media['viewUrl'] =
+        media['viewUrl']?.toString() ??
+        media['url']?.toString() ??
+        media['signedUrl']?.toString() ??
+        '';
+    return media;
   }
 
   Map<String, dynamic> _normalizeDistributionItem(Map<String, dynamic> item) {

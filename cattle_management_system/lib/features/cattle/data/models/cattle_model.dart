@@ -44,6 +44,7 @@ class CattleModel extends Cattle {
     super.ownerName,
     super.ownerMobile,
     super.retiredDate,
+    super.bullType,
     super.bullView,
     super.motherMilk,
     super.grandmotherMilk,
@@ -139,6 +140,7 @@ class CattleModel extends Cattle {
       retiredDate: json['retiredDate'] != null
           ? DateTime.tryParse(json['retiredDate'])
           : null,
+      bullType: json['bullType']?.toString(),
       bullView: json['bullView']?.toString(),
       motherMilk: json['motherMilk'] != null
           ? double.tryParse(json['motherMilk'].toString())
@@ -198,6 +200,7 @@ class CattleModel extends Cattle {
       if (ownerMobile != null) 'ownerMobile': ownerMobile,
       if (retiredDate != null)
         'retiredDate': retiredDate!.toIso8601String().split('T')[0],
+      if (normalizedBullType != null) 'bullType': normalizedBullType,
       if (normalizedBullView != null) 'bullView': normalizedBullView,
       if (motherMilk != null) 'motherMilk': motherMilk,
       if (grandmotherMilk != null) 'grandmotherMilk': grandmotherMilk,

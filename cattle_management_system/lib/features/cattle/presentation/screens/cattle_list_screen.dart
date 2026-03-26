@@ -9,6 +9,8 @@ import '../bloc/cattle_event.dart';
 import '../bloc/cattle_state.dart';
 import 'add_cattle_screen.dart';
 import 'cow_details_screen.dart';
+import 'cattle_details/edit_cow_details_screen.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class CattleListScreen extends StatefulWidget {
   final String? initialFilter;
@@ -22,6 +24,7 @@ class _CattleListScreenState extends State<CattleListScreen> {
   String? _selectedFilter;
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
+  List<Cattle> _cachedCattleList = const [];
 
   bool _isTerminalStatus(String status) {
     final normalized = status.toUpperCase();
@@ -127,7 +130,25 @@ class _CattleListScreenState extends State<CattleListScreen> {
           ),
 
           Expanded(
-            child: BlocBuilder<CattleBloc, CattleState>(
+            child: BlocConsumer<CattleBloc, CattleState>(
+              listenWhen: (previous, current) =>
+                  current is CattleListLoaded ||
+                  current is CattleError ||
+                  current is CattleActionError,
+              listener: (context, state) {
+                if (state is CattleListLoaded) {
+                  _cachedCattleList = List<Cattle>.from(state.cattleList);
+                } else if (state is CattleError) {
+                  AppFeedback.showError(context, state.message);
+                } else if (state is CattleActionError) {
+                  AppFeedback.showError(context, state.message);
+                }
+              },
+              buildWhen: (previous, current) =>
+                  current is CattleLoading ||
+                  current is CattleListLoaded ||
+                  current is CattleEmpty ||
+                  current is CattleError,
               builder: (context, state) {
                 if (state is CattleLoading) {
                   return const Center(child: CircularProgressIndicator());
@@ -179,6 +200,41 @@ class _CattleListScreenState extends State<CattleListScreen> {
                 } else if (state is CattleEmpty) {
                   return Center(child: Text(state.message));
                 } else if (state is CattleError) {
+                  if (_cachedCattleList.isNotEmpty) {
+                    final filteredList = _filterCattle(_cachedCattleList, l10n);
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
+                          ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              l10n.lblTotalCow(filteredList.length),
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filteredList.length,
+                            itemBuilder: (context, index) {
+                              return _CustomCattleCard(
+                                cattle: filteredList[index],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  }
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
@@ -409,11 +465,12 @@ class _CustomCattleCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final isLactating = cattle.effectiveIsLactating;
     final isHeifer = cattle.effectiveIsHeifer;
+    final isCalf = cattle.isCowCalf;
     // Logic for other statuses
 
     Color statusColor = Colors.orange;
     Color statusBg = Colors.white; // Fixed background as requested
-    if (isHeifer) {
+    if (isHeifer || isCalf) {
       statusColor = Colors.blue;
       // statusBg remains white
     }
@@ -652,17 +709,28 @@ class _CustomCattleCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F8E9), // Light Green
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.edit_outlined,
-                        color: const Color(0xFFA4C639),
-                        size: 18,
+                  child: GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              EditCowDetailsScreen(cattle: cattle),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F8E9), // Light Green
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.edit_outlined,
+                          color: Color(0xFFA4C639),
+                          size: 18,
+                        ),
                       ),
                     ),
                   ),
@@ -778,10 +846,13 @@ class _CustomCattleCard extends StatelessWidget {
     if (cattle.effectiveIsRetired) return l10n.lblRetiredCow;
     if (cattle.effectiveIsDryOff) return l10n.lblDryOff;
     if (cattle.effectiveIsPregnant) return l10n.lblPregnant;
-    if (cattle.effectiveIsHeifer) return l10n.lblHeifer;
     if (cattle.effectiveIsLactating) return l10n.lblLactating;
+    if (cattle.isCowCalf) return l10n.lblCalf;
+    if (cattle.effectiveIsHeifer) return l10n.lblHeifer;
 
     switch (cattle.status.toLowerCase()) {
+      case 'active':
+        return cattle.isFemaleGender ? l10n.lblCalf : cattle.status;
       case 'lactating':
         return l10n.lblLactating;
       case 'heifer':

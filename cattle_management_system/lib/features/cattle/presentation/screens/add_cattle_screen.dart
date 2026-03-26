@@ -18,6 +18,7 @@ import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../cow_group/presentation/bloc/cow_group_event.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddCattleScreen extends StatefulWidget {
   const AddCattleScreen({super.key});
@@ -96,6 +97,7 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
   // Image
   File? _selectedImage;
   bool _isUploading = false;
+  bool _isSubmitting = false;
 
   // Live listing for dropdowns
   List<Map<String, dynamic>> _cows = []; // mothers
@@ -204,6 +206,9 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
     return BlocListener<CattleBloc, CattleState>(
       listener: (context, state) {
         if (state is CattleAdded) {
+          if (mounted) {
+            setState(() => _isSubmitting = false);
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Cow added successfully!'),
@@ -211,13 +216,14 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
             ),
           );
           Navigator.pop(context);
-        } else if (state is CattleError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${state.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+        } else if (state is CattleError || state is CattleActionError) {
+          if (mounted) {
+            setState(() => _isSubmitting = false);
+          }
+          final message = state is CattleError
+              ? state.message
+              : (state as CattleActionError).message;
+          AppFeedback.showError(context, message);
         }
       },
       child: Scaffold(
@@ -649,14 +655,14 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isUploading ? null : _submitForm,
+                    onPressed: (_isUploading || _isSubmitting) ? null : _submitForm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFA4C639),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(25),
                       ),
                     ),
-                    child: _isUploading
+                    child: (_isUploading || _isSubmitting)
                         ? const SizedBox(
                       width: 24,
                       height: 24,
@@ -910,11 +916,14 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
   }
 
   void _submitForm() async {
+    if (_isSubmitting) return;
     if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter a cow name')));
+      AppFeedback.showError(context, 'Please enter a cow name');
       return;
+    }
+
+    if (mounted) {
+      setState(() => _isSubmitting = true);
     }
 
     String? photoKey;

@@ -50,11 +50,29 @@ class DryOffRecord {
   }
 
   factory DryOffRecord.fromJson(Map<String, dynamic> json) {
-    final animal = json['animal'] as Map<String, dynamic>?;
+    final animal =
+        json['animal'] is Map
+            ? Map<String, dynamic>.from(json['animal'] as Map)
+            : json['animalId'] is Map
+                ? Map<String, dynamic>.from(json['animalId'] as Map)
+                : null;
+    final nestedRecord =
+        json['dryOff'] is Map
+            ? Map<String, dynamic>.from(json['dryOff'] as Map)
+            : json['record'] is Map
+                ? Map<String, dynamic>.from(json['record'] as Map)
+                : null;
     return DryOffRecord(
-      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      id:
+          json['id']?.toString() ??
+          json['_id']?.toString() ??
+          json['dryOffId']?.toString() ??
+          json['recordId']?.toString() ??
+          nestedRecord?['id']?.toString() ??
+          nestedRecord?['_id']?.toString() ??
+          '',
       animalId:
-          json['animalId']?.toString() ??
+          (json['animalId'] is String ? json['animalId']?.toString() : null) ??
           animal?['id']?.toString() ??
           animal?['_id']?.toString() ??
           '',
@@ -69,6 +87,7 @@ class DryOffRecord {
           json['tagNo']?.toString() ??
           '-',
       cowSerialNumber:
+          animal?['animalNumber']?.toString() ??
           animal?['serialNumber']?.toString() ??
           json['serialNumber']?.toString() ??
           json['animalNumber']?.toString() ??

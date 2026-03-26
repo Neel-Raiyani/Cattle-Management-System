@@ -191,7 +191,13 @@ class HealthEvent {
           json['drugName'],
       testName: json['labtest'] is Map
           ? json['labtest']['name']
-          : (json['labTestName'] ?? json['testName']),
+          : json['labTest'] is Map
+              ? json['labTest']['name']
+              : json['labtestId'] is Map
+                  ? json['labtestId']['name']
+                  : json['labTestId'] is Map
+                      ? json['labTestId']['name']
+                      : (json['labTestName'] ?? json['testName']),
     );
   }
 }

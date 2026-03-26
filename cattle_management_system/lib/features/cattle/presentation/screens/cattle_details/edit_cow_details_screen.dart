@@ -8,15 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../cow_group/presentation/bloc/cow_group_bloc.dart';
 import '../../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../../cow_group/presentation/bloc/cow_group_event.dart';
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../bloc/cattle_bloc.dart';
 import '../../bloc/cattle_event.dart';
 import '../../bloc/cattle_state.dart';
+import '../../../../../core/utils/app_feedback.dart';
 
 class EditCowDetailsScreen extends StatefulWidget {
   final Cattle cattle;
@@ -69,73 +68,44 @@ class _EditCowDetailsScreenState extends State<EditCowDetailsScreen> {
   Future<void> _fetchParentAnimals() async {
     setState(() => _loadingParents = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token') ?? '';
-      final gaushalaId = prefs.getString('gaushala_id') ?? '';
+      final api = sl<ApiService>();
+      final results = await Future.wait([
+        api.getCows(limit: 500),
+        api.getBulls(limit: 500),
+      ]);
 
-      final headers = {
-        'Authorization': 'Bearer $token',
-        'gaushala-id': gaushalaId,
-        'Accept': 'application/json',
-      };
+      _cows = results[0]
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+      _bulls = results[1]
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
 
-      final cowRes = await http.get(
-        Uri.parse(
-          'https://cattle-management-system-1.onrender.com/api/animal/cows?limit=200',
-        ),
-        headers: headers,
-      );
-      final bullRes = await http.get(
-        Uri.parse(
-          'https://cattle-management-system-1.onrender.com/api/animal/bulls?limit=200',
-        ),
-        headers: headers,
-      );
+      _cowLabels = _cows.map((c) => '${c['name']} (${c['tagNumber']})').toList();
+      _bullLabels = _bulls
+          .map((b) => '${b['name']} (${b['tagNumber']})')
+          .toList();
 
-      if (cowRes.statusCode == 200) {
-        final data = jsonDecode(cowRes.body) as Map<String, dynamic>;
-        _cows = List<Map<String, dynamic>>.from(data['cows'] ?? []);
-        _cowLabels = _cows
-            .map((c) => '${c['name']} (${c['tagNumber']})')
-            .toList();
-
-        // Match existing mother
-        if (widget.cattle.motherId != null) {
-          final match = _cows.indexWhere(
-            (c) => (c['_id'] ?? c['id']) == widget.cattle.motherId,
-          );
-          if (match != -1) {
-            _selectedMother = _cowLabels[match];
-          }
-        } else if (widget.cattle.motherName != null) {
-          final match = _cows.indexWhere(
-            (c) => c['name'] == widget.cattle.motherName,
-          );
-          if (match != -1) _selectedMother = _cowLabels[match];
-        }
+      if (widget.cattle.motherId != null) {
+        final match = _cows.indexWhere(
+          (c) => (c['_id'] ?? c['id']) == widget.cattle.motherId,
+        );
+        if (match != -1) _selectedMother = _cowLabels[match];
+      } else if (widget.cattle.motherName != null) {
+        final match = _cows.indexWhere((c) => c['name'] == widget.cattle.motherName);
+        if (match != -1) _selectedMother = _cowLabels[match];
       }
 
-      if (bullRes.statusCode == 200) {
-        final data = jsonDecode(bullRes.body) as Map<String, dynamic>;
-        _bulls = List<Map<String, dynamic>>.from(data['bulls'] ?? []);
-        _bullLabels = _bulls
-            .map((b) => '${b['name']} (${b['tagNumber']})')
-            .toList();
-
-        // Match existing father
-        if (widget.cattle.fatherId != null) {
-          final match = _bulls.indexWhere(
-            (b) => (b['_id'] ?? b['id']) == widget.cattle.fatherId,
-          );
-          if (match != -1) {
-            _selectedFather = _bullLabels[match];
-          }
-        } else if (widget.cattle.fatherName != null) {
-          final match = _bulls.indexWhere(
-            (b) => b['name'] == widget.cattle.fatherName,
-          );
-          if (match != -1) _selectedFather = _bullLabels[match];
-        }
+      if (widget.cattle.fatherId != null) {
+        final match = _bulls.indexWhere(
+          (b) => (b['_id'] ?? b['id']) == widget.cattle.fatherId,
+        );
+        if (match != -1) _selectedFather = _bullLabels[match];
+      } else if (widget.cattle.fatherName != null) {
+        final match = _bulls.indexWhere((b) => b['name'] == widget.cattle.fatherName);
+        if (match != -1) _selectedFather = _bullLabels[match];
       }
     } catch (e) {
       debugPrint('Error fetching parent animals: $e');
@@ -249,13 +219,11 @@ class _EditCowDetailsScreenState extends State<EditCowDetailsScreen> {
             ),
           );
           Navigator.pop(context);
-        } else if (state is CattleError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${state.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+        } else if (state is CattleError || state is CattleActionError) {
+          final message = state is CattleError
+              ? state.message
+              : (state as CattleActionError).message;
+          AppFeedback.showError(context, message);
         }
       },
       child: Scaffold(
@@ -862,9 +830,7 @@ class _EditCowDetailsScreenState extends State<EditCowDetailsScreen> {
 
   void _submitForm() async {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter cow name')));
+      AppFeedback.showError(context, 'Please enter cow name');
       return;
     }
 
@@ -881,19 +847,15 @@ class _EditCowDetailsScreenState extends State<EditCowDetailsScreen> {
           errorMsg = 'Unauthorized: Please re-login';
         if (newPhotoKey.contains('S3')) errorMsg = 'Server storage error';
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$errorMsg. Saving other changes...'),
-            backgroundColor: Colors.orange,
-          ),
+        AppFeedback.showWarning(
+          context,
+          '$errorMsg. Saving other changes...',
         );
         newPhotoKey = null; // Don't save the error code as URL
       } else if (newPhotoKey == null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Image upload failed. Saving other changes...'),
-            backgroundColor: Colors.orange,
-          ),
+        AppFeedback.showWarning(
+          context,
+          'Image upload failed. Saving other changes...',
         );
       }
     }

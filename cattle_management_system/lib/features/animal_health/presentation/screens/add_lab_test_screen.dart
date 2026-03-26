@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
-import 'package:cattle_management_system/core/di/injection_container.dart';
-import 'package:cattle_management_system/core/services/api_service.dart';
-import 'package:cattle_management_system/features/cattle/data/models/cattle_model.dart';
-import '../../domain/entities/health_event.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/error/exceptions.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/utils/app_feedback.dart';
 import '../../../cattle/domain/entities/cattle.dart';
+import '../../../cattle/presentation/bloc/cattle_bloc.dart';
+import '../../../cattle/presentation/bloc/cattle_event.dart';
+import '../../../cattle/presentation/bloc/cattle_state.dart';
+import '../../domain/entities/health_event.dart';
 
 class AddLabTestScreen extends StatefulWidget {
   final HealthEvent? existingRecord;
+
   const AddLabTestScreen({super.key, this.existingRecord});
 
   @override
@@ -17,100 +23,252 @@ class AddLabTestScreen extends StatefulWidget {
 }
 
 class _AddLabTestScreenState extends State<AddLabTestScreen> {
+  static const String _kOtherId = '__OTHER__';
+
   final _formKey = GlobalKey<FormState>();
-  String _selectedAnimalType = 'Cow';
+  final TextEditingController _otherLabTestCtrl = TextEditingController();
+  final TextEditingController _remarkCtrl = TextEditingController();
+
+  String _animalType = 'Cow';
   Cattle? _selectedAnimal;
-  DateTime? _sampleDate = DateTime.now();
-  DateTime? _resultDate = DateTime.now();
-  String? _selectedTest;
-  String? _selectedResult;
-  final _remarkCtrl = TextEditingController();
+  DateTime _sampleDate = DateTime.now();
+  DateTime _resultDate = DateTime.now();
+  String? _selectedLabTestId;
+  String _selectedResult = 'POSITIVE';
+  bool _isSubmitting = false;
+  bool _isLoadingLabTests = true;
+  String? _labTestLoadError;
+  List<Map<String, dynamic>> _labTests = [];
 
-  List<Cattle> _cows = [];
-  List<Cattle> _bulls = [];
-  bool _isLoading = true;
-  final List<String> _results = ['Positive', 'Negative'];
-
-  final List<String> _labTests = [
-    'Hematology (CBC) (હેમેટોલોજી – રક્ત તપાસ)',
-    'Biochemistry (બાયોકેમિસ્ટ્રી – રાસાયણિક તપાસ)',
-    'Urine Examination (મૂત્ર તપાસ)',
-    'Faecal Examination (મળ તપાસ)',
-    'Skin Scraping (ત્વચા ખંજવાળ તપાસ)',
-    'Panel Test by Dry Biochemistry (ડ્રાય બાયોકેમિસ્ટ્રી પેનલ ટેસ્ટ)',
-    'Allergen Special Test (એલર્જન વિશેષ પરીક્ષણ)',
-    'Immuno Canine Vaccicheck (ઇમ્યુનો કેનાઇન વેક્સીચેક ટેસ્ટ)',
-    'Microbial Culture (માઈક્રોબિયલ કલ્ચર)',
-    'Microbial Culture & DST (માઈક્રોબિયલ કલ્ચર અને ડ્રગ સેન્સિટિવિટી ટેસ્ટ)',
-    'Heart Diagnostic Test (હૃદય સંબંધિત નિદાન પરીક્ષણ)',
-    'Special Test for Gene A1A2 By PCR (જિન A1A2 માટે પીસીઆર ટેસ્ટ)',
-    'Milk (દૂધ તપાસ)',
-    'Canine Rapid Diagnostic Test (કેનાઇન ઝડપી નિદાન ટેસ્ટ)',
-    'Histopathology (હિસ્ટોપેથોલોજી – કોષસંરચનાત્મક પરીક્ષણ)',
-    'Water Analysis (TDS + pH + Coliform count) (પાણી તપાસ: ટી.ડી.એસ + પીએચ + કોલિફોર્મ ગણતરી)',
-    'Post mortem examination (મૃત્યુ પછીનું પરીક્ષણ)',
-    'Molecular Diagnostics/PCR for diagnosis (અણુઆધારિત નિદાન / પી.સી.આર)',
-    'Feline Rapid Diagnostic Test (ફિલાઇન ઝડપી નિદાન પરીક્ષણ)',
-    'PCR based Diagnosis (પીસીઆર આધારિત નિદાન)',
-    'Breed Purity Test (જાતિ શુદ્ધતા પરીક્ષણ)',
-    'Gender Determination (લિંગ નિર્ધારણ)',
-    'Air Sampling (Bacterial + Fungal) (4–6 Plates) (હવા તપાસ: બેક્ટેરિયલ + ફંગલ)',
-    'Rabies Antibodies by RFFIT (International Pet Travel) (રેબીસ એન્ટીબોડી આરએફએફઆઈટી – આંતરરાષ્ટ્રીય પાળતુ પ્રાણી મુસાફરી)',
-    'Rabies Antibodies by RFFIT (Sero-Monitoring) (રેબીસ એન્ટીબોડી આરએફએફઆઈટી – સેરો મોનીટરીંગ)',
-    'Mineral / Metal Analysis (ખનિજ / ધાતુ વિશ્લેષણ)',
-    'Brucellosi (બ્રુસેલોસિસ)',
-  ];
+  static const List<String> _results = ['POSITIVE', 'NEGATIVE'];
 
   @override
   void initState() {
     super.initState();
-    _fetchCattle();
-    if (widget.existingRecord != null) {
-      final r = widget.existingRecord!;
-      _sampleDate = r.eventDate;
-      _resultDate = r.nextDueDate;
-      _selectedTest = r.testName;
-      _selectedResult = r.status;
-      _remarkCtrl.text = r.remark ?? '';
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cattleState = context.read<CattleBloc>().state;
+      if (cattleState is! CattleListLoaded) {
+        context.read<CattleBloc>().add(const LoadCattleList());
+      }
+    });
+    _loadLabTests();
+    _hydrateExistingRecord();
   }
 
-  Future<void> _fetchCattle() async {
+  void _hydrateExistingRecord() {
+    final existing = widget.existingRecord;
+    if (existing == null) return;
+    _sampleDate = existing.eventDate;
+    _resultDate = existing.nextDueDate ?? existing.eventDate;
+    _selectedResult = existing.status.trim().toUpperCase();
+    _remarkCtrl.text = existing.remark ?? '';
+  }
+
+  void _syncExistingAnimal(List<Cattle> cattleList) {
+    final existing = widget.existingRecord;
+    if (existing == null || _selectedAnimal != null) return;
+
+    final match = cattleList.cast<Cattle?>().firstWhere(
+          (cattle) =>
+              cattle?.name == existing.cowName &&
+              cattle?.tagNumber == existing.cowTagNumber,
+          orElse: () => null,
+        );
+    if (match == null) return;
+
+    _selectedAnimal = match;
+    _animalType =
+        match.gender.toUpperCase().startsWith('M') ? 'Bull' : 'Cow';
+  }
+
+  @override
+  void dispose() {
+    _otherLabTestCtrl.dispose();
+    _remarkCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadLabTests() async {
+    setState(() {
+      _isLoadingLabTests = true;
+      _labTestLoadError = null;
+    });
+
     try {
-      final api = sl<ApiService>();
-      final cowResults = await api.getCows();
-      final bullResults = await api.getBulls();
-      
-      final cows = cowResults.map((e) => CattleModel.fromJson(e)).where((c) => c.isActive).toList();
-      final bulls = bullResults.map((e) => CattleModel.fromJson(e)).where((c) => c.isActive).toList();
+      final list = await sl<ApiService>().getLabTestTypes();
+      if (!mounted) return;
+
+      final labTests = list
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .map((item) => {
+                'id': item['id']?.toString() ?? item['_id']?.toString() ?? '',
+                'name': item['name']?.toString() ?? 'Unknown',
+              })
+          .where((item) =>
+              (item['id'] as String).isNotEmpty &&
+              (item['name'] as String).trim().isNotEmpty)
+          .toList();
+
+      String? selectedId = _selectedLabTestId;
+      final existingName = widget.existingRecord?.testName?.trim();
+      if (selectedId == null &&
+          existingName != null &&
+          existingName.isNotEmpty) {
+        final match = labTests.cast<Map<String, dynamic>?>().firstWhere(
+              (item) =>
+                  item?['name']?.toString().trim().toLowerCase() ==
+                  existingName.toLowerCase(),
+              orElse: () => null,
+            );
+        if (match != null) {
+          selectedId = match['id'] as String;
+        } else {
+          selectedId = _kOtherId;
+          _otherLabTestCtrl.text = existingName;
+        }
+      }
 
       setState(() {
-        _cows = cows;
-        _bulls = bulls;
-        _isLoading = false;
-
-        if (widget.existingRecord != null) {
-          try {
-            final allCattle = [..._cows, ..._bulls];
-            _selectedAnimal = allCattle.firstWhere(
-              (c) => c.name == widget.existingRecord!.cowName,
-            );
-          } catch (_) {}
-        }
+        _labTests = labTests;
+        _selectedLabTestId = selectedId;
+        _isLoadingLabTests = false;
       });
-    } catch (e) {
-      setState(() => _isLoading = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingLabTests = false;
+        _labTestLoadError = 'Could not load lab tests. Tap to retry.';
+      });
     }
   }
 
-  List<Cattle> get _displayAnimals {
-    return _selectedAnimalType == 'Cow' ? _cows : _bulls;
+  List<Cattle> _currentCattleList(BuildContext context) {
+    final state = context.read<CattleBloc>().state;
+    if (state is CattleListLoaded) {
+      return state.cattleList.where((cattle) {
+        final isMatch = _animalType == 'Cow'
+            ? cattle.gender.toUpperCase().startsWith('F')
+            : cattle.gender.toUpperCase().startsWith('M');
+        return isMatch && cattle.isActive;
+      }).toList();
+    }
+    return [];
+  }
+
+  Future<void> _pickDate(bool isSampleDate) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isSampleDate ? _sampleDate : _resultDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF99AA5A),
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isSampleDate) {
+        _sampleDate = picked;
+        if (_resultDate.isBefore(_sampleDate)) {
+          _resultDate = _sampleDate;
+        }
+      } else {
+        _resultDate = picked;
+      }
+    });
+  }
+
+  Future<void> _submit() async {
+    if (_selectedAnimal == null || _selectedLabTestId == null) {
+      AppFeedback.showError(context, 'Please fill required fields');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      String resolvedLabTestId;
+      if (_selectedLabTestId == _kOtherId) {
+        final name = _otherLabTestCtrl.text.trim();
+        if (name.isEmpty) {
+          AppFeedback.showError(context, 'Please enter the lab test name.');
+          setState(() => _isSubmitting = false);
+          return;
+        }
+        final result = await sl<ApiService>().addLabTestType(name: name);
+        resolvedLabTestId = result['_id']?.toString() ??
+            result['id']?.toString() ??
+            (result['data'] is Map
+                ? ((result['data'] as Map)['_id']?.toString() ??
+                    (result['data'] as Map)['id']?.toString() ??
+                    '')
+                : '');
+        if (resolvedLabTestId.isEmpty) {
+          throw Exception('Failed to create lab test master entry');
+        }
+        final createdName = name.trim();
+        setState(() {
+          _labTests = [
+            ..._labTests.where(
+              (item) => item['id']?.toString() != resolvedLabTestId,
+            ),
+            {'id': resolvedLabTestId, 'name': createdName},
+          ];
+          _selectedLabTestId = resolvedLabTestId;
+        });
+      } else {
+        resolvedLabTestId = _selectedLabTestId!;
+      }
+
+      if (widget.existingRecord == null) {
+        await sl<ApiService>().addLabRecord(
+          animalId: _selectedAnimal!.id,
+          labtestId: resolvedLabTestId,
+          sampleDate: _sampleDate,
+          resultDate: _resultDate,
+          result: _selectedResult,
+          remark: _remarkCtrl.text.trim().isEmpty ? null : _remarkCtrl.text.trim(),
+        );
+      } else {
+        await sl<ApiService>().updateLabRecord(
+          id: widget.existingRecord!.id,
+          labtestId: resolvedLabTestId,
+          sampleDate: _sampleDate,
+          resultDate: _resultDate,
+          result: _selectedResult,
+          remark: _remarkCtrl.text.trim().isEmpty ? null : _remarkCtrl.text.trim(),
+        );
+      }
+
+      if (!mounted) return;
+      await AppFeedback.showSuccess(
+        context,
+        widget.existingRecord == null
+            ? 'Lab test record added successfully'
+            : 'Lab test record updated successfully',
+      );
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } on ServerException catch (e) {
+      AppFeedback.showError(context, e.message);
+    } catch (e) {
+      AppFeedback.showError(context, 'Failed to save lab test: $e');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    bool isEdit = widget.existingRecord != null;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -131,7 +289,9 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
           ),
         ),
         title: Text(
-          isEdit ? 'Edit Lab Test Information' : 'Add Lab Test Information',
+          widget.existingRecord == null
+              ? 'Add Lab Test Information'
+              : 'Edit Lab Test Information',
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -146,7 +306,6 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Cow / Bull Tabs
               Container(
                 height: 45,
                 decoration: BoxDecoration(
@@ -154,23 +313,35 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
-                  children: [_buildTabButton('Cow'), _buildTabButton('Bull')],
+                  children: [
+                    _buildTabButton('Cow'),
+                    _buildTabButton('Bull'),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),
-
               _buildLabel('Name'),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : _buildDropdown<Cattle>(
-                      hint: 'Select ${_selectedAnimalType.toLowerCase()} name',
-                      value: _selectedAnimal,
-                      items: _displayAnimals,
-                      itemLabelBuilder: (c) => '${c.name} (${c.tagNumber})',
-                      onChanged: (val) => setState(() => _selectedAnimal = val),
-                    ),
-              const SizedBox(height: 16),
+              BlocBuilder<CattleBloc, CattleState>(
+                builder: (context, state) {
+                  if (state is CattleListLoaded) {
+                    _syncExistingAnimal(state.cattleList);
+                  }
+                  final items = _currentCattleList(context);
+                  if (state is CattleLoading && items.isEmpty) {
+                    return const CircularProgressIndicator();
+                  }
 
+                  return _buildDropdown<Cattle>(
+                    hint: 'Select ${_animalType.toLowerCase()} name',
+                    value: _selectedAnimal,
+                    items: items,
+                    itemLabelBuilder: (cattle) =>
+                        '${cattle.name} (${cattle.tagNumber})',
+                    onChanged: (value) => setState(() => _selectedAnimal = value),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -203,31 +374,29 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              _buildLabel('Labtest'),
-              _buildDropdown<String>(
-                hint: 'Select the laboratory test',
-                value: _selectedTest,
-                items: _labTests,
-                itemLabelBuilder: (val) => val,
-                onChanged: (val) => setState(() => _selectedTest = val),
-              ),
+              _buildLabel('Lab Test'),
+              _buildLabTestDropdown(),
+              if (_selectedLabTestId == _kOtherId) ...[
+                const SizedBox(height: 12),
+                _buildTextField(
+                  controller: _otherLabTestCtrl,
+                  hint: 'Enter the lab test name',
+                ),
+              ],
               const SizedBox(height: 16),
-
               _buildLabel('Result'),
               _buildDropdown<String>(
                 hint: 'Select the test result',
                 value: _selectedResult,
                 items: _results,
-                itemLabelBuilder: (val) => val,
-                onChanged: (val) => setState(() => _selectedResult = val),
+                itemLabelBuilder: (value) => value,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedResult = value);
+                  }
+                },
               ),
               const SizedBox(height: 16),
-
-              _buildLabel('Result Attachment'),
-              _buildAttachmentPicker(),
-              const SizedBox(height: 16),
-
               _buildLabel('Remark'),
               _buildTextField(
                 controller: _remarkCtrl,
@@ -235,11 +404,10 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
                 maxLines: 4,
               ),
               const SizedBox(height: 32),
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submit,
+                  onPressed: _isSubmitting ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF99AA5A),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -248,14 +416,23 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: Text(
-                    'Submit',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.4,
+                          ),
+                        )
+                      : Text(
+                          'Submit',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -267,11 +444,11 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
   }
 
   Widget _buildTabButton(String type) {
-    bool isSelected = _selectedAnimalType == type;
+    final isSelected = _animalType == type;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() {
-          _selectedAnimalType = type;
+          _animalType = type;
           _selectedAnimal = null;
         }),
         child: Container(
@@ -304,10 +481,10 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
 
   Widget _buildDropdown<T>({
     required String hint,
-    T? value,
+    required T? value,
     required List<T> items,
     required String Function(T) itemLabelBuilder,
-    required Function(T?) onChanged,
+    required ValueChanged<T?> onChanged,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -325,10 +502,10 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
           ),
           items: items
               .map(
-                (e) => DropdownMenuItem<T>(
-                  value: e,
+                (item) => DropdownMenuItem<T>(
+                  value: item,
                   child: Text(
-                    itemLabelBuilder(e),
+                    itemLabelBuilder(item),
                     style: GoogleFonts.inter(fontSize: 14),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -341,8 +518,131 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
     );
   }
 
+  Widget _buildLabTestDropdown() {
+    if (_isLoadingLabTests) {
+      return Container(
+        height: 50,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F6F7),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF99AA5A),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Loading lab tests...',
+              style: GoogleFonts.inter(
+                color: Colors.grey.shade500,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_labTestLoadError != null) {
+      return GestureDetector(
+        onTap: _loadLabTests,
+        child: Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF0F0),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.refresh, color: Colors.red.shade400, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _labTestLoadError!,
+                  style: GoogleFonts.inter(
+                    color: Colors.red.shade400,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final items = [
+      ..._labTests,
+      {'id': _kOtherId, 'name': 'Other'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F6F7),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedLabTestId,
+              hint: Text(
+                items.length == 1 ? 'Select Other' : 'Select lab test',
+                style: GoogleFonts.inter(
+                  color: Colors.grey.shade400,
+                  fontSize: 13,
+                ),
+              ),
+              isExpanded: true,
+              items: items.map((item) {
+                return DropdownMenuItem<String>(
+                  value: item['id'] as String,
+                  child: Text(
+                    item['name'] as String,
+                    style: GoogleFonts.inter(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedLabTestId = value;
+                  if (value != _kOtherId) {
+                    _otherLabTestCtrl.clear();
+                  }
+                });
+              },
+            ),
+          ),
+        ),
+        if (_labTests.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              'No lab tests found from backend. Use Other to add one.',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildDatePickerField({
-    DateTime? value,
+    required DateTime value,
     required VoidCallback onTap,
     required String hint,
   }) {
@@ -359,11 +659,8 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
           children: [
             Expanded(
               child: Text(
-                value != null ? DateFormat('dd MMM, yyyy').format(value) : hint,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: value != null ? Colors.black : Colors.grey,
-                ),
+                DateFormat('dd MMM, yyyy').format(value),
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.black),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -403,98 +700,5 @@ class _AddLabTestScreenState extends State<AddLabTestScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildAttachmentPicker() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F7),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.cloud_upload_outlined, color: Colors.grey, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            'Upload Attachment',
-            style: GoogleFonts.inter(color: Colors.grey, fontSize: 12),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF99AA5A),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Select Attachment',
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _pickDate(bool isSampleDate) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: (isSampleDate ? _sampleDate : _resultDate) ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF99AA5A),
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        if (isSampleDate) {
-          _sampleDate = picked;
-        } else {
-          _resultDate = picked;
-        }
-      });
-    }
-  }
-
-  void _submit() {
-    if (_selectedAnimal == null ||
-        _selectedTest == null ||
-        _selectedResult == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
-      );
-      return;
-    }
-
-    final record = HealthEvent(
-      id: widget.existingRecord?.id ?? const Uuid().v4(),
-      cowName: _selectedAnimal!.name,
-      cowTagNumber: _selectedAnimal!.tagNumber,
-      cowSerialNumber: _selectedAnimal!.serialNumber ?? '',
-      eventType: 'Lab Testing',
-      testName: _selectedTest,
-      eventDate: _sampleDate!,
-      nextDueDate: _resultDate, // Using nextDueDate as result date here
-      status: _selectedResult!,
-      remark: _remarkCtrl.text,
-      createdAt: DateTime.now(),
-    );
-
-    Navigator.pop(context, record);
   }
 }

@@ -4,8 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import '../../domain/entities/cattle.dart';
@@ -17,6 +15,7 @@ import '../bloc/cattle_state.dart';
 import '../../../cow_group/presentation/bloc/cow_group_bloc.dart';
 import '../../../cow_group/presentation/bloc/cow_group_event.dart';
 import '../../../cow_group/presentation/bloc/cow_group_state.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddAiBullScreen extends StatefulWidget {
   const AddAiBullScreen({super.key});
@@ -40,6 +39,7 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
   String? _selectedCowGroup;
   File? _selectedImage;
   bool _isUploading = false;
+  bool _isSubmitting = false;
   List<String> _breeds = [];
   bool _loadingBreeds = false;
 
@@ -56,48 +56,18 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
 
   Future<String?> _uploadImageAndGetKey(File imageFile) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token') ?? '';
-      final gaushalaId = prefs.getString('gaushala_id') ?? '';
-
-      // Platform-aware filename extraction
       final fileName = imageFile.path
           .split(Platform.isWindows ? '\\' : '/')
           .last;
       const contentType = 'image/jpeg';
 
-      // Use Uri.https for safe parameter encoding
-      final queryParams = {
-        'fileName': fileName,
-        'contentType': contentType,
-        'type': 'PHOTO',
-      };
-
-      final presignedUrl = Uri.https(
-        'cattle-management-system-1.onrender.com',
-        '/api/animal/media/presigned-url',
-        queryParams,
+      final presignedData = await sl<ApiService>().getPresignedUrl(
+        fileName: fileName,
+        contentType: contentType,
+        type: 'PHOTO',
       );
-
-      final presignedRes = await http.get(
-        presignedUrl,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'gaushala-id': gaushalaId,
-          'Accept': 'application/json',
-        },
-      );
-
-      debugPrint('[IMG] Presigned status: ${presignedRes.statusCode}');
-
-      if (presignedRes.statusCode != 200) {
-        return 'ERROR_PRESIGNED_${presignedRes.statusCode}';
-      }
-
-      final presignedJson =
-          jsonDecode(presignedRes.body) as Map<String, dynamic>;
-      final uploadUrl = presignedJson['uploadUrl'] as String?;
-      final key = presignedJson['key'] as String?;
+      final uploadUrl = presignedData['uploadUrl'] as String?;
+      final key = presignedData['key'] as String?;
 
       if (uploadUrl == null || key == null) return null;
 
@@ -153,7 +123,11 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
   }
 
   void _submitForm() async {
+    if (_isSubmitting) return;
     if (_formKey.currentState!.validate()) {
+      if (mounted) {
+        setState(() => _isSubmitting = true);
+      }
       // Upload image if selected
       String? photoKey;
       if (_selectedImage != null) {
@@ -167,11 +141,9 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
             errorMsg = 'Unauthorized: Please re-login';
           if (photoKey.contains('S3')) errorMsg = 'Server storage error';
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$errorMsg. Adding AI bull without photo...'),
-              backgroundColor: Colors.orange,
-            ),
+          AppFeedback.showWarning(
+            context,
+            '$errorMsg. Adding AI bull without photo...',
           );
           photoKey = null;
         }
@@ -193,6 +165,7 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
         imageUrl: photoKey, // S3 key
         isRetired: false,
         cowGroup: _selectedCowGroup,
+        bullType: 'AI',
         bullView: 'AI',
         motherMilk: double.tryParse(_motherMilkController.text.trim()),
         grandmotherMilk: double.tryParse(
@@ -211,6 +184,9 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
     return BlocListener<CattleBloc, CattleState>(
       listener: (context, state) {
         if (state is CattleAdded) {
+          if (mounted) {
+            setState(() => _isSubmitting = false);
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Bull added successfully!'),
@@ -218,13 +194,14 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
             ),
           );
           Navigator.pop(context);
-        } else if (state is CattleError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${state.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+        } else if (state is CattleError || state is CattleActionError) {
+          if (mounted) {
+            setState(() => _isSubmitting = false);
+          }
+          final message = state is CattleError
+              ? state.message
+              : (state as CattleActionError).message;
+          AppFeedback.showError(context, message);
         }
       },
       child: Scaffold(
@@ -426,14 +403,14 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isUploading ? null : _submitForm,
+                    onPressed: (_isUploading || _isSubmitting) ? null : _submitForm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xff99AA5A),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(25),
                       ),
                     ),
-                    child: _isUploading
+                    child: (_isUploading || _isSubmitting)
                         ? const SizedBox(
                             width: 24,
                             height: 24,

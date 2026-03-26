@@ -132,7 +132,12 @@ Future<void> _onLoadCattleById(
   Future<void> _onAddCattle(AddCattle event, Emitter<CattleState> emit) async {
     emit(CattleLoading());
     final result = await repository.addCattle(event.cattle);
-    result.fold((failure) => emit(CattleError(failure.message)), (cattle) {
+    result.fold((failure) {
+      emit(CattleActionError(failure.message));
+      if (_currentCattleList.isNotEmpty) {
+        emit(CattleListLoaded(List.from(_currentCattleList), isFromCache: true));
+      }
+    }, (cattle) {
       _currentCattleList.add(cattle);
       emit(CattleAdded(cattle));
       // Emit updated list immediately
@@ -146,7 +151,12 @@ Future<void> _onLoadCattleById(
   ) async {
     emit(CattleLoading());
     final result = await repository.updateCattle(event.cattle);
-    result.fold((failure) => emit(CattleError(failure.message)), (cattle) {
+    result.fold((failure) {
+      emit(CattleActionError(failure.message));
+      if (_currentCattleList.isNotEmpty) {
+        emit(CattleListLoaded(List.from(_currentCattleList), isFromCache: true));
+      }
+    }, (cattle) {
       final index = _currentCattleList.indexWhere((c) => c.id == cattle.id);
       if (index != -1) {
         _currentCattleList[index] = cattle;
@@ -173,7 +183,10 @@ Future<void> _onLoadCattleById(
         _currentCattleList.insert(removedIndex, removedCattle);
         emit(CattleListLoaded(List.from(_currentCattleList), isFromCache: true));
       }
-      emit(CattleError(failure.message));
+      emit(CattleActionError(failure.message));
+      if (_currentCattleList.isNotEmpty) {
+        emit(CattleListLoaded(List.from(_currentCattleList), isFromCache: true));
+      }
     }, (_) {
       emit(CattleDeleted(event.id));
       emit(CattleListLoaded(List.from(_currentCattleList)));

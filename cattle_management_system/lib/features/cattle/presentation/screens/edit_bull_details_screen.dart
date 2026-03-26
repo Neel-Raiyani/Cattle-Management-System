@@ -5,8 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import '../../domain/entities/cattle.dart';
@@ -126,43 +124,18 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
 
   Future<String?> _uploadImageAndGetKey(File imageFile) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token') ?? '';
-      final gaushalaId = prefs.getString('gaushala_id') ?? '';
-
       final fileName = imageFile.path
           .split(Platform.isWindows ? '\\' : '/')
           .last;
       const contentType = 'image/jpeg';
 
-      final queryParams = {
-        'fileName': fileName,
-        'contentType': contentType,
-        'type': 'PHOTO',
-      };
-
-      final presignedUrl = Uri.https(
-        'cattle-management-system-1.onrender.com',
-        '/api/animal/media/presigned-url',
-        queryParams,
+      final presignedData = await sl<ApiService>().getPresignedUrl(
+        fileName: fileName,
+        contentType: contentType,
+        type: 'PHOTO',
       );
-
-      final presignedRes = await http.get(
-        presignedUrl,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'gaushala-id': gaushalaId,
-          'Accept': 'application/json',
-        },
-      );
-
-      if (presignedRes.statusCode != 200)
-        return 'ERROR_PRESIGNED_${presignedRes.statusCode}';
-
-      final presignedJson =
-          jsonDecode(presignedRes.body) as Map<String, dynamic>;
-      final uploadUrl = presignedJson['uploadUrl'] as String?;
-      final key = presignedJson['key'] as String?;
+      final uploadUrl = presignedData['uploadUrl'] as String?;
+      final key = presignedData['key'] as String?;
 
       if (uploadUrl == null || key == null) return null;
 

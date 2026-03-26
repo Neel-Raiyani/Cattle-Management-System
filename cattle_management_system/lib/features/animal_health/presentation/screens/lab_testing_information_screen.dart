@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
 import '../../domain/entities/health_event.dart';
 import 'add_lab_test_screen.dart';
 
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class LabTestingInformationScreen extends StatefulWidget {
   const LabTestingInformationScreen({super.key});
@@ -37,7 +39,10 @@ class _LabTestingInformationScreenState
     });
 
     try {
-      final data = await sl<ApiService>().getLabRecords();
+      final data = await sl<ApiService>().getLabReport(
+        from: _fromDate,
+        to: _toDate,
+      );
       if (mounted) {
         setState(() {
           _records = data
@@ -49,7 +54,7 @@ class _LabTestingInformationScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Service not available';
+          _error = e.toString().replaceFirst('Exception: ', '');
           _isLoading = false;
         });
       }
@@ -272,7 +277,7 @@ class _LabTestingInformationScreenState
                     onUpdate: (updated) {
                       _fetchRecords();
                     },
-                    onDelete: () => _showDeleteDialog(_records.indexOf(record)),
+                    onDelete: () => _showDeleteDialog(record),
                   );
                 },
               ),
@@ -318,12 +323,7 @@ class _LabTestingInformationScreenState
           record.cowName.toLowerCase().contains(_searchQuery) ||
           record.cowTagNumber.toLowerCase().contains(_searchQuery);
 
-      final eventD = DateTime(record.eventDate.year, record.eventDate.month, record.eventDate.day);
-      final fromD = DateTime(_fromDate.year, _fromDate.month, _fromDate.day);
-      final toD = DateTime(_toDate.year, _toDate.month, _toDate.day);
-      final matchesDate = !eventD.isBefore(fromD) && !eventD.isAfter(toD);
-
-      return matchesSearch && matchesDate;
+      return matchesSearch;
     }).toList();
     
     filtered.sort((a, b) => b.eventDate.compareTo(a.eventDate));
@@ -358,7 +358,7 @@ class _LabTestingInformationScreenState
     }
   }
 
-  void _showDeleteDialog(int index) {
+  void _showDeleteDialog(HealthEvent record) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -376,17 +376,37 @@ class _LabTestingInformationScreenState
             child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              setState(() {
-                _records.removeAt(index);
-              });
+              await _deleteRecord(record);
             },
             child: Text('Delete', style: GoogleFonts.inter(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteRecord(HealthEvent record) async {
+    if (record.id.isEmpty) {
+      AppFeedback.showError(context, 'Unable to delete this record.');
+      return;
+    }
+    try {
+      await sl<ApiService>().deleteLabRecord(id: record.id);
+      if (!mounted) return;
+      await AppFeedback.showSuccess(
+        context,
+        'Lab test record deleted successfully',
+      );
+      if (!mounted) return;
+      await _fetchRecords();
+    } catch (e) {
+      AppFeedback.showError(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
   }
 }
 
@@ -433,10 +453,20 @@ class _LabTestingRecordCard extends StatelessWidget {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      'assets/icons/mother_cow.png',
-                      fit: BoxFit.contain,
-                    ),
+                    child: record.cowImageUrl != null &&
+                            record.cowImageUrl!.isNotEmpty
+                        ? Image.network(
+                            record.cowImageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Image.asset(
+                              'assets/icons/mother_cow.png',
+                              fit: BoxFit.contain,
+                            ),
+                          )
+                        : Image.asset(
+                            'assets/icons/mother_cow.png',
+                            fit: BoxFit.contain,
+                          ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -615,15 +645,15 @@ class _LabTestingRecordCard extends StatelessWidget {
                 Expanded(
                   child: InkWell(
                     onTap: () async {
-                      final updated = await Navigator.push<HealthEvent>(
+                      final updated = await Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
                               AddLabTestScreen(existingRecord: record),
                         ),
                       );
-                      if (updated != null) {
-                        onUpdate(updated);
+                      if (updated == true) {
+                        onUpdate(record);
                       }
                     },
                     child: Container(

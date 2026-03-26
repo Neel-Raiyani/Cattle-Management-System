@@ -295,6 +295,9 @@ class AppLocalizationsGu extends AppLocalizations {
   String get lblLactating => 'દૂધ આપતી';
 
   @override
+  String get lblCalf => 'વાછરડી';
+
+  @override
   String get lblHeifer => 'પાડી';
 
   @override

@@ -51,6 +51,7 @@ class Cattle extends Equatable {
   final String? ownerMobile;
   // Others
   final DateTime? retiredDate;
+  final String? bullType; // GAUSHALA or AI
   final String? bullView; // For Bulls
   final double? motherMilk;
   final double? grandmotherMilk;
@@ -98,6 +99,7 @@ class Cattle extends Equatable {
     this.ownerName,
     this.ownerMobile,
     this.retiredDate,
+    this.bullType,
     this.bullView,
     this.motherMilk,
     this.grandmotherMilk,
@@ -153,6 +155,13 @@ class Cattle extends Equatable {
     return trimmed.toUpperCase();
   }
 
+  String? get normalizedBullType {
+    final trimmed = bullType?.trim().toUpperCase();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    if (trimmed == 'GAUSHALA' || trimmed == 'AI') return trimmed;
+    return null;
+  }
+
   String? get normalizedCowGroup {
     final trimmed = cowGroup?.trim();
     if (trimmed == null || trimmed.isEmpty) return null;
@@ -185,6 +194,13 @@ class Cattle extends Equatable {
 
   bool get effectiveIsHeifer {
     if (!isFemaleGender || !isActive) return false;
+    if (isHeifer == false) return false;
+    if (effectiveIsLactating || effectiveIsPregnant || effectiveIsDryOff) {
+      return false;
+    }
+    if ((parity ?? 0) > 0 || lastDeliveryDate != null) {
+      return false;
+    }
     if (isHeifer == true) return true;
 
     final group = normalizedCowGroup?.toLowerCase();
@@ -199,6 +215,18 @@ class Cattle extends Equatable {
         !effectiveIsDryOff;
 
     return ageInMonths < 12 || hasNoPregnancyHistory;
+  }
+
+  bool get isCowCalf {
+    if (!isFemaleGender || !isActive) return false;
+    if (effectiveIsLactating ||
+        effectiveIsPregnant ||
+        effectiveIsDryOff ||
+        effectiveIsHeifer ||
+        effectiveIsRetired) {
+      return false;
+    }
+    return ageInMonths < 12 && (parity ?? 0) == 0;
   }
 
   bool get isBullCalf {
@@ -261,6 +289,7 @@ class Cattle extends Equatable {
     String? ownerName,
     String? ownerMobile,
     DateTime? retiredDate,
+    String? bullType,
     String? bullView,
     double? motherMilk,
     double? grandmotherMilk,
@@ -308,6 +337,7 @@ class Cattle extends Equatable {
       ownerName: ownerName ?? this.ownerName,
       ownerMobile: ownerMobile ?? this.ownerMobile,
       retiredDate: retiredDate ?? this.retiredDate,
+      bullType: bullType ?? this.bullType,
       bullView: bullView ?? this.bullView,
       motherMilk: motherMilk ?? this.motherMilk,
       grandmotherMilk: grandmotherMilk ?? this.grandmotherMilk,
@@ -358,6 +388,7 @@ class Cattle extends Equatable {
     ownerName,
     ownerMobile,
     retiredDate,
+    bullType,
     bullView,
     motherMilk,
     grandmotherMilk,

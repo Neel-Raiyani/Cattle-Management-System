@@ -652,6 +652,12 @@ abstract class AppLocalizations {
   /// **'Lactating'**
   String get lblLactating;
 
+  /// No description provided for @lblCalf.
+  ///
+  /// In en, this message translates to:
+  /// **'Calf'**
+  String get lblCalf;
+
   /// No description provided for @lblHeifer.
   ///
   /// In en, this message translates to:

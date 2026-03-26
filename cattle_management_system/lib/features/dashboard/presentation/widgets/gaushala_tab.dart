@@ -30,7 +30,6 @@ import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/data/models/cattle_model.dart';
 import '../../../../features/conception/domain/entities/conception_record.dart';
-import '../../../../features/heat_record/domain/entities/heat_record.dart';
 import '../../../../features/milk_production/presentation/bloc/milk_production_bloc.dart';
 import '../../../../features/milk_production/presentation/bloc/milk_production_state.dart';
 import '../../../../features/milk_production/presentation/bloc/milk_production_event.dart';
@@ -59,6 +58,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
   int? _heatRecordCount;
   int? _conceptionCount;
   int? _dryOffRecordCount;
+  int? _pregnantJourneyCount;
+  int? _dryJourneyCount;
 
   @override
   void initState() {
@@ -211,27 +212,46 @@ class _GaushalaTabState extends State<GaushalaTab> {
     int heatCount = 0;
     int conceptionCount = 0;
     int dryOffCount = 0;
+    int pregnantJourneyCount = 0;
+    int dryJourneyCount = 0;
 
     try {
       final items = await sl<ApiService>().getHeatReport(
         from: DateTime.now().subtract(const Duration(days: 30)),
         to: DateTime.now().add(const Duration(days: 1)),
       );
-      final records = items
+      heatCount = items
           .whereType<Map>()
-          .map(
-            (item) => HeatRecord.fromJson(Map<String, dynamic>.from(item)),
-          )
-          .where(
-            (record) => registry.matches(
-              animalId: record.animalId,
-              tagNumber: record.cowTagNumber,
-              serialNumber: record.cowSerialNumber,
-              name: record.cowName,
-            ),
-          )
-          .toList();
-      heatCount = records.length;
+          .where((item) {
+            final raw = Map<String, dynamic>.from(item);
+            return registry.matches(
+              animalId:
+                  raw['animal'] is Map
+                      ? (raw['animal']['id'] ?? raw['animal']['_id'])?.toString()
+                      : raw['animalId']?.toString(),
+              tagNumber:
+                  (raw['tagno'] ??
+                          raw['tagNumber'] ??
+                          raw['animalTagNumber'] ??
+                          (raw['animal'] is Map ? raw['animal']['tagNumber'] : null))
+                      ?.toString(),
+              serialNumber:
+                  (raw['cowNo'] ??
+                          raw['animalNumber'] ??
+                          raw['serialNumber'] ??
+                          (raw['animal'] is Map
+                              ? (raw['animal']['animalNumber'] ??
+                                  raw['animal']['serialNumber'])
+                              : null))
+                      ?.toString(),
+              name:
+                  (raw['name'] ??
+                          raw['animalName'] ??
+                          (raw['animal'] is Map ? raw['animal']['name'] : null))
+                      ?.toString(),
+            );
+          })
+          .length;
     } catch (_) {}
 
     try {
@@ -253,6 +273,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
           )
           .toList();
       conceptionCount = records.length;
+      pregnantJourneyCount = records.where((record) => record.isPregnant).length;
+      dryJourneyCount = records.where((record) => record.isDryOff).length;
     } catch (_) {}
 
     try {
@@ -264,6 +286,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
         _heatRecordCount = heatCount;
         _conceptionCount = conceptionCount;
         _dryOffRecordCount = dryOffCount;
+        _pregnantJourneyCount = pregnantJourneyCount;
+        _dryJourneyCount = dryJourneyCount;
       });
     }
   }
@@ -462,27 +486,29 @@ class _GaushalaTabState extends State<GaushalaTab> {
                 .where(_isHeiferCandidate)
                 .length;
 
-            final int calvingCount = _summaryCount(
-              ['pregnantCount'],
-              fallback: _nestedSummaryCount(
-                'cows',
-                'pregnant',
-                fallback: activeCattle
-                    .where((c) => c.effectiveIsPregnant)
-                    .length,
-              ),
-            );
+            final int calvingCount = _pregnantJourneyCount ??
+                _summaryCount(
+                  ['pregnantCount'],
+                  fallback: _nestedSummaryCount(
+                    'cows',
+                    'pregnant',
+                    fallback: activeCattle
+                        .where((c) => c.effectiveIsPregnant)
+                        .length,
+                  ),
+                );
 
-            final int dryCount = _summaryCount(
-              ['dryOffCount'],
-              fallback: _nestedSummaryCount(
-                'cows',
-                'dryOff',
-                fallback: activeCattle
-                    .where((c) => c.effectiveIsDryOff)
-                    .length,
-              ),
-            );
+            final int dryCount = _dryJourneyCount ??
+                _summaryCount(
+                  ['dryOffCount'],
+                  fallback: _nestedSummaryCount(
+                    'cows',
+                    'dryOff',
+                    fallback: activeCattle
+                        .where((c) => c.effectiveIsDryOff)
+                        .length,
+                  ),
+                );
 
             final String sickAnimalCount = _summaryCount(
               ['sickAnimalCount', 'sickCount'],
@@ -492,7 +518,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
             final String pregnancyStatusCount =
                 (_conceptionCount ?? calvingCount).toString();
             final String dryOffTargetCount =
-                (_dryOffRecordCount ?? dryCount).toString();
+                (_dryJourneyCount ?? _dryOffRecordCount ?? dryCount).toString();
 
             final double totalMorningMilk = milkEntries.fold<double>(
               0.0,
