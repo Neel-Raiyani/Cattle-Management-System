@@ -18,6 +18,11 @@
  *           minLength: 1
  *           example: 'Foot and Mouth Disease'
  *           description: Common name of the illness.
+ *         gaushalaId:
+ *           type: string
+ *           format: mongo-id
+ *           nullable: true
+ *           description: ID of the owning gaushala. null indicates a system-wide common disease.
  *
  *     VaccineMaster:
  *       type: object
@@ -31,6 +36,33 @@
  *           minLength: 1
  *           example: 'FMD Vaccine'
  *           description: Commercial or scientific name of the vaccine.
+ *         frequencyMonths:
+ *           type: integer
+ *           minimum: 0
+ *           description: Recommended interval between doses in months.
+ *         gaushalaId:
+ *           type: string
+ *           format: mongo-id
+ *           nullable: true
+ *           description: ID of the owning gaushala. null indicates a system-wide common vaccine.
+ *
+ *     LabtestMaster:
+ *       type: object
+ *       description: Reference record for laboratory diagnostic tests.
+ *       properties:
+ *         id:
+ *           type: string
+ *           example: '65d1234567890abcdef12347'
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           example: 'Mastitis CMT'
+ *           description: Name of the diagnostic procedure.
+ *         gaushalaId:
+ *           type: string
+ *           format: mongo-id
+ *           nullable: true
+ *           description: ID of the owning gaushala. null indicates a system-wide common lab test.
  *
  *     Species:
  *       type: string
@@ -142,7 +174,7 @@
  * /api/health/master/diseases:
  *   get:
  *     summary: List all cataloged diseases
- *     description: Retrieves the gaushala-wise master list of diseases for selection in records.
+ *     description: Retrieves the master list of diseases. Returns common diseases (system-wide) merged with gaushala-specific records. If a gaushala-specific disease has the same name as a common one, the gaushala-specific version takes precedence.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -187,7 +219,7 @@
  * /api/health/master/vaccines:
  *   get:
  *     summary: List all vaccines
- *     description: Retrieves the gaushala-wise master list of available vaccinations.
+ *     description: Retrieves the master list of available vaccinations. Returns common vaccines (system-wide) merged with gaushala-specific records. If a gaushala-specific vaccine has the same name as a common one, the gaushala-specific version takes precedence.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []
@@ -699,7 +731,7 @@
  * /api/health/lab/master:
  *   get:
  *     summary: List Lab Test Types
- *     description: Returns the gaushala-wise list of available lab tests for dropdowns.
+ *     description: Returns the list of available lab tests. Returns common lab tests (system-wide) merged with gaushala-specific records. If a gaushala-specific lab test has the same name as a common one, the gaushala-specific version takes precedence.
  *     tags: [Health Service]
  *     security:
  *       - bearerAuth: []

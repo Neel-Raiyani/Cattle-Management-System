@@ -91,7 +91,7 @@ model VaccineMaster {
 model LabtestMaster {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
-  gaushalaId  String   @db.ObjectId
+  gaushalaId  String?  @db.ObjectId   // null = common lab test (visible to all gaushalas)
   createdAt   DateTime @default(now())
 
   @@unique([name, gaushalaId])

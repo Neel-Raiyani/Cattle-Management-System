@@ -146,16 +146,38 @@ export const addVaccine = async (req: AuthRequest, res: Response, next: NextFunc
 
 /**
  * Fetch all lab tests for a specific gaushala.
+ * Returns common lab tests (gaushalaId = null) merged with gaushala-specific ones.
+ * If a gaushala-specific lab test has the same name as a common one, the specific one takes precedence.
  */
 export const getLabTests = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const gaushalaId = req.gaushala?.id as string;
         if (!gaushalaId) throw new AppError('Gaushala ID is required', 400);
 
-        const labTests = await (prisma as any).labtestMaster.findMany({
-            where: { gaushalaId },
+        const allLabTests = await (prisma as any).labtestMaster.findMany({
+            where: {
+                OR: [
+                    { gaushalaId: null },
+                    { gaushalaId }
+                ]
+            },
             orderBy: { name: 'asc' }
         });
+
+        // Deduplicate: gaushala-specific lab tests take precedence over common ones
+        const labTestMap = new Map<string, any>();
+        for (const t of allLabTests) {
+            if (t.gaushalaId === null) {
+                labTestMap.set(t.name.toLowerCase(), t);
+            }
+        }
+        for (const t of allLabTests) {
+            if (t.gaushalaId !== null) {
+                labTestMap.set(t.name.toLowerCase(), t);
+            }
+        }
+
+        const labTests = Array.from(labTestMap.values()).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
         res.status(200).json({
             success: true,
