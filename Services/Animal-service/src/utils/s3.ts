@@ -11,7 +11,7 @@ const s3Client = new S3Client({
         accessKeyId: process.env.S3_ACCESS_KEY || '',
         secretAccessKey: process.env.S3_SECRET_KEY || ''
     },
-    forcePathStyle: process.env.STORAGE_MODE === 'development' // Required for MinIO
+    forcePathStyle: true // Required for MinIO (both local and production)
 });
 
 /**
