@@ -5,6 +5,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/data/models/cattle_model.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 // ============================================================
 // CONSTANTS
@@ -518,22 +519,14 @@ class _MonthlyMilkReportScreenState
         fallback: '',
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      AppFeedback.showSuccess(context, 
             fileUrl.isNotEmpty
                 ? 'Monthly export is ready.'
                 : 'Monthly export request completed.',
-          ),
-        ),
-      );
+          );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to export monthly report right now.'),
-        ),
-      );
+      AppFeedback.showError(context, 'Unable to export monthly report right now.');
     } finally {
       if (mounted) {
         setState(() => _isDownloading = false);

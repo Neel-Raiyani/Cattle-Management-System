@@ -10,9 +10,11 @@ import 'dart:typed_data';
 import '../../domain/entities/cattle.dart';
 import '../bloc/cattle_bloc.dart';
 import '../bloc/cattle_event.dart';
+import '../bloc/cattle_state.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/utils/media_file_utils.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class EditBullDetailsScreen extends StatefulWidget {
   final Cattle cattle;
@@ -68,10 +70,11 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
       text: DateFormat('dd MMM, yyyy').format(widget.cattle.dateOfBirth),
     );
 
-    // Logic for Adult Date (e.g. 2.5 years after birth?)
-    // For now we don't have this field in Cattle entity so I'll leave it blank or mock it.
-    // If I had it I would populate it.
-    _adultDateController = TextEditingController();
+    _adultDateController = TextEditingController(
+      text: widget.cattle.dateOfAdult != null
+          ? DateFormat('dd MMM, yyyy').format(widget.cattle.dateOfAdult!)
+          : '',
+    );
 
     // Bull View field - map from something?
     _bullViewController = TextEditingController();
@@ -135,11 +138,21 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
         contentType: contentType,
         type: 'PHOTO',
       );
-      final uploadUrl = presignedData['uploadUrl'] as String?;
-      final key =
-          presignedData['viewUrl'] as String? ?? presignedData['key'] as String?;
+      final uploadUrl = presignedData['uploadUrl']?.toString();
+      final viewUrl = presignedData['viewUrl']?.toString();
+      final key = presignedData['key']?.toString();
+      final storablePhotoUrl =
+          (viewUrl != null && viewUrl.isNotEmpty)
+              ? viewUrl
+              : ((uploadUrl != null && uploadUrl.isNotEmpty)
+                  ? uploadUrl.split('?').first
+                  : key);
 
-      if (uploadUrl == null || key == null) return null;
+      if (uploadUrl == null ||
+          storablePhotoUrl == null ||
+          storablePhotoUrl.isEmpty) {
+        return null;
+      }
 
       final Uint8List imageBytes = await imageFile.readAsBytes();
       final s3Response = await http.put(
@@ -152,7 +165,7 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
         return 'ERROR_S3_${s3Response.statusCode}';
       }
 
-      return key;
+      return storablePhotoUrl;
     } catch (e) {
       debugPrint('[IMG] Upload exception: $e');
       return null;
@@ -182,42 +195,50 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
-              onPressed: () => Navigator.pop(context),
-              padding: EdgeInsets.zero,
-            ),
-          ),
-        ),
-        title: Text(
-          'Edit Bull Details', // Changed title
-          style: GoogleFonts.poppins(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: false,
+    return BlocListener<CattleBloc, CattleState>(
+      listener: (context, state) {
+        if (state is CattleUpdated) {
+          Navigator.pop(context, true);
+        } else if (state is CattleActionError) {
+          AppFeedback.showError(context, state.message);
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        appBar: AppBar(
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          title: Text(
+            'Edit Bull Details',
+            style: GoogleFonts.poppins(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          centerTitle: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // Profile Image
               Center(
                 child: Column(
@@ -528,7 +549,8 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
                 ],
               ),
               const SizedBox(height: 40),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -757,12 +779,7 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
         String errorMsg = 'Image upload failed';
         if (newPhotoKey.contains('401')) errorMsg = 'Unauthorized';
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$errorMsg. Saving other changes...'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        AppFeedback.showError(context, '$errorMsg. Saving other changes...');
         newPhotoKey = null;
       }
     }
@@ -788,11 +805,14 @@ class _EditBullDetailsScreenState extends State<EditBullDetailsScreen> {
       createdAt: widget.cattle.createdAt,
       updatedAt: DateTime.now(),
       imageUrl: _imageDeleted ? null : (newPhotoKey ?? widget.cattle.imageUrl),
+      bullType: widget.cattle.bullType ?? 'GAUSHALA',
+      bullView: _bullViewController.text.isNotEmpty
+          ? _bullViewController.text
+          : widget.cattle.bullView,
     );
 
     if (mounted) {
       context.read<CattleBloc>().add(UpdateCattle(updatedCattle));
-      Navigator.pop(context);
     }
   }
 }

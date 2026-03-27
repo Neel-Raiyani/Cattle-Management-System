@@ -12,13 +12,13 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../config/app_config.dart';
 import '../error/exceptions.dart';
-import '../services/app_feedback_service.dart';
 import '../services/navigation_service.dart';
 
 /// API Client using Dio
 class ApiClient {
   late final Dio _dio;
   static bool _isHandlingUnauthorized = false;
+  static bool _hasRedirectedToLogin = false;
   final Map<String, Response> _cache = {};
   final Map<String, DateTime> _cacheTime = {};
   final Map<String, Future<Response>> _inFlightGetRequests = {};
@@ -79,8 +79,9 @@ class ApiClient {
           }
 
           final token = await _getAuthToken();
-          if (token != null) {
+          if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
+            _hasRedirectedToLogin = false;
           }
 
           final gaushalaId = await _getGaushalaId();
@@ -105,50 +106,23 @@ class ApiClient {
         onError: (error, handler) async {
           if (error.response?.statusCode == 401 &&
               !_isHandlingUnauthorized &&
+              !_hasRedirectedToLogin &&
               await _shouldTreat401AsSessionExpired(error)) {
             _isHandlingUnauthorized = true;
+            _hasRedirectedToLogin = true;
+
+            try {
+              await get_it.GetIt.instance<AuthRepository>().logout();
+            } catch (_) {}
+
             final ctx = NavigationService.navigatorKey.currentContext;
-
-            if (ctx != null) {
-              final lang = Localizations.localeOf(ctx).languageCode;
-              final title = lang == 'hi'
-                  ? 'सत्र समाप्त'
-                  : lang == 'gu'
-                      ? 'સેશન સમાપ્ત'
-                      : 'Session expired';
-              final message = lang == 'hi'
-                  ? 'सत्र समाप्त हो गया है। कृपया फिर से लॉग इन करें।'
-                  : lang == 'gu'
-                      ? 'સેશન સમાપ્ત થયું છે. કૃપા કરીને ફરી લૉગિન કરો.'
-                      : 'Session expired. Please log in again.';
-              final buttonText = lang == 'hi'
-                  ? 'फिर से लॉगिन करें'
-                  : lang == 'gu'
-                      ? 'ફરી લૉગિન કરો'
-                      : 'Login again';
-
-              await AppFeedbackService.showPopup(
-                title: title,
-                message: message,
-                type: AppFeedbackType.error,
-                dedupeKey: 'session_expired',
-                primaryLabel: buttonText,
-                barrierDismissible: false,
-                onPrimary: () async {
-                  try {
-                    await get_it.GetIt.instance<AuthRepository>().logout();
-                  } catch (_) {}
-
-                  if (ctx.mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      ctx,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
-                      ),
-                      (route) => false,
-                    );
-                  }
-                },
+            if (ctx != null && ctx.mounted) {
+              Navigator.pushAndRemoveUntil(
+                ctx,
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+                (route) => false,
               );
             }
 
@@ -190,7 +164,23 @@ class ApiClient {
   }
 
   Future<bool> _shouldTreat401AsSessionExpired(DioException error) async {
+    final path = error.requestOptions.path.toLowerCase();
+    if (path.contains('/api/auth/login') ||
+        path.contains('/api/auth/register') ||
+        path.contains('/api/auth/forgot') ||
+        path.contains('/api/auth/reset') ||
+        path.contains('/api/auth/verify')) {
+      return false;
+    }
+
     final token = await _getAuthToken();
+    final authHeader =
+        error.requestOptions.headers['Authorization']?.toString();
+    if ((token == null || token.isEmpty) &&
+        (authHeader == null || authHeader.isEmpty)) {
+      return false;
+    }
+
     if (token == null || token.isEmpty) return true;
     if (_isJwtExpired(token)) return true;
 
@@ -500,3 +490,4 @@ class ApiClient {
     }
   }
 }
+

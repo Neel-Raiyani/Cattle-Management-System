@@ -10,13 +10,18 @@ import '../../../cattle/domain/entities/cattle.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/localization/localized_assets.dart';
+import 'package:cattle_management_system/core/localization/localized_ui.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 // Filter options — third option is Gujarati "ખાલી" (empty/not pregnant)
-const _filterOptions = ['All Cows', 'Pregnant', 'ખાલી'];
+const _filterAll = 'all';
+const _filterPregnant = 'pregnant';
+const _filterEmpty = 'empty';
 
 // ---------------------------------------------------------------------------
 // DryOffScreen
@@ -35,7 +40,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
   String? _errorMessage;
   DateTime _fromDate = DateTime.now();
   DateTime _toDate = DateTime.now().add(const Duration(days: 30));
-  String _activeFilter = 'All Cows';
+  String _activeFilter = _filterAll;
   bool _filterOpen = false;
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -131,7 +136,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
         _isLoading = false;
         _errorMessage =
             (e.toString().contains('404') || e.toString().contains('503'))
-            ? 'Service not available'
+            ? context.ui.serviceNotAvailable
             : 'Error: ${e.toString()}';
       });
     }
@@ -151,9 +156,9 @@ class _DryOffScreenState extends State<DryOffScreen> {
     List<DryOffRecord> list = mergedById.values.toList();
 
     // Apply basic status filter
-    if (_activeFilter == 'Pregnant') {
+    if (_activeFilter == _filterPregnant) {
       list = list.where((r) => r.isPregnant).toList();
-    } else if (_activeFilter == 'ખાલી') {
+    } else if (_activeFilter == _filterEmpty) {
       list = list.where((r) => !r.isPregnant).toList();
     }
 
@@ -238,9 +243,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
           _isLoading = false;
         });
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dry off record deleted successfully')),
-        );
+        AppFeedback.showSuccess(context, context.ui.dryOffRecordDeletedSuccessfully);
         return;
       }
       final targetRecord = [
@@ -256,9 +259,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
       await sl<ApiService>().deleteDryOff(id: deleteId);
       if (!mounted) return;
       _localRecords.removeWhere((record) => record.id == id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dry off record deleted successfully')),
-      );
+      AppFeedback.showSuccess(context, context.ui.dryOffRecordDeletedSuccessfully);
       await _fetchRecords();
     } on ServerException catch (e) {
       if (!mounted) return;
@@ -435,7 +436,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
             ),
           ),
           title: Text(
-            'Dry Off Cow',
+            context.ui.dryOffCow,
             style: GoogleFonts.poppins(
               color: Colors.black,
               fontWeight: FontWeight.bold,
@@ -515,11 +516,11 @@ class _DryOffScreenState extends State<DryOffScreen> {
                           ),
                         ),
                       ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         child: Text(
-                          'to',
-                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                          context.ui.to,
+                          style: const TextStyle(color: Colors.grey, fontSize: 13),
                         ),
                       ),
                       Expanded(
@@ -580,9 +581,11 @@ class _DryOffScreenState extends State<DryOffScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                _activeFilter == 'All Cows'
-                                    ? 'Filter'
-                                    : _activeFilter,
+                                _activeFilter == _filterAll
+                                    ? context.ui.filter
+                                    : _activeFilter == _filterPregnant
+                                        ? context.ui.pregnant
+                                        : context.ui.emptyStatus,
                                 style: GoogleFonts.inter(
                                   fontSize: 13,
                                   color: Colors.black54,
@@ -615,7 +618,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
                           padding: const EdgeInsets.all(16),
                           children: [
                             Text(
-                              'Total: ${filtered.length}',
+                              '${context.ui.total}: ${filtered.length}',
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -701,7 +704,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
                       ),
                       const Divider(height: 1),
                       // Filter options
-                      ..._filterOptions.map((opt) {
+                      ...[_filterAll, _filterPregnant, _filterEmpty].map((opt) {
                         final isSelected = opt == _activeFilter;
                         return InkWell(
                           onTap: () => setState(() {
@@ -717,7 +720,11 @@ class _DryOffScreenState extends State<DryOffScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    opt,
+                                    opt == _filterAll
+                                        ? context.ui.allCow
+                                        : opt == _filterPregnant
+                                            ? context.ui.pregnant
+                                            : context.ui.emptyStatus,
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.inter(
                                       fontSize: 14,
@@ -777,13 +784,13 @@ class _DryOffScreenState extends State<DryOffScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/icons/no_data_found.png',
+            context.noDataFoundAsset,
             width: 180,
             height: 180,
           ),
           const SizedBox(height: 16),
           Text(
-            _errorMessage ?? 'Service not available',
+            _errorMessage ?? context.ui.serviceNotAvailable,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -798,7 +805,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
               backgroundColor: const Color(0xFF99AA5A),
               foregroundColor: Colors.white,
             ),
-            child: const Text('Retry'),
+            child: Text(context.ui.retry),
           ),
         ],
       ),
@@ -811,13 +818,13 @@ class _DryOffScreenState extends State<DryOffScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/icons/no_data_found.png',
+            context.noDataFoundAsset,
             width: 180,
             height: 180,
           ),
           const SizedBox(height: 16),
           Text(
-            'No data found',
+            context.ui.noDataFound,
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -834,24 +841,24 @@ class _DryOffScreenState extends State<DryOffScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
-          'Delete Record',
+          context.ui.deleteRecord,
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Are you sure you want to delete this dry off record?',
+          context.ui.deleteDryOffRecordConfirmation,
           style: GoogleFonts.inter(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+            child: Text(context.ui.cancel, style: GoogleFonts.inter(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               _deleteRecord(id);
             },
-            child: Text('Delete', style: GoogleFonts.inter(color: Colors.red)),
+            child: Text(context.ui.delete, style: GoogleFonts.inter(color: Colors.red)),
           ),
         ],
       ),
@@ -945,7 +952,7 @@ class _DryOffCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        record.isPregnant ? 'Pregnant' : 'ખાલી',
+                        record.isPregnant ? context.ui.pregnant : context.ui.emptyStatus,
                         style: GoogleFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -1023,7 +1030,7 @@ class _DryOffCard extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
-                                      'Tag No.: ${record.cowTagNumber}',
+                                      '${context.ui.tagNo}: ${record.cowTagNumber}',
                                       style: GoogleFonts.inter(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
@@ -1039,7 +1046,7 @@ class _DryOffCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              'No.: ${record.cowSerialNumber}',
+                              '${context.ui.numberShort}: ${record.cowSerialNumber}',
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 color: Colors.grey,
@@ -1208,15 +1215,11 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
           );
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
+          AppFeedback.showSuccess(context, 
                 widget.initialRecord == null
-                    ? 'Dry off record added successfully'
-                    : 'Dry off record updated successfully',
-              ),
-            ),
-          );
+                    ? context.ui.dryOffRecordAddedSuccessfully
+                    : context.ui.dryOffRecordUpdatedSuccessfully,
+              );
           Navigator.pop(context, localRecord);
         }
       } on ServerException catch (e) {
@@ -1235,27 +1238,15 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
       return;
     }
     if (_selectedCow == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFF99AA5A),
-          content: Text(
-            'Please select a cow',
-            style: GoogleFonts.inter(color: Colors.white),
-          ),
-        ),
-      );
+      AppFeedback.showError(context, 
+            context.ui.pleaseSelectCow,
+          );
       return;
     }
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFF99AA5A),
-          content: Text(
-            'Please select a dry off date',
-            style: GoogleFonts.inter(color: Colors.white),
-          ),
-        ),
-      );
+      AppFeedback.showError(context, 
+            context.ui.pleaseSelectDryOffDate,
+          );
       return;
     }
   }
@@ -1294,7 +1285,7 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
               Expanded(
                 child: Text(
                   widget.initialRecord == null
-                      ? 'Dry Off Cow'
+                      ? context.ui.dryOffCow
                       : 'Edit Dry Off Record',
                   style: GoogleFonts.poppins(
                     fontSize: 20,
@@ -1319,7 +1310,7 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
 
           // ── Name dropdown ────────────────────────────────────────
           Text(
-            'Name',
+            context.ui.name,
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -1327,7 +1318,7 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
           ),
           const SizedBox(height: 8),
           _buildDropdown(
-            hint: 'Select cow name',
+            hint: context.ui.selectCowName,
             value: _selectedCow,
             items: widget.cattle,
             onChanged: (v) => setState(() => _selectedCow = v),
@@ -1336,7 +1327,7 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
 
           // ── Dry Off Date ─────────────────────────────────────────
           Text(
-            'Dry Off Date',
+            context.ui.dryOffDate,
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -1357,7 +1348,7 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
                   Expanded(
                     child: Text(
                       _selectedDate == null
-                          ? 'Select dry off date'
+                          ? context.ui.selectDryOffDate
                           : dateFmt.format(_selectedDate!),
                       style: GoogleFonts.inter(
                         fontSize: 13,
@@ -1391,7 +1382,7 @@ class _AddDryOffSheetState extends State<_AddDryOffSheet> {
                 ),
               ),
               child: Text(
-                'Submit',
+                context.ui.submit,
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

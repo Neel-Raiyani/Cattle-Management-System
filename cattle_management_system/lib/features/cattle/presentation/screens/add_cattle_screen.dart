@@ -211,13 +211,7 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
           if (mounted) {
             setState(() => _isSubmitting = false);
           }
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cow added successfully!'),
-              backgroundColor: Color(0xFFA4C639),
-            ),
-          );
-          Navigator.pop(context);
+          Navigator.pop(context, true);
         } else if (state is CattleError || state is CattleActionError) {
           if (mounted) {
             setState(() => _isSubmitting = false);

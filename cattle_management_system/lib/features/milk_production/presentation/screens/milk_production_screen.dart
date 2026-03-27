@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/localization/localized_ui.dart';
 import '../../../cow_group/presentation/bloc/cow_group_bloc.dart';
 import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../cow_group/presentation/bloc/cow_group_event.dart';
@@ -12,6 +14,7 @@ import '../bloc/milk_production_event.dart';
 import '../bloc/milk_production_state.dart';
 import '../../domain/entities/milk_production_entry.dart';
 import 'add_milk_entry_screen.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class MilkProductionScreen extends StatefulWidget {
   const MilkProductionScreen({super.key});
@@ -72,14 +75,6 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
     }
   }
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return months[month - 1];
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,7 +99,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
                 controller: _searchCtrl,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Search cow name...',
+                  hintText: '${context.ui.cowName}...',
                   border: InputBorder.none,
                   hintStyle: GoogleFonts.poppins(color: Colors.grey, fontSize: 16),
                 ),
@@ -112,7 +107,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
                 onChanged: (v) => setState(() => _searchQuery = v),
               )
             : Text(
-                'Milk Production',
+                context.ui.milkProduction,
                 style: GoogleFonts.poppins(
                   color: Colors.black87,
                   fontWeight: FontWeight.bold,
@@ -169,7 +164,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
             }
 
             // Apply Group filter
-            if (_selectedGroup != 'All') {
+            if (_selectedGroup != context.ui.all) {
               final selectedGroup = _selectedGroup.trim().toLowerCase();
               entries = entries
                   .where(
@@ -195,7 +190,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
                         Icon(Icons.inbox, size: 64, color: Colors.grey[300]),
                         const SizedBox(height: 16),
                         Text(
-                          'No entries found for this date',
+                          context.ui.noDataFound,
                           style: GoogleFonts.poppins(color: Colors.grey),
                         ),
                       ],
@@ -223,17 +218,27 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await Navigator.push(
+          final result = await Navigator.push<dynamic>(
             context,
             MaterialPageRoute(builder: (context) => const AddMilkEntryScreen()),
           );
-          // Always refresh when returning from the entry screen
+          if (!mounted) return;
+
+          if (result is Map && result['submitted'] == true) {
+            _loadEntries();
+            final message = result['message']?.toString();
+            if (message != null && message.isNotEmpty) {
+              await AppFeedback.showSuccess(context, message);
+            }
+            return;
+          }
+
           _loadEntries();
         },
         backgroundColor: AppTheme.primaryColor,
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
-          'Add Milk Entry',
+          context.ui.addMilkEntry,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -254,7 +259,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Date',
+                  context.ui.date,
                   style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
@@ -271,7 +276,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${_selectedDate.day} ${_getMonthName(_selectedDate.month)}, ${_selectedDate.year}',
+                          DateFormat('dd MMM, yyyy').format(_selectedDate),
                           style: GoogleFonts.inter(fontSize: 12),
                         ),
                         const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
@@ -288,15 +293,15 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Cow Group',
+                  context.ui.cowGroup,
                   style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 BlocBuilder<CowGroupBloc, CowGroupState>(
                   builder: (context, state) {
-                    List<String> groupNames = ['All'];
+                    List<String> groupNames = [context.ui.all];
                     if (state is CowGroupLoaded) {
-                      groupNames = ['All', ...state.groups.map((g) => g.name)];
+                      groupNames = [context.ui.all, ...state.groups.map((g) => g.name)];
                     }
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -306,7 +311,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
-                          value: groupNames.contains(_selectedGroup) ? _selectedGroup : 'All',
+                          value: groupNames.contains(_selectedGroup) ? _selectedGroup : context.ui.all,
                           icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey),
                           isDense: true,
                           style: GoogleFonts.inter(fontSize: 12, color: Colors.black87),
@@ -337,7 +342,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'Total $count Cow',
+          context.ui.totalCowCount(count),
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
@@ -360,7 +365,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
           Expanded(
             flex: 2,
             child: Text(
-              'Cow Name',
+              context.ui.cowName,
               style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
@@ -376,7 +381,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
                   ),
                   child: const Icon(Icons.wb_sunny, size: 12, color: Colors.white),
                 ),
-                Text('Morning', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold)),
+                Text(context.ui.morning, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -392,7 +397,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
                   ),
                   child: const Icon(Icons.nightlight_round, size: 12, color: Colors.white),
                 ),
-                Text('Evening', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold)),
+                Text(context.ui.evening, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -501,7 +506,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
           Expanded(
             flex: 2,
             child: Text(
-              'Total',
+              context.ui.total,
               style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),

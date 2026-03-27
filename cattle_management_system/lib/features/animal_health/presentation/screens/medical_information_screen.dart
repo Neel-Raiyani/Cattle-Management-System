@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/health_event.dart';
@@ -6,6 +6,7 @@ import 'medical_details_screen.dart';
 import 'add_medical_record_screen.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import 'package:cattle_management_system/core/localization/localized_assets.dart';
 
 class MedicalInformationScreen extends StatefulWidget {
   const MedicalInformationScreen({super.key});
@@ -281,7 +282,7 @@ class _MedicalInformationScreenState extends State<MedicalInformationScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/icons/no_data_found.png',
+                      context.noDataFoundAsset,
                       height: 150,
                       errorBuilder: (_, __, ___) =>
                           const Icon(Icons.error, size: 50),
@@ -319,7 +320,7 @@ class _MedicalInformationScreenState extends State<MedicalInformationScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/icons/no_data_found.png',
+                      context.noDataFoundAsset,
                       height: 150,
                       errorBuilder: (_, __, ___) =>
                           const Icon(Icons.error, size: 50),
@@ -540,7 +541,7 @@ class _MedicalRecordCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '• ',
+                            'â€¢ ',
                             style: TextStyle(color: Colors.grey.shade400),
                           ),
                           Container(
@@ -706,3 +707,4 @@ class _InfoItem extends StatelessWidget {
     );
   }
 }
+

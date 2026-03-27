@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/heat_record.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class EditHeatRecordScreen extends StatefulWidget {
   final HeatRecord record;
@@ -64,15 +65,9 @@ class _EditHeatRecordScreenState extends State<EditHeatRecordScreen> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     if (_heatDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFF99AA5A),
-          content: Text(
+      AppFeedback.showError(context, 
             'Please select a heat date',
-            style: GoogleFonts.inter(color: Colors.white),
-          ),
-        ),
-      );
+          );
       return;
     }
 

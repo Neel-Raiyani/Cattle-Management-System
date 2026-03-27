@@ -181,12 +181,21 @@ class ApiService {
   }
 
   /// GET /api/animal/bulls — Fetch all bulls
-  Future<List<dynamic>> getBulls({int limit = 200, int page = 1}) async {
+  Future<List<dynamic>> getBulls({
+    int limit = 200,
+    int page = 1,
+    String? bullType,
+  }) async {
     if (page == 1) {
       final animals = await _getAllAnimalsCached();
       final bulls = animals
           .where(
-            (item) => _animalMatchesGender(item, 'M') && _isVisibleAnimal(item),
+            (item) =>
+                _animalMatchesGender(item, 'M') &&
+                _isVisibleAnimal(item) &&
+                (bullType == null ||
+                    bullType.isEmpty ||
+                    (item['bullType']?.toString().trim().toUpperCase() == bullType)),
           )
           .take(limit)
           .toList();
@@ -196,6 +205,7 @@ class ApiService {
     final data = await _get('/api/animal/bulls', {
       'limit': limit.toString(),
       'page': page.toString(),
+      if (bullType != null && bullType.isNotEmpty) 'bullType': bullType,
     });
     final items = _extractList(
       data,
@@ -463,7 +473,16 @@ class ApiService {
     if (from != null) params['from'] = from.toIso8601String().split('T')[0];
     if (to != null) params['to'] = to.toIso8601String().split('T')[0];
     final data = await _get('/api/breeding/reports/pregnancy', params);
-    return data is List ? data : (data['data'] as List? ?? []);
+    final records = _extractList(
+      data,
+      primaryKeys: const ['data', 'records', 'items', 'list'],
+    );
+    return await _filterRecordsForVisibleAnimals(
+      records
+          .whereType<Map>()
+          .map((record) => Map<String, dynamic>.from(record))
+          .toList(),
+    );
   }
 
   /// GET /api/breeding/reports/delivery
@@ -1005,9 +1024,52 @@ class ApiService {
       data,
       primaryKeys: const ['data', 'records', 'items', 'list'],
     );
-    return await _filterRecordsForVisibleAnimals(
+    final visibleRecords = await _filterRecordsForVisibleAnimals(
       records.map((record) => _normalizeAlertRecord(record)).toList(),
     );
+    if (visibleRecords.isNotEmpty) {
+      return visibleRecords;
+    }
+
+    final fallbackRecords = await getLabRecords(animalId: animalId);
+    return fallbackRecords.where((record) {
+      final recordMap = Map<String, dynamic>.from(record);
+      final recordAnimalId = (recordMap['animalId'] is Map
+              ? ((recordMap['animalId'] as Map)['id'] ??
+                  (recordMap['animalId'] as Map)['_id'])
+              : recordMap['animalId'])
+          ?.toString();
+      final recordLabTestId = (recordMap['labTestId'] is Map
+              ? ((recordMap['labTestId'] as Map)['id'] ??
+                  (recordMap['labTestId'] as Map)['_id'])
+              : recordMap['labTestId'])
+          ?.toString();
+      final sampleDate = DateTime.tryParse(
+        (recordMap['sampleDate'] ?? recordMap['date'] ?? '').toString(),
+      );
+
+      final animalMatches =
+          animalId == null || animalId.isEmpty || recordAnimalId == animalId;
+      final labMatches = labtestId == null ||
+          labtestId.isEmpty ||
+          recordLabTestId == labtestId;
+      final fromMatches = from == null ||
+          (sampleDate != null &&
+              !DateTime(
+                sampleDate.year,
+                sampleDate.month,
+                sampleDate.day,
+              ).isBefore(DateTime(from.year, from.month, from.day)));
+      final toMatches = to == null ||
+          (sampleDate != null &&
+              !DateTime(
+                sampleDate.year,
+                sampleDate.month,
+                sampleDate.day,
+              ).isAfter(DateTime(to.year, to.month, to.day)));
+
+      return animalMatches && labMatches && fromMatches && toMatches;
+    }).toList();
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -2016,11 +2078,16 @@ class ApiService {
   ) async {
     final registry = await _getVisibleAnimalRegistry();
     final filtered = <Map<String, dynamic>>[];
+    final registryHasEntries =
+        registry.byId.isNotEmpty ||
+        registry.byTag.isNotEmpty ||
+        registry.bySerial.isNotEmpty ||
+        registry.byName.isNotEmpty;
 
     for (final raw in items.whereType<Map>()) {
       final animal = _normalizeAnimalSummaryItem(Map<String, dynamic>.from(raw));
       final resolved = _resolveVisibleAnimalForRecord(animal, registry);
-      if (resolved != null || _isVisibleAnimal(animal)) {
+      if (resolved != null || (!registryHasEntries && _isVisibleAnimal(animal))) {
         filtered.add(animal);
       }
     }

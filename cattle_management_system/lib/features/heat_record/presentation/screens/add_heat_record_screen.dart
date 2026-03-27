@@ -6,6 +6,8 @@ import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/localization/localized_ui.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddHeatRecordScreen extends StatefulWidget {
   /// Pass the list of actual Cattle objects so we can get their IDs for the API.
@@ -66,22 +68,14 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
 
   Future<void> _submit() async {
     if (_selectedCattle == null && widget.cattle.isNotEmpty) {
-      setState(() => _cowNameError = 'Please select a cow');
+      setState(() => _cowNameError = context.ui.pleaseSelectCow);
       return;
     }
 
     if (!_formKey.currentState!.validate()) return;
 
     if (_heatDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFF99AA5A),
-          content: Text(
-            'Please select a heat date',
-            style: GoogleFonts.inter(color: Colors.white),
-          ),
-        ),
-      );
+      AppFeedback.showError(context, context.ui.pleaseSelectHeatDate);
       return;
     }
 
@@ -96,9 +90,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
         );
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Heat record added successfully')),
-          );
+          AppFeedback.showSuccess(context, 'Heat record added successfully');
           Navigator.pop(context, true);
         }
       } on ServerException catch (e) {
@@ -155,7 +147,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
           ),
         ),
         title: Text(
-          'Add Heat Record',
+          context.ui.addHeatRecord,
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -171,7 +163,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Name ────────────────────────────────────────────────────
-              _sectionLabel('Name'),
+              _sectionLabel(context.ui.name),
               const SizedBox(height: 8),
               _buildCowDropdown(),
               if (_cowNameError != null) ...[
@@ -181,11 +173,11 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
               const SizedBox(height: 20),
 
               // ── Parity ───────────────────────────────────────────────────
-              _sectionLabel('Parity'),
+              _sectionLabel(context.ui.parity),
               const SizedBox(height: 8),
               _buildTextField(
                 controller: _parityController,
-                hint: 'Parity number',
+                hint: context.ui.parityNumber,
                 keyboardType: TextInputType.number,
                 enabled: false, // User cannot edit parity
                 validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
@@ -193,18 +185,18 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
               const SizedBox(height: 20),
 
               // ── Breeding Status ────────────────────────────────────────
-              _sectionLabel('Breeding Status'),
+              _sectionLabel(context.ui.breedingStatus),
               const SizedBox(height: 8),
               Row(
                 children: [
                   _RadioOption(
-                    label: 'Conceived',
+                    label: context.ui.conceived,
                     selected: _isConceived,
                     onTap: () => setState(() => _isConceived = true),
                   ),
                   const SizedBox(width: 24),
                   _RadioOption(
-                    label: 'Not Conceived',
+                    label: context.ui.notConceived,
                     selected: !_isConceived,
                     onTap: () => setState(() => _isConceived = false),
                   ),
@@ -213,7 +205,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
               const SizedBox(height: 20),
 
               // ── Heat Date ─────────────────────────────────────────────
-              _sectionLabel('Heat date'),
+              _sectionLabel(context.ui.heatDate),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickHeatDate,
@@ -229,7 +221,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
                       Expanded(
                         child: Text(
                           _heatDate == null
-                              ? 'Select heat date'
+                              ? context.ui.selectHeatDate
                               : DateFormat('dd MMM, yyyy').format(_heatDate!),
                           style: GoogleFonts.inter(
                             fontSize: 13,
@@ -251,7 +243,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
               const SizedBox(height: 20),
 
               // ── Note ─────────────────────────────────────────────────
-              _sectionLabel('Note'),
+              _sectionLabel(context.ui.note),
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
@@ -263,7 +255,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
                   maxLines: 4,
                   style: GoogleFonts.inter(fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'Add any notes (optional)',
+                    hintText: context.ui.addAnyNotesOptional,
                     hintStyle: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.grey,
@@ -297,7 +289,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
                           ),
                         )
                       : Text(
-                          'Submit',
+                          context.ui.submit,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -329,7 +321,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
           value: _selectedCattle,
           isExpanded: true,
           hint: Text(
-            'Select cow name',
+            context.ui.selectCowName,
             style: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
           ),
           style: GoogleFonts.inter(fontSize: 13, color: Colors.black87),

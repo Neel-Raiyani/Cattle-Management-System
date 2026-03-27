@@ -12,6 +12,7 @@ class HealthEvent {
   final String? testName; // Lab Testing
   final String? doctorName;
   final DateTime eventDate;
+  final DateTime? lastDoseDate;
   final DateTime? nextDueDate;
   final String? note;
   final String status; // 'Healthy', 'Under Treatment', 'Recovered'
@@ -40,6 +41,7 @@ class HealthEvent {
     this.testName,
     this.doctorName,
     required this.eventDate,
+    this.lastDoseDate,
     this.nextDueDate,
     this.note,
     required this.status,
@@ -68,6 +70,7 @@ class HealthEvent {
     String? testName,
     String? doctorName,
     DateTime? eventDate,
+    DateTime? lastDoseDate,
     DateTime? nextDueDate,
     String? note,
     String? status,
@@ -95,6 +98,7 @@ class HealthEvent {
       testName: testName ?? this.testName,
       doctorName: doctorName ?? this.doctorName,
       eventDate: eventDate ?? this.eventDate,
+      lastDoseDate: lastDoseDate ?? this.lastDoseDate,
       nextDueDate: nextDueDate ?? this.nextDueDate,
       note: note ?? this.note,
       status: status ?? this.status,
@@ -150,6 +154,14 @@ class HealthEvent {
         : rawMedicalStatus == 'HEALTHY'
             ? 'Healthy'
             : (json['status']?.toString() ?? rawMedicalStatus);
+    final rawDoseType = json['doseType']?.toString();
+    final quantity = json['quantity']?.toString().trim();
+    final displayDoseType =
+        rawDoseType == null || rawDoseType.trim().isEmpty
+            ? null
+            : (quantity == null || quantity.isEmpty
+                ? rawDoseType
+                : '$rawDoseType ($quantity)');
 
     return HealthEvent(
       id: json['id'] ?? json['_id'] ?? '',
@@ -165,6 +177,14 @@ class HealthEvent {
             json['date'] ??
             DateTime.now().toIso8601String(),
       ).toLocal(),
+      lastDoseDate: json['lastDoseDate'] != null
+          ? DateTime.tryParse(json['lastDoseDate'].toString())?.toLocal()
+          : null,
+      nextDueDate: (json['nextDoseDate'] ?? json['nextDueDate']) != null
+          ? DateTime.tryParse(
+              (json['nextDoseDate'] ?? json['nextDueDate']).toString(),
+            )?.toLocal()
+          : null,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt']).toLocal()
           : DateTime.now(),
@@ -175,7 +195,7 @@ class HealthEvent {
           : (json['diseaseName'] ?? json['disease']),
       doctorName: json['vet'] is Map
           ? json['vet']['name']
-          : (json['vetName'] ?? json['doctorName']),
+          : (json['vetName'] ?? json['doctorName'] ?? json['vetId']),
       medicalStatus: rawMedicalStatus.isEmpty ? null : rawMedicalStatus,
       symptoms: json['symptoms'],
       treatment: json['treatment'],
@@ -183,8 +203,9 @@ class HealthEvent {
       vaccineName: json['vaccine'] is Map
           ? json['vaccine']['name']
           : (json['vaccineName'] ?? json['vaccinationName']),
-      doseType: json['doseType'],
+      doseType: displayDoseType,
       dewormingDrug:
+          json['companyName'] ??
           json['medicineName'] ??
           json['medicineType'] ??
           json['drug'] ??

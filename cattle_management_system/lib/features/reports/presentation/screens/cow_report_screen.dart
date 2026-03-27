@@ -6,6 +6,7 @@ import '../../../cattle/domain/entities/cattle.dart';
 import '../../../cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_event.dart';
 import '../../../cattle/presentation/bloc/cattle_state.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 // ---------------------------------------------------------------------------
 // Mock cow data shared across all sub-screens
@@ -1350,15 +1351,9 @@ class _AddRetiredCowSheetState extends State<_AddRetiredCowSheet> {
               child: ElevatedButton(
                 onPressed: () {
                   if (_selectedCow == null || _selectedDate == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: const Color(0xFF99AA5A),
-                        content: Text(
+                    AppFeedback.showError(context, 
                           'Please fill all fields',
-                          style: GoogleFonts.inter(color: Colors.white),
-                        ),
-                      ),
-                    );
+                        );
                     return;
                   }
                   widget.onSubmit(_selectedCow!, _selectedDate!);

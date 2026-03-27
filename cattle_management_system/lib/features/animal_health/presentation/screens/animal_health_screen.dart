@@ -9,6 +9,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 // ── Status colors ─────────────────────────────────────────────────────────
 
@@ -853,12 +854,7 @@ class _AddHealthEventScreenState extends State<AddHealthEventScreen> {
   }
 
   void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF99AA5A),
-        content: Text(msg, style: GoogleFonts.inter(color: Colors.white)),
-      ),
-    );
+    AppFeedback.showError(context, msg);
   }
 
   @override

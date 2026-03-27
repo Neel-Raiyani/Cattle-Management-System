@@ -28,7 +28,6 @@ import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/domain/entities/cattle.dart';
-import '../../../../features/cattle/data/models/cattle_model.dart';
 import '../../../../features/conception/domain/entities/conception_record.dart';
 import '../../../../features/milk_production/presentation/bloc/milk_production_bloc.dart';
 import '../../../../features/milk_production/presentation/bloc/milk_production_state.dart';
@@ -38,6 +37,7 @@ import '../../../../features/animal_health/domain/entities/health_event.dart';
 
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/localization/localized_ui.dart';
 
 class GaushalaTab extends StatefulWidget {
   const GaushalaTab({super.key});
@@ -49,11 +49,9 @@ class GaushalaTab extends StatefulWidget {
 class _GaushalaTabState extends State<GaushalaTab> {
   final Color _oliveGreen = const Color(0xFF8DA94D);
   static const String _summaryCacheKey = 'CACHED_ANIMAL_SUMMARY';
-  static const String _cattleCacheKey = 'CACHED_CATTLE_LIST';
   static const String _deliveredJourneyIdsKey =
       'LOCALLY_DELIVERED_CONCEPTION_IDS';
   Map<String, dynamic>? _summary;
-  List<Cattle> _cachedCattle = [];
   int? _derivedSickAnimalCount;
   int? _heatRecordCount;
   int? _conceptionCount;
@@ -65,7 +63,6 @@ class _GaushalaTabState extends State<GaushalaTab> {
   void initState() {
     super.initState();
     _loadCachedSummary();
-    _loadCachedCattle();
     _loadInitialData();
   }
 
@@ -84,23 +81,6 @@ class _GaushalaTabState extends State<GaushalaTab> {
       if (value.isNotEmpty && mounted) {
         setState(() {
           _summary = value;
-        });
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _loadCachedCattle() async {
-    try {
-      final prefs = sl<SharedPreferences>();
-      final cached = prefs.getString(_cattleCacheKey);
-      if (cached == null || cached.isEmpty) return;
-      final decoded = jsonDecode(cached) as List<dynamic>;
-      final cattle = decoded
-          .map((item) => CattleModel.fromJson(Map<String, dynamic>.from(item)))
-          .toList();
-      if (mounted) {
-        setState(() {
-          _cachedCattle = cattle;
         });
       }
     } catch (_) {}
@@ -161,11 +141,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
   }
 
   Future<void> _fetchDerivedSickAnimalCount() async {
-    if (_hasUsableSummaryValue(['sickAnimalCount', 'sickCount'])) {
-      return;
-    }
     try {
-      final items = await sl<ApiService>().getMedicalHistory();
+      final items = await sl<ApiService>().getSickAnimals();
       final records = items
           .whereType<Map>()
           .map((e) => HealthEvent.fromJson(Map<String, dynamic>.from(e), 'Medical'))
@@ -340,14 +317,9 @@ class _GaushalaTabState extends State<GaushalaTab> {
   List<Cattle> _getCurrentCattleList() {
     final cattleState = context.read<CattleBloc>().state;
     if (cattleState is CattleListLoaded) {
-      final loadedList = cattleState.cattleList;
-      final shouldUseCachedFullList =
-          _cachedCattle.isNotEmpty &&
-          _isFilteredGenderOnlyList(loadedList) &&
-          _cachedCattle.length > loadedList.length;
-      return shouldUseCachedFullList ? _cachedCattle : loadedList;
+      return cattleState.cattleList;
     }
-    return _cachedCattle;
+    return const <Cattle>[];
   }
 
   List<Cattle> _getActiveCattle() {
@@ -397,13 +369,6 @@ class _GaushalaTabState extends State<GaushalaTab> {
     return false;
   }
 
-  bool _isFilteredGenderOnlyList(List<Cattle> list) {
-    if (list.isEmpty) return false;
-    final hasFemale = list.any((c) => c.gender.toUpperCase().startsWith('F'));
-    final hasMale = list.any((c) => c.gender.toUpperCase().startsWith('M'));
-    return hasFemale != hasMale;
-  }
-
   bool _isLocallyDeliveredConception(
     ConceptionRecord record,
     Set<String> deliveredKeys,
@@ -449,71 +414,37 @@ class _GaushalaTabState extends State<GaushalaTab> {
             )
                 .toList();
 
-            final int allCowCount = _summaryCount(
-              ['allCowCount'],
-              fallback: _nestedSummaryCount(
-                'cows',
-                'total',
-                fallback: activeCattle
-                    .where((c) => c.isFemaleGender)
-                    .length,
-              ),
-            );
+            final int allCowCount = activeCattle
+                .where((c) => c.isFemaleGender)
+                .length;
 
-            final int allBullCount = _summaryCount(
-              ['allBullCount'],
-              fallback: _nestedSummaryCount(
-                'bulls',
-                'total',
-                fallback: activeCattle
-                    .where((c) => c.isMaleGender)
-                    .length,
-              ),
-            );
+            final int allBullCount = activeCattle
+                .where((c) => c.isMaleGender)
+                .length;
 
-            final int lactatingCount = _summaryCount(
-              ['lactatingCount'],
-              fallback: _nestedSummaryCount(
-                'cows',
-                'lactating',
-                fallback: activeCattle
-                    .where((c) => c.effectiveIsLactating)
-                    .length,
-              ),
-            );
+            final int lactatingCount = activeCattle
+                .where((c) => c.effectiveIsLactating)
+                .length;
 
             final int heiferCount = activeCattle
                 .where(_isHeiferCandidate)
                 .length;
 
             final int calvingCount = _pregnantJourneyCount ??
-                _summaryCount(
-                  ['pregnantCount'],
-                  fallback: _nestedSummaryCount(
-                    'cows',
-                    'pregnant',
-                    fallback: activeCattle
-                        .where((c) => c.effectiveIsPregnant)
-                        .length,
-                  ),
-                );
+                activeCattle.where((c) => c.effectiveIsPregnant).length;
 
             final int dryCount = _dryJourneyCount ??
-                _summaryCount(
-                  ['dryOffCount'],
-                  fallback: _nestedSummaryCount(
-                    'cows',
-                    'dryOff',
-                    fallback: activeCattle
-                        .where((c) => c.effectiveIsDryOff)
-                        .length,
-                  ),
-                );
+                activeCattle.where((c) => c.effectiveIsDryOff).length;
 
             final String sickAnimalCount = _summaryCount(
               ['sickAnimalCount', 'sickCount'],
-              fallback: _derivedSickAnimalCount ?? 0,
+              fallback: 0,
             ).toString();
+            final String visibleSickAnimalCount =
+                (_derivedSickAnimalCount ??
+                        int.tryParse(sickAnimalCount) ??
+                        0)
+                    .toString();
             final String heatRecordCount = (_heatRecordCount ?? 0).toString();
             final String pregnancyStatusCount =
                 (_conceptionCount ?? calvingCount).toString();
@@ -544,7 +475,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                     children: [
                       Expanded(
                         child: _buildSummaryCard(
-                          'All Cow',
+                          context.ui.allCow,
                           formatCount(allCowCount),
                           'assets/icons/all_cow_icon.png',
                           onTap: () async {
@@ -561,7 +492,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildSummaryCard(
-                          'All Bull',
+                          context.ui.allBull,
                           formatCount(allBullCount),
                           'assets/icons/all_bull_icon.png',
                           onTap: () async {
@@ -578,7 +509,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  _buildSectionHeader('Cattle Status', action: ''),
+                  _buildSectionHeader(context.ui.cattleStatus, action: ''),
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 140,
@@ -587,7 +518,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                       children: [
                         _buildStatusCircle(
                           formatCount(lactatingCount),
-                          'Lactating',
+                          context.ui.lactating,
                           Colors.green,
                           onTap: () {
                             Navigator.push(
@@ -602,7 +533,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                         ),
                         _buildStatusCircle(
                           formatCount(heiferCount),
-                          'Heifer',
+                          context.ui.heifer,
                           Colors.teal,
                           onTap: () {
                             Navigator.push(
@@ -617,7 +548,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                         ),
                         _buildStatusCircle(
                           formatCount(calvingCount),
-                          'Calving',
+                          context.ui.calving,
                           Colors.orange,
                           onTap: () {
                             Navigator.push(
@@ -681,7 +612,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Today\'s Production',
+                                    context.ui.todaysProduction,
                                     style: GoogleFonts.poppins(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -716,7 +647,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                                 children: [
                                   Expanded(
                                     child: _buildProductionSubCard(
-                                      'Morning',
+                                      context.ui.morning,
                                       '${formatAmount(totalMorningMilk)} Ltr',
                                       Icons.wb_sunny_rounded,
                                     ),
@@ -724,7 +655,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: _buildProductionSubCard(
-                                      'Evening',
+                                      context.ui.evening,
                                       '${formatAmount(totalEveningMilk)} Ltr',
                                       Icons.nightlight_round,
                                     ),
@@ -738,7 +669,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _buildSectionHeader('Health & Reproduction'),
+                  _buildSectionHeader(context.ui.healthAndReproduction),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -761,8 +692,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
                           child: _buildListRow(
                             Icons.favorite,
                             Colors.pink,
-                            'Heat Record',
-                            'Total Active',
+                            context.ui.heatRecord,
+                            context.ui.totalActive,
                             heatRecordCount,
                           ),
                         ),
@@ -780,8 +711,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
                           child: _buildListRow(
                             Icons.pregnant_woman,
                             Colors.purple,
-                            'Conception',
-                            'Pregnancy Status',
+                            context.ui.conception,
+                            context.ui.pregnancyStatus,
                             pregnancyStatusCount,
                           ),
                         ),
@@ -799,8 +730,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
                           child: _buildListRow(
                             Icons.block,
                             Colors.grey,
-                            'Dry Off Cow',
-                            'Target Date',
+                            context.ui.dryOffCow,
+                            context.ui.targetDate,
                             dryOffTargetCount,
                           ),
                         ),
@@ -851,7 +782,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Distribute Milk',
+                                      context.ui.distributeMilk,
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
@@ -921,7 +852,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                     ],
                   ),
                   const SizedBox(height: 32),
-                  _buildSectionHeader('Animal Left from Gaushala'),
+                  _buildSectionHeader(context.ui.animalLeftFromGaushala),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -943,7 +874,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                           context,
                           icon: Icons.sell_outlined,
                           color: Colors.orange,
-                          title: 'Sell',
+                          title: context.ui.sell,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -964,7 +895,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                           context,
                           icon: Icons.warning_amber_rounded,
                           color: Colors.blueGrey,
-                          title: 'Death',
+                          title: context.ui.death,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -985,7 +916,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                           context,
                           icon: Icons.volunteer_activism_outlined,
                           color: Colors.green,
-                          title: 'Donation',
+                          title: context.ui.donation,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -999,7 +930,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _buildSectionHeader('Animal Health Information'),
+                  _buildSectionHeader(context.ui.animalHealthInformation),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -1016,7 +947,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                             if (mounted) _refreshDashboard();
                           },
                           child: _buildHealthCard(
-                            'Medical',
+                            context.ui.medical,
                             Icons.medical_services_outlined,
                             Colors.red,
                           ),
@@ -1035,7 +966,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                             );
                           },
                           child: _buildHealthCard(
-                            'Vaccination',
+                            context.ui.vaccination,
                             Icons.colorize_outlined,
                             Colors.blue,
                           ),
@@ -1058,7 +989,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                             );
                           },
                           child: _buildHealthCard(
-                            'Deworming',
+                            context.ui.deworming,
                             Icons.spa_outlined,
                             Colors.green,
                           ),
@@ -1077,7 +1008,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                             );
                           },
                           child: _buildHealthCard(
-                            'Lab Testing',
+                            context.ui.labTesting,
                             Icons.biotech_outlined,
                             Colors.purple,
                           ),
@@ -1125,7 +1056,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Sick Animal',
+                                  context.ui.sickAnimal,
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
@@ -1133,7 +1064,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                                   ),
                                 ),
                                 Text(
-                                  sickAnimalCount,
+                                  visibleSickAnimalCount,
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -1173,7 +1104,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                             );
                           },
                           child: _buildHealthCard(
-                            'Photo Gallery',
+                            context.ui.photoGallery,
                             Icons.image_outlined,
                             Colors.blue,
                           ),
@@ -1191,7 +1122,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                             );
                           },
                           child: _buildHealthCard(
-                            'Video Gallery',
+                            context.ui.videoGallery,
                             Icons.movie_outlined,
                             Colors.red,
                           ),

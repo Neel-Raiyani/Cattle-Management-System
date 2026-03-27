@@ -97,7 +97,7 @@ class CattleBloc extends Bloc<CattleEvent, CattleState> {
       emit(CattleLoading());
     }
 
-    final result = await repository.getAllCattle();
+    final result = await repository.getBulls(bullType: event.bullType);
     result.fold((failure) => emit(CattleError(failure.message)), (cattleList) {
       _currentCattleList = List.from(cattleList);
       final bullsList = _currentCattleList

@@ -10,6 +10,7 @@ import '../../../cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_event.dart';
 import '../../../cattle/presentation/bloc/cattle_state.dart';
 import '../../../cattle/domain/entities/cattle.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddMedicalRecordScreen extends StatefulWidget {
   const AddMedicalRecordScreen({super.key});
@@ -149,9 +150,7 @@ class _AddMedicalRecordScreenState extends State<AddMedicalRecordScreen> {
           // Create a new disease on the backend, get its _id
           final name = _otherDiseaseCtrl.text.trim();
           if (name.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please enter the disease name.')),
-            );
+            AppFeedback.showError(context, 'Please enter the disease name.');
             setState(() => _isSubmitting = false);
             return;
           }
@@ -178,27 +177,23 @@ class _AddMedicalRecordScreenState extends State<AddMedicalRecordScreen> {
           treatment: _treatmentCtrl.text.isEmpty ? null : _treatmentCtrl.text,
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Medical record added successfully')),
-          );
+          AppFeedback.showSuccess(context, 'Medical record added successfully');
           Navigator.pop(context, true);
         }
       } on ServerException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+          AppFeedback.showError(context, e.message);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+          AppFeedback.showError(context, 'Error: $e');
         }
       } finally {
         if (mounted) setState(() => _isSubmitting = false);
       }
     } else if (_selectedAnimal == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select an animal first.')),
-        );
+        AppFeedback.showError(context, 'Please select an animal first.');
       }
     }
   }

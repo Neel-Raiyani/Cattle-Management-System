@@ -6,6 +6,7 @@ import '../../../../core/error/exceptions.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'reset_password_screen.dart'; // Will create next
+import '../../../../core/utils/app_feedback.dart';
 
 class VerifyOtpScreen extends StatefulWidget {
   final String mobileNumber;
@@ -163,14 +164,10 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                           mobileNumber: widget.mobileNumber,
                         );
                         if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(content: Text('OTP resent to ${widget.mobileNumber}')),
-                        );
+                        AppFeedback.showSuccess(context, 'OTP resent to ${widget.mobileNumber}');
                       } on ServerException catch (e) {
                         if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-                        );
+                        AppFeedback.showError(context, e.message);
                       } finally {
                         if (mounted) {
                           setState(() => _isResending = false);
@@ -214,9 +211,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                         setState(() => _isSubmitting = false);
                       }
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                         const SnackBar(content: Text('Please enter the 4-digit OTP'), backgroundColor: Colors.red),
-                      );
+                      AppFeedback.showError(context, 'Please enter the 4-digit OTP');
                     }
                   },
                   style: ElevatedButton.styleFrom(

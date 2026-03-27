@@ -11,6 +11,7 @@ import 'medical_report_screen.dart';
 import 'milk_report_screen.dart';
 import 'pregnancy_report_screen.dart';
 import 'vaccination_report_screen.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
@@ -142,15 +143,9 @@ class ReportsScreen extends StatelessWidget {
   }
 
   void _comingSoon(BuildContext ctx, String name) {
-    ScaffoldMessenger.of(ctx).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF99AA5A),
-        content: Text(
+    AppFeedback.showSuccess(ctx, 
           ctx.tr.comingSoon(name),
-          style: GoogleFonts.inter(color: Colors.white),
-        ),
-      ),
-    );
+        );
   }
 }
 

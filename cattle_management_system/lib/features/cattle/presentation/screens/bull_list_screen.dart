@@ -10,6 +10,8 @@ import '../bloc/cattle_state.dart';
 import 'add_bull_screen.dart';
 import 'bull_details_screen.dart';
 import 'edit_bull_details_screen.dart';
+import '../../../../core/utils/app_feedback.dart';
+import '../../../../core/utils/cattle_image_provider.dart';
 
 class BullListScreen extends StatefulWidget {
   const BullListScreen({super.key});
@@ -34,7 +36,9 @@ class _BullListScreenState extends State<BullListScreen> {
   void initState() {
     super.initState();
     // Refresh list to ensure we have latest data
-    context.read<CattleBloc>().add(const LoadCattleList());
+    context.read<CattleBloc>().add(
+      const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'),
+    );
   }
 
   @override
@@ -51,10 +55,11 @@ class _BullListScreenState extends State<BullListScreen> {
       appBar: _buildCustomAppBar(context),
       body: BlocListener<CattleBloc, CattleState>(
         listener: (context, state) {
-          if (state is CattleAdded ||
-              state is CattleUpdated) {
+          if (state is CattleAdded || state is CattleUpdated) {
             // Refresh the list when an animal is added, deleted, or updated
-            context.read<CattleBloc>().add(const LoadCattleList());
+            context.read<CattleBloc>().add(
+              const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'),
+            );
           }
         },
         child: Column(
@@ -166,12 +171,18 @@ class _BullListScreenState extends State<BullListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Navigation to Add Bull Screen
-          Navigator.push(
+        onPressed: () async {
+          final added = await Navigator.push<bool>(
             context,
             MaterialPageRoute(builder: (context) => const AddBullScreen()),
           );
+          if (!context.mounted) return;
+          if (added == true) {
+            context.read<CattleBloc>().add(
+              const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'),
+            );
+            await AppFeedback.showSuccess(context, 'Bull added successfully!');
+          }
         },
         backgroundColor: const Color(0xff99AA5A),
         icon: const Icon(Icons.add, color: Colors.white),
@@ -330,7 +341,9 @@ class _BullListScreenState extends State<BullListScreen> {
   List<Cattle> _filterBulls(List<Cattle> cattleList) {
     // Basic filter: Male cattle
     final males = cattleList.where((c) {
-      return c.isMaleGender && !_isTerminalStatus(c.status);
+      final isAiBull =
+          c.normalizedBullType == 'AI' || c.normalizedBullView == 'AI';
+      return c.isMaleGender && !_isTerminalStatus(c.status) && !isAiBull;
     }).toList();
 
     if (_selectedFilter == 'all_bull') {
@@ -361,6 +374,7 @@ class _BullCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final networkImage = cattleNetworkImageProvider(cattle.imageUrl);
     Color statusColor = const Color(0xFF5E35B1); // Deep Purple (Bull Calf)
     Color statusBg = const Color(0xFFEDE7F6); // Light Purple
     Color statusBorder = const Color(0xFF5E35B1);
@@ -426,11 +440,9 @@ class _BullCard extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        image:
-                            (cattle.imageUrl != null &&
-                                cattle.imageUrl!.isNotEmpty)
+                        image: networkImage != null
                             ? DecorationImage(
-                                image: NetworkImage(cattle.imageUrl!),
+                                image: networkImage,
                                 fit: BoxFit.cover,
                               )
                             : const DecorationImage(
@@ -566,14 +578,22 @@ class _BullCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      final updated = await Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
                               EditBullDetailsScreen(cattle: cattle),
                         ),
                       );
+                      if (updated == true && context.mounted) {
+                        context.read<CattleBloc>().add(
+                          const LoadBullsList(
+                            forceRefresh: true,
+                            bullType: 'GAUSHALA',
+                          ),
+                        );
+                      }
                     },
                     child: Container(
                       height: 44,

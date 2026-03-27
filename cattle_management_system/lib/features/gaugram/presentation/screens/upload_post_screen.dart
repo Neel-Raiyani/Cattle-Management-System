@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../../../../core/utils/app_feedback.dart';
 
 class UploadPostScreen extends StatefulWidget {
   const UploadPostScreen({super.key});
@@ -65,9 +66,7 @@ class _UploadPostScreenState extends State<UploadPostScreen>
 
   void _pickDocument() {
     // Placeholder for document picking logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Document picker not implemented')),
-    );
+    AppFeedback.showError(context, 'Document picker not implemented');
     setState(() {
       _isExpanded = false;
       _animationController.reverse();
@@ -76,9 +75,7 @@ class _UploadPostScreenState extends State<UploadPostScreen>
 
   void _pickAudio() {
     // Placeholder for audio picking logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Audio picker not implemented')),
-    );
+    AppFeedback.showError(context, 'Audio picker not implemented');
     setState(() {
       _isExpanded = false;
       _animationController.reverse();
@@ -286,11 +283,7 @@ class _UploadPostScreenState extends State<UploadPostScreen>
                   child: ElevatedButton(
                     onPressed: () {
                       // Handle upload logic
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Post Uploaded Successfully!'),
-                        ),
-                      );
+                      AppFeedback.showSuccess(context, 'Post Uploaded Successfully!');
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(

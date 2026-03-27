@@ -11,7 +11,9 @@ import '../../../../core/di/injection_container.dart';
 import '../../domain/entities/cattle.dart';
 import '../bloc/cattle_bloc.dart';
 import '../bloc/cattle_event.dart';
+import '../bloc/cattle_state.dart';
 import '../../../../core/utils/media_file_utils.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class EditAiBullScreen extends StatefulWidget {
   final Cattle cattle;
@@ -96,11 +98,21 @@ class _EditAiBullScreenState extends State<EditAiBullScreen> {
         contentType: contentType,
         type: 'PHOTO',
       );
-      final uploadUrl = presignedData['uploadUrl'] as String?;
-      final key =
-          presignedData['viewUrl'] as String? ?? presignedData['key'] as String?;
+      final uploadUrl = presignedData['uploadUrl']?.toString();
+      final viewUrl = presignedData['viewUrl']?.toString();
+      final key = presignedData['key']?.toString();
+      final storablePhotoUrl =
+          (viewUrl != null && viewUrl.isNotEmpty)
+              ? viewUrl
+              : ((uploadUrl != null && uploadUrl.isNotEmpty)
+                  ? uploadUrl.split('?').first
+                  : key);
 
-      if (uploadUrl == null || key == null) return null;
+      if (uploadUrl == null ||
+          storablePhotoUrl == null ||
+          storablePhotoUrl.isEmpty) {
+        return null;
+      }
 
       final Uint8List imageBytes = await imageFile.readAsBytes();
       final s3Response = await http.put(
@@ -113,7 +125,7 @@ class _EditAiBullScreenState extends State<EditAiBullScreen> {
         return 'ERROR_S3_${s3Response.statusCode}';
       }
 
-      return key;
+      return storablePhotoUrl;
     } catch (e) {
       debugPrint('[IMG] Upload exception: $e');
       return null;
@@ -150,12 +162,7 @@ class _EditAiBullScreenState extends State<EditAiBullScreen> {
           String errorMsg = 'Image upload failed';
           if (newPhotoKey.contains('401')) errorMsg = 'Unauthorized';
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$errorMsg. Saving other changes...'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          AppFeedback.showError(context, '$errorMsg. Saving other changes...');
           newPhotoKey = null;
         }
       }
@@ -175,6 +182,7 @@ class _EditAiBullScreenState extends State<EditAiBullScreen> {
         imageUrl: _imageDeleted
             ? null
             : (newPhotoKey ?? widget.cattle.imageUrl),
+        bullType: 'AI',
         bullView: 'AI',
         motherMilk: double.tryParse(_motherMilkController.text.trim()),
         grandmotherMilk: double.tryParse(
@@ -184,49 +192,56 @@ class _EditAiBullScreenState extends State<EditAiBullScreen> {
 
       if (mounted) {
         context.read<CattleBloc>().add(UpdateCattle(updatedCattle));
-        Navigator.pop(context);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
-              onPressed: () => Navigator.pop(context),
-              padding: EdgeInsets.zero,
-            ),
-          ),
-        ),
-        title: Text(
-          'Edit Bull Details', // AI Bull Edit Screen
-          style: GoogleFonts.poppins(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: false,
+    return BlocListener<CattleBloc, CattleState>(
+      listener: (context, state) {
+        if (state is CattleUpdated) {
+          Navigator.pop(context, true);
+        } else if (state is CattleActionError) {
+          AppFeedback.showError(context, state.message);
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        appBar: AppBar(
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          title: Text(
+            'Edit Bull Details',
+            style: GoogleFonts.poppins(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          centerTitle: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // Profile Image
               Center(
                 child: Column(
@@ -431,7 +446,8 @@ class _EditAiBullScreenState extends State<EditAiBullScreen> {
                         ),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

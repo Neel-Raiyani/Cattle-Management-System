@@ -12,6 +12,7 @@ import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 // ---------------------------------------------------------------------------
 // ConceptionScreen
@@ -138,9 +139,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
       await _fetchRecords();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update dry off status')),
-      );
+      AppFeedback.showError(context, 'Failed to update dry off status');
     }
   }
 
@@ -178,9 +177,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
       await _fetchRecords();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to record delivery')),
-      );
+      AppFeedback.showError(context, 'Failed to record delivery');
     }
   }
 
@@ -224,9 +221,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
       context.read<CattleBloc>().add(const LoadCattleList(forceRefresh: true));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete record')),
-      );
+      AppFeedback.showError(context, 'Failed to delete record');
     }
   }
 

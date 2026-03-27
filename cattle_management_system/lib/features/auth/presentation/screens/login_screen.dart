@@ -9,6 +9,7 @@ import '../bloc/auth_state.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../../../../presentation/screens/home_screen.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -192,12 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         (route) => false,
                       );
                     } else if (state is AuthError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                      AppFeedback.showError(context, state.message);
                     }
                   },
                   builder: (context, state) {
@@ -243,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
-                                    "Connecting to server...",
+                                    "Logging In",
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,

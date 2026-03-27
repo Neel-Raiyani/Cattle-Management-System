@@ -10,6 +10,9 @@ import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/localization/localized_assets.dart';
+import '../../../../core/localization/localized_ui.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 // ---------------------------------------------------------------------------
 // Static mock data — replace with BLoC / API calls when backend is ready
@@ -60,7 +63,7 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
         _isLoading = false;
         _errorMessage =
             e.toString().contains('404') || e.toString().contains('503')
-            ? 'Service not available'
+            ? context.ui.serviceNotAvailable
             : 'Error: ${e.toString()}';
       });
     }
@@ -185,22 +188,14 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
       // gaushala-id header is auto-injected by ApiClient interceptor
       await sl<ApiService>().deleteHeatRecord(id: deleteId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Heat record deleted successfully')),
-        );
+        AppFeedback.showSuccess(context, context.ui.heatRecordDeletedSuccessfully);
       }
       _fetchRecords();
     } catch (e) {
       debugPrint('[HeatRecordScreen] Deletion error: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Deletion failed: ${e.toString()}'),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(label: 'Retry', onPressed: () => _deleteRecord(record)),
-          ),
-        );
+        AppFeedback.showError(context, context.ui.deletionFailed(e.toString()));
       }
     }
   }
@@ -230,7 +225,7 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
           ),
         ),
         title: Text(
-          'Heat Record',
+          context.ui.heatRecord,
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -293,11 +288,11 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
                     ),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
-                    'to',
-                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                    context.ui.to,
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
                   ),
                 ),
                 Expanded(
@@ -349,7 +344,7 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       Text(
-                        'Total: ${filtered.length}',
+                        context.ui.totalAnimals(filtered.length),
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -407,7 +402,7 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
           ),
           icon: const Icon(Icons.add, color: Colors.white),
           label: Text(
-            'Add Heat Record',
+            context.ui.addHeatRecord,
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -427,13 +422,13 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/icons/no_data_found.png',
+            context.noDataFoundAsset,
             width: 180,
             height: 180,
           ),
           const SizedBox(height: 16),
           Text(
-            'No data found',
+            context.ui.noDataFound,
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -451,13 +446,13 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/icons/no_data_found.png',
+            context.noDataFoundAsset,
             width: 180,
             height: 180,
           ),
           const SizedBox(height: 16),
           Text(
-            _errorMessage ?? 'Service not available',
+            _errorMessage ?? context.ui.serviceNotAvailable,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -472,7 +467,7 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
               backgroundColor: const Color(0xFF99AA5A),
               foregroundColor: Colors.white,
             ),
-            child: const Text('Retry'),
+            child: Text(context.ui.retry),
           ),
         ],
       ),
@@ -484,24 +479,24 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
-          'Delete Record',
+          context.ui.deleteRecord,
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Are you sure you want to delete this heat record?',
+          context.ui.deleteHeatRecordConfirmation,
           style: GoogleFonts.inter(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+            child: Text(context.ui.cancel, style: GoogleFonts.inter(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               _deleteRecord(record);
             },
-            child: Text('Delete', style: GoogleFonts.inter(color: Colors.red)),
+            child: Text(context.ui.delete, style: GoogleFonts.inter(color: Colors.red)),
           ),
         ],
       ),
@@ -607,7 +602,7 @@ class _HeatRecordCard extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
-                                    'Tag No.: ${record.cowTagNumber}',
+                                    '${context.ui.tagNo}: ${record.cowTagNumber}',
                                     style: GoogleFonts.inter(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
@@ -623,7 +618,7 @@ class _HeatRecordCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            'No. ${record.cowSerialNumber}',
+                            '${context.ui.numberShort} ${record.cowSerialNumber}',
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               color: Colors.grey,
@@ -648,7 +643,7 @@ class _HeatRecordCard extends StatelessWidget {
             iconBg: const Color(0xFFF5F5F5),
             iconColor: Colors.grey,
             icon: Icons.access_time_rounded,
-            label: 'Parity:',
+            label: '${context.ui.parity}:',
             value: record.parity.toString(),
           ),
           const SizedBox(height: 8),
@@ -656,9 +651,9 @@ class _HeatRecordCard extends StatelessWidget {
             iconBg: const Color(0xFFE8F5E9),
             iconColor: Colors.green,
             icon: Icons.eco_rounded,
-            label: 'Breeding Status:',
+            label: '${context.ui.breedingStatus}:',
             valueWidget: Text(
-              record.isConceived ? 'Conceived' : 'Not Conceived',
+              record.isConceived ? context.ui.conceived : context.ui.notConceived,
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -671,7 +666,7 @@ class _HeatRecordCard extends StatelessWidget {
             iconBg: const Color(0xFFE3F2FD),
             iconColor: Colors.blue,
             icon: Icons.calendar_today_rounded,
-            label: 'Heat Date:',
+            label: '${context.ui.heatDate}:',
             value: heatDateFmt,
           ),
           if (record.note != null && record.note!.isNotEmpty) ...[
@@ -680,7 +675,7 @@ class _HeatRecordCard extends StatelessWidget {
               iconBg: const Color(0xFFF5F5F5),
               iconColor: Colors.grey,
               icon: Icons.notes_rounded,
-              label: 'Note:',
+              label: '${context.ui.note}:',
               value: record.note!,
             ),
           ],

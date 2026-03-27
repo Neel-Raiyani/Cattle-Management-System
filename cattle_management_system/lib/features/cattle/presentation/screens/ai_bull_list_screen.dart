@@ -8,6 +8,8 @@ import '../bloc/cattle_event.dart';
 import '../bloc/cattle_state.dart';
 import 'add_ai_bull_screen.dart';
 import 'edit_ai_bull_screen.dart'; // We will create this
+import '../../../../core/utils/app_feedback.dart';
+import '../../../../core/utils/cattle_image_provider.dart';
 
 class AiBullListScreen extends StatefulWidget {
   const AiBullListScreen({super.key});
@@ -23,7 +25,9 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<CattleBloc>().add(const LoadCattleList());
+    context.read<CattleBloc>().add(
+      const LoadBullsList(forceRefresh: true, bullType: 'AI'),
+    );
   }
 
   @override
@@ -80,7 +84,7 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
                   if (!_isSearching) {
                     _searchController.clear();
                     context.read<CattleBloc>().add(
-                      const LoadCattleList(forceRefresh: true),
+                      const LoadBullsList(forceRefresh: true, bullType: 'AI'),
                     );
                   }
                 });
@@ -115,7 +119,8 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
                   (c) =>
                       c.isMaleGender &&
                       c.isActive &&
-                      c.normalizedBullView == 'AI',
+                      (c.normalizedBullType == 'AI' ||
+                          c.normalizedBullView == 'AI'),
                 )
                 .toList();
 
@@ -166,13 +171,23 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
         child: SizedBox(
           height: 48,
           child: FloatingActionButton.extended(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final added = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AddAiBullScreen(),
                 ),
               );
+              if (!context.mounted) return;
+              if (added == true) {
+                context.read<CattleBloc>().add(
+                  const LoadBullsList(forceRefresh: true, bullType: 'AI'),
+                );
+                await AppFeedback.showSuccess(
+                  context,
+                  'AI bull added successfully!',
+                );
+              }
             },
             backgroundColor: const Color(0xff99AA5A), // Olive Green
             shape: RoundedRectangleBorder(
@@ -201,6 +216,7 @@ class _AiBullCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final networkImage = cattleNetworkImageProvider(cattle.imageUrl);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -229,10 +245,9 @@ class _AiBullCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(8),
-                  image:
-                      (cattle.imageUrl != null && cattle.imageUrl!.isNotEmpty)
+                  image: networkImage != null
                       ? DecorationImage(
-                          image: NetworkImage(cattle.imageUrl!),
+                          image: networkImage,
                           fit: BoxFit.cover,
                         )
                       : const DecorationImage(
@@ -321,13 +336,18 @@ class _AiBullCard extends StatelessWidget {
             children: [
               Expanded(
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    final updated = await Navigator.push<bool>(
                       context,
                       MaterialPageRoute(
                         builder: (c) => EditAiBullScreen(cattle: cattle),
                       ),
                     );
+                    if (updated == true && context.mounted) {
+                      context.read<CattleBloc>().add(
+                        const LoadBullsList(forceRefresh: true, bullType: 'AI'),
+                      );
+                    }
                   },
                   child: Container(
                     height: 40,

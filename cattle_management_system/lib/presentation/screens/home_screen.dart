@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/localization/localized_ui.dart';
 import '../widgets/side_menu_drawer.dart';
 import '../../features/dashboard/presentation/widgets/gaushala_tab.dart';
 import '../../features/gaugram/presentation/widgets/gaugram_tab.dart';
@@ -90,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Welcome back',
+                context.ui.welcomeBack,
                 style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
               ),
               Text(
@@ -164,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  'Gaushala',
+                  context.ui.gaushala,
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
                     color: _selectedIndex == 0 ? Colors.white : Colors.grey,
@@ -186,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  'GauGram',
+                  context.ui.gauGram,
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
                     color: _selectedIndex == 1 ? Colors.white : Colors.grey,

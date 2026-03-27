@@ -9,6 +9,7 @@ import '../../../cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_state.dart';
 import '../../../cattle/presentation/bloc/cattle_event.dart';
 import '../../../cattle/domain/entities/cattle.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddBulkDewormingScreen extends StatefulWidget {
   const AddBulkDewormingScreen({super.key});
@@ -578,15 +579,11 @@ class _AddBulkDewormingScreenState extends State<AddBulkDewormingScreen> {
         .toList();
 
     if (selectedIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one animal')),
-      );
+      AppFeedback.showError(context, 'Please select at least one animal');
       return;
     }
     if (_selectedDoseType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select dose type')),
-      );
+      AppFeedback.showError(context, 'Please select dose type');
       return;
     }
 
@@ -608,15 +605,13 @@ class _AddBulkDewormingScreenState extends State<AddBulkDewormingScreen> {
         vetId: resolvedVetId,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bulk deworming records added successfully')),
-        );
+        AppFeedback.showSuccess(context, 'Bulk deworming records added successfully');
         Navigator.pop(context, true);
       }
     } on ServerException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted) AppFeedback.showError(context, e.message);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) AppFeedback.showError(context, 'Error: $e');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

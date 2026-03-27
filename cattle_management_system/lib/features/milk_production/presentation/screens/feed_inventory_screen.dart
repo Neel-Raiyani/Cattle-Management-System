@@ -4,6 +4,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../data/datasources/feed_local_data_source.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class FeedInventoryScreen extends StatefulWidget {
   const FeedInventoryScreen({super.key});
@@ -149,21 +150,11 @@ class _FeedInventoryScreenState extends State<FeedInventoryScreen> {
 
                   if (context.mounted) {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Inventory updated successfully on server.'),
-                        backgroundColor: AppTheme.primaryColor,
-                      ),
-                    );
+                    AppFeedback.showSuccess(context, 'Inventory updated successfully on server.');
                   }
                 } catch (e) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('Failed to sync with server: $e'),
-                          backgroundColor: Colors.red
-                      ),
-                    );
+                    AppFeedback.showError(context, 'Failed to sync with server: $e');
                   }
                 }
               }

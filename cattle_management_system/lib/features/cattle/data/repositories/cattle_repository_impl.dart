@@ -34,9 +34,31 @@ class CattleRepositoryImpl implements CattleRepository {
       try {
         final remoteCattle = await remoteDataSource.getAllCattle();
         final mergedById = <String, Cattle>{};
+        final cachedById = {
+          for (final cattle in cachedCattle) cattle.id: cattle,
+        };
 
         for (final cattle in remoteCattle) {
-          mergedById[cattle.id] = cattle;
+          final classified = cattle;
+          final cached = cachedById[classified.id];
+          if (cached != null &&
+              ((classified.bullType == null ||
+                      classified.bullType!.trim().isEmpty) ||
+                  (classified.bullView == null ||
+                      classified.bullView!.trim().isEmpty))) {
+            mergedById[classified.id] = classified.copyWith(
+              bullType: (classified.bullType == null ||
+                      classified.bullType!.trim().isEmpty)
+                  ? cached.bullType
+                  : classified.bullType,
+              bullView: (classified.bullView == null ||
+                      classified.bullView!.trim().isEmpty)
+                  ? cached.bullView
+                  : classified.bullView,
+            );
+          } else {
+            mergedById[classified.id] = classified;
+          }
         }
 
         for (final cattle in cachedCattle) {
@@ -93,6 +115,7 @@ class CattleRepositoryImpl implements CattleRepository {
                       ownerName: cattle.ownerName,
                       ownerMobile: cattle.ownerMobile,
                       retiredDate: cattle.retiredDate,
+                      bullType: cattle.bullType,
                       bullView: cattle.bullView,
                       motherMilk: cattle.motherMilk,
                       grandmotherMilk: cattle.grandmotherMilk,
@@ -146,7 +169,7 @@ class CattleRepositoryImpl implements CattleRepository {
   }
 
   @override
-  Future<Either<Failure, List<Cattle>>> getBulls() async {
+  Future<Either<Failure, List<Cattle>>> getBulls({String? bullType}) async {
     final cachedCattle = await localDataSource.getLastCattleList();
     final cachedBulls = cachedCattle
         .where((c) => c.gender.toUpperCase().startsWith('M'))
@@ -154,7 +177,7 @@ class CattleRepositoryImpl implements CattleRepository {
 
     if (await networkInfo.isConnected) {
       try {
-        final remoteBulls = await remoteDataSource.getBulls();
+        final remoteBulls = await remoteDataSource.getBulls(bullType: bullType);
         return Right(remoteBulls);
       } on ServerException catch (e) {
         return cachedBulls.isNotEmpty

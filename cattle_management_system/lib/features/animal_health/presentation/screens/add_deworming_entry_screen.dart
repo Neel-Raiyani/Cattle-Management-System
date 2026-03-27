@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_state.dart';
 import '../../../cattle/domain/entities/cattle.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddDewormingEntryScreen extends StatefulWidget {
   final HealthEvent? existingRecord;
@@ -504,15 +505,11 @@ class _AddDewormingEntryScreenState extends State<AddDewormingEntryScreen> {
 
   void _submit() async {
     if (_selectedAnimal == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an animal name')),
-      );
+      AppFeedback.showError(context, 'Please select an animal name');
       return;
     }
     if (_doseDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a dose date')),
-      );
+      AppFeedback.showError(context, 'Please select a dose date');
       return;
     }
 
@@ -540,9 +537,6 @@ class _AddDewormingEntryScreenState extends State<AddDewormingEntryScreen> {
         nextDoseDate: _nextDoseDate,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Deworming record added successfully')),
-        );
         Navigator.pop(context, true);
       }
     } on ServerException catch (e) {

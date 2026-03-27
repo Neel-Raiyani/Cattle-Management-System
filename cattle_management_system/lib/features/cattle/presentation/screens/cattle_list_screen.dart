@@ -11,6 +11,7 @@ import 'add_cattle_screen.dart';
 import 'cow_details_screen.dart';
 import 'cattle_details/edit_cow_details_screen.dart';
 import '../../../../core/utils/app_feedback.dart';
+import '../../../../core/utils/cattle_image_provider.dart';
 
 class CattleListScreen extends StatefulWidget {
   final String? initialFilter;
@@ -275,11 +276,18 @@ class _CattleListScreenState extends State<CattleListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final added = await Navigator.push<bool>(
             context,
             MaterialPageRoute(builder: (context) => const AddCattleScreen()),
           );
+          if (!context.mounted) return;
+          if (added == true) {
+            context.read<CattleBloc>().add(
+              const LoadCowsList(forceRefresh: true),
+            );
+            await AppFeedback.showSuccess(context, 'Cow added successfully!');
+          }
         },
         backgroundColor: const Color(0xFFA4C639),
         icon: const Icon(Icons.add, color: Colors.white),
@@ -463,6 +471,7 @@ class _CustomCattleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final networkImage = cattleNetworkImageProvider(cattle.imageUrl);
     final isLactating = cattle.effectiveIsLactating;
     final isHeifer = cattle.effectiveIsHeifer;
     final isCalf = cattle.isCowCalf;
@@ -518,11 +527,9 @@ class _CustomCattleCard extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        image:
-                            (cattle.imageUrl != null &&
-                                cattle.imageUrl!.isNotEmpty)
+                        image: networkImage != null
                             ? DecorationImage(
-                                image: NetworkImage(cattle.imageUrl!),
+                                image: networkImage,
                                 fit: BoxFit.cover,
                               )
                             : const DecorationImage(
@@ -711,13 +718,18 @@ class _CustomCattleCard extends StatelessWidget {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
-                      await Navigator.push(
+                      final updated = await Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
                               EditCowDetailsScreen(cattle: cattle),
                         ),
                       );
+                      if (updated == true && context.mounted) {
+                        context.read<CattleBloc>().add(
+                          const LoadCowsList(forceRefresh: true),
+                        );
+                      }
                     },
                     child: Container(
                       height: 40,

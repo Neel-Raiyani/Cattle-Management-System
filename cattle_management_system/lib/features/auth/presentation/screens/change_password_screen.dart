@@ -6,6 +6,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
 import 'forgot_password_screen.dart'; // Will create next
+import '../../../../core/utils/app_feedback.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -170,9 +171,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     onPressed: _isSubmitting ? null : () async {
                       if (_formKey.currentState!.validate()) {
                         if (_newPasswordController.text != _confirmPasswordController.text) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(AppLocalizations.of(context)!.passwordMismatch)),
-                          );
+                          AppFeedback.showError(context, AppLocalizations.of(context)!.passwordMismatch);
                           return;
                         }
                         setState(() => _isSubmitting = true);
@@ -183,20 +182,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             confirmPassword: _confirmPasswordController.text.trim(),
                           );
                           if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Password changed successfully'), backgroundColor: Colors.green),
-                          );
+                          AppFeedback.showSuccess(context, 'Password changed successfully');
                           Navigator.pop(context);
                         } on ServerException catch (e) {
                           if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-                          );
+                          AppFeedback.showError(context, e.message);
                         } catch (_) {
                           if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Failed to change password'), backgroundColor: Colors.red),
-                          );
+                          AppFeedback.showError(context, 'Failed to change password');
                         } finally {
                           if (mounted) {
                             setState(() => _isSubmitting = false);

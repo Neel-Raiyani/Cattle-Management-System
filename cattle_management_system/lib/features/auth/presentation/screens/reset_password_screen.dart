@@ -6,6 +6,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
 import 'login_screen.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String mobileNumber;
@@ -32,6 +33,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -49,139 +51,151 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 16),
-                Text(
-                  AppLocalizations.of(context)!.createPasswordTitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF212121),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  AppLocalizations.of(context)!.createPasswordSubtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: const Color(0xFF757575),
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 32),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                0,
+                24,
+                24 + MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Form(
+                  key: _formKey,
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        Text(
+                          AppLocalizations.of(context)!.createPasswordTitle,
+                          style: GoogleFonts.poppins(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF212121),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          AppLocalizations.of(context)!.createPasswordSubtitle,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: const Color(0xFF757575),
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        Text(
+                          AppLocalizations.of(context)!.labelNewPass,
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _newPasswordController,
+                          obscureText: _obscureNew,
+                          validator: (value) =>
+                              value == null || value.length < 6 ? 'Min 6 chars' : null,
+                          decoration: _buildInputDecoration(
+                            AppLocalizations.of(context)!.hintNewPass,
+                            _obscureNew,
+                            () => setState(() => _obscureNew = !_obscureNew),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          AppLocalizations.of(context)!.confirmNewPassword,
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          obscureText: _obscureConfirm,
+                          validator: (value) =>
+                              value == null || value.isEmpty ? 'Required' : null,
+                          decoration: _buildInputDecoration(
+                            AppLocalizations.of(context)!.hintConfirmPass,
+                            _obscureConfirm,
+                            () => setState(() => _obscureConfirm = !_obscureConfirm),
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                        const Spacer(),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isSubmitting ? null : () async {
+                              if (_formKey.currentState!.validate()) {
+                                if (_newPasswordController.text !=
+                                    _confirmPasswordController.text) {
+                                  AppFeedback.showError(
+                                    context,
+                                    AppLocalizations.of(context)!.passwordMismatch,
+                                  );
+                                  return;
+                                }
 
-                // New Password
-                Text(
-                  AppLocalizations.of(context)!.labelNewPass,
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _newPasswordController,
-                  obscureText: _obscureNew,
-                  validator: (value) => value == null || value.length < 6 ? 'Min 6 chars' : null,
-                  decoration: _buildInputDecoration(
-                    AppLocalizations.of(context)!.hintNewPass,
-                    _obscureNew,
-                    () => setState(() => _obscureNew = !_obscureNew),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Confirm Password
-                Text(
-                  AppLocalizations.of(context)!.confirmNewPassword,
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirm,
-                  validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                  decoration: _buildInputDecoration(
-                    AppLocalizations.of(context)!.hintConfirmPass,
-                    _obscureConfirm,
-                    () => setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                const Spacer(),
-
-                // Change Password Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isSubmitting ? null : () async {
-                      if (_formKey.currentState!.validate()) {
-                        if (_newPasswordController.text != _confirmPasswordController.text) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(AppLocalizations.of(context)!.passwordMismatch)),
-                          );
-                          return;
-                        }
-
-                        setState(() => _isSubmitting = true);
-                        try {
-                          await sl<AuthRemoteDataSource>().verifyForgotPasswordOtp(
-                            mobileNumber: widget.mobileNumber,
-                            otp: widget.otp,
-                            newPassword: _newPasswordController.text.trim(),
-                            confirmPassword: _confirmPasswordController.text.trim(),
-                          );
-                          if (!mounted) return;
-                          _showSuccessDialog();
-                        } on ServerException catch (e) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-                          );
-                        } catch (_) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Failed to reset password'), backgroundColor: Colors.red),
-                          );
-                        } finally {
-                          if (mounted) {
-                            setState(() => _isSubmitting = false);
-                          }
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      textStyle: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                                setState(() => _isSubmitting = true);
+                                try {
+                                  await sl<AuthRemoteDataSource>().verifyForgotPasswordOtp(
+                                    mobileNumber: widget.mobileNumber,
+                                    otp: widget.otp,
+                                    newPassword: _newPasswordController.text.trim(),
+                                    confirmPassword: _confirmPasswordController.text.trim(),
+                                  );
+                                  if (!mounted) return;
+                                  _showSuccessDialog();
+                                } on ServerException catch (e) {
+                                  if (!mounted) return;
+                                  AppFeedback.showError(context, e.message);
+                                } catch (_) {
+                                  if (!mounted) return;
+                                  AppFeedback.showError(
+                                    context,
+                                    'Failed to reset password',
+                                  );
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _isSubmitting = false);
+                                  }
+                                }
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              textStyle: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          )
-                        : Text(AppLocalizations.of(context)!.btnChangePassword),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    AppLocalizations.of(context)!.btnChangePassword,
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

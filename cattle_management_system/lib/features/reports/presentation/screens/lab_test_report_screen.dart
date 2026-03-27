@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/localization/localized_assets.dart';
+import 'package:cattle_management_system/core/localization/localized_ui.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/utils/app_feedback.dart';
 
@@ -866,14 +868,14 @@ class _NoDataFound extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/icons/no_data_found.png',
+            context.noDataFoundAsset,
             width: 150,
             height: 150,
             fit: BoxFit.contain,
           ),
           const SizedBox(height: 16),
           Text(
-            'No Data Found',
+            context.ui.noDataFound,
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w500,

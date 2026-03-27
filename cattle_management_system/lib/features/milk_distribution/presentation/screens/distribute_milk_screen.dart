@@ -4,8 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/api_service.dart';
-import '../../../../core/services/app_feedback_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/localization/localized_assets.dart';
+import '../../../../core/localization/localized_ui.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class DistributeMilkScreen extends StatefulWidget {
   const DistributeMilkScreen({super.key});
@@ -205,17 +207,17 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
     if (_isSubmitting) return;
 
     if (_distributionValues.isEmpty) {
-      AppFeedbackService.showPopup(
-        message: 'Please enter distribution values',
-        type: AppFeedbackType.warning,
+      await AppFeedback.showWarning(
+        context,
+        context.ui.pleaseEnterDistributionValues,
       );
       return;
     }
 
     if (_totalMilkProduced <= 0) {
-      AppFeedbackService.showPopup(
-        message: 'No milk production found for the selected date and shift',
-        type: AppFeedbackType.warning,
+      await AppFeedback.showWarning(
+        context,
+        context.ui.noMilkProductionFound,
       );
       return;
     }
@@ -223,9 +225,9 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
     // Validate if exceeding remaining
     double currentInputTotal = _distributionValues.values.fold(0, (sum, val) => sum + val);
     if ((_alreadyDistributed + currentInputTotal) > _totalMilkProduced) {
-      AppFeedbackService.showPopup(
-        message: 'Distribution exceeds total produced milk',
-        type: AppFeedbackType.error,
+      await AppFeedback.showError(
+        context,
+        context.ui.distributionExceedsProduction,
       );
       return;
     }
@@ -258,9 +260,9 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
           _distributionValues.clear();
           _remarksController.clear();
         });
-        AppFeedbackService.showPopup(
-          message: 'Milk distributed successfully',
-          type: AppFeedbackType.success,
+        await AppFeedback.showSuccess(
+          context,
+          context.ui.milkDistributedSuccessfully,
         );
         if (Navigator.canPop(context)) {
           Navigator.pop(context, true);
@@ -268,9 +270,9 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppFeedbackService.showPopup(
-          message: 'Failed to distribute milk: $e',
-          type: AppFeedbackType.error,
+        await AppFeedback.showError(
+          context,
+          context.ui.failedToDistributeMilk(e.toString()),
         );
       }
     } finally {
@@ -339,7 +341,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          'Distribute Milk',
+          context.ui.distributeMilk,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
             color: Colors.black87,
@@ -378,7 +380,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Date',
+                        context.ui.date,
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -423,7 +425,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Shift',
+                        context.ui.shift,
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -435,9 +437,9 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           children: [
-                            _buildRadioOption('Morning'),
+                          _buildRadioOption('Morning'),
                             const SizedBox(width: 12),
-                            _buildRadioOption('Evening'),
+                          _buildRadioOption('Evening'),
                           ],
                         ),
                       ),
@@ -457,7 +459,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'assets/icons/no_data_found.png',
+                          context.noDataFoundAsset,
                           width: 150,
                           height: 150,
                         ),
@@ -477,7 +479,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                             backgroundColor: AppTheme.primaryColor,
                           ),
                           child: Text(
-                            'Retry',
+                            context.ui.retry,
                             style: GoogleFonts.poppins(color: Colors.white),
                           ),
                         ),
@@ -490,13 +492,13 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'assets/icons/no_data_found.png',
+                          context.noDataFoundAsset,
                           width: 150,
                           height: 150,
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No Categories Found',
+                          context.ui.noCategoriesFound,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -516,7 +518,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                             // Total - Yellowish/Orange
                             Expanded(
                               child: _buildSummaryCard(
-                                'Total',
+                                context.ui.total,
                                 _totalMilkProduced.toStringAsFixed(2),
                                 const Color(0xFFFFF3E0),
                                 Colors.orange.shade800,
@@ -526,7 +528,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                             // Distribution - Greenish
                             Expanded(
                               child: _buildSummaryCard(
-                                'Distribution',
+                                context.ui.distribution,
                                 displayDistribution.toStringAsFixed(2),
                                 const Color(0xFFE8F5E9),
                                 Colors.green.shade800,
@@ -536,7 +538,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                             // Remain - Reddish
                             Expanded(
                               child: _buildSummaryCard(
-                                'Remain',
+                                context.ui.remain,
                                 remaining.toStringAsFixed(2),
                                 const Color(0xFFFFEBEE),
                                 Colors.red.shade800,
@@ -565,7 +567,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                               SizedBox(
                                 width: 40,
                                 child: Text(
-                                  'Sr No.',
+                                  context.ui.serialNo,
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
@@ -576,7 +578,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Category',
+                                  context.ui.category,
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
@@ -586,7 +588,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                               SizedBox(
                                 width: 80,
                                 child: Text(
-                                  'Milk',
+                                  context.ui.milk,
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
@@ -713,7 +715,7 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
                           ),
                         )
                       : Text(
-                          'Submit',
+                          context.ui.submit,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -762,7 +764,11 @@ class _DistributeMilkScreenState extends State<DistributeMilkScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            value,
+            value == 'Morning'
+                ? context.ui.morning
+                : value == 'Evening'
+                    ? context.ui.evening
+                    : value,
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,

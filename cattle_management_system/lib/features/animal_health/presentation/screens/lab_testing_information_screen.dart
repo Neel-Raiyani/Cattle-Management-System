@@ -8,6 +8,8 @@ import 'add_lab_test_screen.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/utils/app_feedback.dart';
+import '../../../../core/localization/localized_assets.dart';
+import 'package:cattle_management_system/core/localization/localized_ui.dart';
 
 class LabTestingInformationScreen extends StatefulWidget {
   const LabTestingInformationScreen({super.key});
@@ -210,7 +212,7 @@ class _LabTestingInformationScreenState
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/icons/no_data_found.png',
+                      context.noDataFoundAsset,
                       height: 150,
                       errorBuilder: (_, __, ___) =>
                           const Icon(Icons.error, size: 50),
@@ -248,14 +250,14 @@ class _LabTestingInformationScreenState
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/icons/no_data_found.png',
+                      context.noDataFoundAsset,
                       height: 150,
                       errorBuilder: (_, __, ___) =>
                           const Icon(Icons.error, size: 50),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No Records Found',
+                      context.ui.noRecordsFound,
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         color: Colors.grey,

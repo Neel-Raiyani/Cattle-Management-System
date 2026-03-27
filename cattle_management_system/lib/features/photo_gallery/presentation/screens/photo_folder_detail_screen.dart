@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class PhotoFolderDetailScreen extends StatefulWidget {
   final String folderId;
@@ -469,7 +470,7 @@ class _PhotoFolderDetailScreenState extends State<PhotoFolderDetailScreen> {
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    AppFeedback.showSuccess(context, message);
   }
 
   String _readableError(Object error, {required String fallback}) {

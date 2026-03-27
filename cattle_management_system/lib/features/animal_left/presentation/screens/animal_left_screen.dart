@@ -7,6 +7,7 @@ import 'death_report_screen.dart';
 import 'donation_report_screen.dart';
 import 'sell_report_screen.dart';
 import '../../domain/entities/animal_left_record.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 // ---------------------------------------------------------------------------
 // Mock data factory
@@ -703,11 +704,7 @@ class _AddAnimalLeftScreenState extends State<AddAnimalLeftScreen> {
   }
 
   void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      backgroundColor: const Color(0xFF99AA5A),
-      content:
-          Text(msg, style: GoogleFonts.inter(color: Colors.white)),
-    ));
+    AppFeedback.showError(context, msg);
   }
 
   @override

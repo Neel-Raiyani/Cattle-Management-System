@@ -15,6 +15,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/app_feedback_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddDeathRecordScreen extends StatefulWidget {
   const AddDeathRecordScreen({super.key});
@@ -167,17 +168,13 @@ class _AddDeathRecordScreenState extends State<AddDeathRecordScreen> {
           ),
         );
         final lang = Localizations.localeOf(context).languageCode;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        AppFeedback.showSuccess(context, 
               lang == 'hi'
                   ? 'मृत्यु रिकॉर्ड सफलतापूर्वक जोड़ा गया'
                   : lang == 'gu'
                   ? 'મૃત્યુ રેકોર્ડ સફળતાપૂર્વક ઉમેરાયો'
                   : 'Death record added successfully',
-            ),
-          ),
-        );
+            );
         Navigator.pop(context, true);
       }
     } on ServerException catch (e) {

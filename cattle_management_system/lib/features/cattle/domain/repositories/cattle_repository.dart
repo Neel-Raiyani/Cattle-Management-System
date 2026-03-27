@@ -5,7 +5,7 @@ import '../entities/cattle.dart';
 abstract class CattleRepository {
   Future<Either<Failure, List<Cattle>>> getAllCattle();
   Future<Either<Failure, List<Cattle>>> getCows();
-  Future<Either<Failure, List<Cattle>>> getBulls();
+  Future<Either<Failure, List<Cattle>>> getBulls({String? bullType});
   Future<Either<Failure, Cattle>> getCattleById(String id);
   Future<Either<Failure, Cattle>> addCattle(Cattle cattle);
   Future<Either<Failure, Cattle>> updateCattle(Cattle cattle);

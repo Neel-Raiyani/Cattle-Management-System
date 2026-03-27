@@ -101,8 +101,9 @@ class LoadCowsList extends CattleEvent {
 /// Load Bulls only
 class LoadBullsList extends CattleEvent {
   final bool forceRefresh;
-  const LoadBullsList({this.forceRefresh = false});
+  final String? bullType;
+  const LoadBullsList({this.forceRefresh = false, this.bullType});
 
   @override
-  List<Object?> get props => [forceRefresh];
+  List<Object?> get props => [forceRefresh, bullType];
 }

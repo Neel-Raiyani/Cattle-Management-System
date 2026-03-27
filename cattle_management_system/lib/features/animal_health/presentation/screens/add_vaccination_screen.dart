@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_state.dart';
 import '../../../cattle/domain/entities/cattle.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddVaccinationScreen extends StatefulWidget {
   final HealthEvent? existingRecord;
@@ -460,9 +461,7 @@ class _AddVaccinationScreenState extends State<AddVaccinationScreen> {
   void _submit() async {
     if (_selectedAnimal == null || _selectedVaccineId == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill required fields')),
-        );
+        AppFeedback.showError(context, 'Please fill required fields');
       }
       return;
     }
@@ -473,9 +472,7 @@ class _AddVaccinationScreenState extends State<AddVaccinationScreen> {
       if (_selectedVaccineId == _kOtherId) {
         final name = _otherVaccineCtrl.text.trim();
         if (name.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please enter the vaccine name.')),
-          );
+          AppFeedback.showError(context, 'Please enter the vaccine name.');
           setState(() => _isSubmitting = false);
           return;
         }
@@ -504,11 +501,7 @@ class _AddVaccinationScreenState extends State<AddVaccinationScreen> {
         remark: _remarkController.text,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Vaccination record added successfully'),
-          ),
-        );
+        AppFeedback.showSuccess(context, 'Vaccination record added successfully');
         Navigator.pop(context, true);
       }
     } on ServerException catch (e) {

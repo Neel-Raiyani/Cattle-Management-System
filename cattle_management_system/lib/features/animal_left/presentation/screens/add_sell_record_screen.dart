@@ -13,6 +13,7 @@ import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddSellRecordScreen extends StatefulWidget {
   const AddSellRecordScreen({super.key});
@@ -543,18 +544,14 @@ class _AddSellRecordScreenState extends State<AddSellRecordScreen> {
       return;
     }
     if (_mobileCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      AppFeedback.showError(context, 
             _localize(
               context,
               en: 'Please enter mobile number',
               hi: 'कृपया मोबाइल नंबर दर्ज करें',
               gu: 'કૃપા કરીને મોબાઇલ નંબર દાખલ કરો',
             ),
-          ),
-        ),
-      );
+          );
       return;
     }
     final amount = double.tryParse(_amountCtrl.text) ?? 0.0;
@@ -585,18 +582,14 @@ class _AddSellRecordScreenState extends State<AddSellRecordScreen> {
             ),
           ),
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        AppFeedback.showSuccess(context, 
               _localize(
                 context,
                 en: 'Sell record added successfully',
                 hi: 'बिक्री रिकॉर्ड सफलतापूर्वक जोड़ा गया',
                 gu: 'વેચાણ રેકોર્ડ સફળતાપૂર્વક ઉમેરાયો',
               ),
-            ),
-          ),
-        );
+            );
         Navigator.pop(context, true);
       }
     } on ServerException catch (e) {

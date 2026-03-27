@@ -6,6 +6,8 @@ import '../../domain/entities/health_event.dart';
 import 'medical_details_screen.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/localization/localized_assets.dart';
+import 'package:cattle_management_system/core/localization/localized_ui.dart';
 
 class SickAnimalScreen extends StatefulWidget {
   const SickAnimalScreen({super.key});
@@ -152,7 +154,7 @@ class _SickAnimalScreenState extends State<SickAnimalScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset(
-                        'assets/icons/no_data_found.png',
+                        context.noDataFoundAsset,
                         height: 150,
                         errorBuilder: (_, __, ___) =>
                             const Icon(Icons.error, size: 50),
@@ -188,14 +190,14 @@ class _SickAnimalScreenState extends State<SickAnimalScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset(
-                            'assets/icons/no_data_found.png',
+                            context.noDataFoundAsset,
                             width: 150,
                             errorBuilder: (_, __, ___) =>
                                 const Icon(Icons.error, size: 50),
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No data found',
+                            context.ui.noDataFound,
                             style: GoogleFonts.poppins(
                               fontSize: 16,
                               color: const Color(0xFF99AA5A),

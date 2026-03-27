@@ -4,6 +4,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Valid roles as per the backend (Swagger: UserGaushala.role enum)
@@ -353,25 +354,16 @@ class _AddUserScreenState extends State<AddUserScreen> {
         city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Staff member added successfully!'),
-            backgroundColor: Color(0xFF99AA5A),
-          ),
-        );
+        AppFeedback.showSuccess(context, 'Staff member added successfully!');
         Navigator.pop(context, true); // return true → trigger refresh
       }
     } on ServerException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-        );
+        AppFeedback.showError(context, e.message);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
+        AppFeedback.showError(context, 'Error: $e');
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

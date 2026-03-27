@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/di/injection_container.dart';
-import '../../../../core/services/api_service.dart';
-import '../../../cattle/data/models/cattle_model.dart';
 import '../../../cattle/domain/entities/cattle.dart';
 import '../../../cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_event.dart';
 import '../../../cattle/presentation/bloc/cattle_state.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 // ---------------------------------------------------------------------------
 // Mock bull data
@@ -166,13 +164,11 @@ class _BullListReportScreenState extends State<BullListReportScreen> {
   bool _searchOpen = false;
   String _searchQuery = '';
   final _searchCtrl = TextEditingController();
-  bool _isLoading = false;
-  List<Cattle> _apiBulls = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchBullReport();
+    context.read<CattleBloc>().add(const LoadCattleList());
   }
 
   @override
@@ -181,38 +177,14 @@ class _BullListReportScreenState extends State<BullListReportScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchBullReport() async {
-    setState(() => _isLoading = true);
-    try {
-      final bulls = await sl<ApiService>()
-          .getBullReportExport()
-          .timeout(const Duration(seconds: 10));
-      if (!mounted) return;
-      setState(() {
-        _apiBulls = bulls
-            .whereType<Map>()
-            .map((item) => CattleModel.fromJson(Map<String, dynamic>.from(item)))
-            .cast<Cattle>()
-            .toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _apiBulls = [];
-        _isLoading = false;
-      });
-    }
-  }
-
   List<Cattle> _getFiltered(List<Cattle> allCattle) {
     final bulls = allCattle
         .where(
           (b) =>
-              b.gender.toLowerCase() == 'male' &&
-              b.status.toUpperCase() == 'ACTIVE' &&
-              b.isRetired != true &&
-              b.ageInMonths >= 12,
+              b.isMaleGender &&
+              b.isActive &&
+              !b.effectiveIsRetired &&
+              !b.isBullCalf,
         )
         .toList();
     if (_searchQuery.isEmpty) return bulls;
@@ -231,9 +203,24 @@ class _BullListReportScreenState extends State<BullListReportScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(context),
-      body: Builder(
-        builder: (context) {
-          final filtered = _getFiltered(_apiBulls);
+      body: BlocBuilder<CattleBloc, CattleState>(
+        builder: (context, state) {
+          if (state is CattleLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF99AA5A),
+              ),
+            );
+          }
+
+          List<Cattle> allCattle = [];
+          if (state is CattleListLoaded) {
+            allCattle = state.cattleList;
+          } else if (state is CattleDetailLoaded) {
+            allCattle = [state.cattle];
+          }
+
+          final filtered = _getFiltered(allCattle);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,18 +236,13 @@ class _BullListReportScreenState extends State<BullListReportScreen> {
                 ),
               ),
               Expanded(
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF99AA5A),
-                        ),)
-                    : filtered.isEmpty
-                        ?  _EmptyState()
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: filtered.length,
-                            itemBuilder: (_, i) => _BullCard(bull: filtered[i]),
-                          ),
+                child: filtered.isEmpty
+                    ? _EmptyState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: filtered.length,
+                        itemBuilder: (_, i) => _BullCard(bull: filtered[i]),
+                      ),
               ),
             ],
           );
@@ -340,10 +322,10 @@ class _BullCalfReportScreenState extends State<BullCalfReportScreen> {
     final calves = allCattle
         .where(
           (b) =>
-              b.gender.toLowerCase() == 'male' &&
-              b.status.toUpperCase() == 'ACTIVE' &&
-              b.isRetired != true &&
-              b.ageInMonths < 12,
+              b.isMaleGender &&
+              b.isActive &&
+              !b.effectiveIsRetired &&
+              b.isBullCalf,
         )
         .toList();
     if (_searchQuery.isEmpty) return calves;
@@ -1270,15 +1252,9 @@ class _AddRetiredBullSheetState extends State<_AddRetiredBullSheet> {
               child: ElevatedButton(
                 onPressed: () {
                   if (_selectedBull == null || _selectedDate == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: const Color(0xFF99AA5A),
-                        content: Text(
+                    AppFeedback.showError(context, 
                           'Please fill all fields',
-                          style: GoogleFonts.inter(color: Colors.white),
-                        ),
-                      ),
-                    );
+                        );
                     return;
                   }
                   widget.onSubmit(_selectedBull!, _selectedDate!);

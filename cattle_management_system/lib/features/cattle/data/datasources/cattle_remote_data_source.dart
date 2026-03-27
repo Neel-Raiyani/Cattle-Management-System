@@ -7,7 +7,7 @@ import '../../domain/entities/cattle.dart';
 abstract class CattleRemoteDataSource {
   Future<List<CattleModel>> getAllCattle();
   Future<List<CattleModel>> getCows();
-  Future<List<CattleModel>> getBulls();
+  Future<List<CattleModel>> getBulls({String? bullType});
   Future<CattleModel> getCattleById(String id);
   Future<CattleModel> addCattle(Cattle cattle);
   Future<CattleModel> updateCattle(Cattle cattle);
@@ -108,6 +108,95 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
     return updated;
   }
 
+  Map<String, dynamic> _buildFallbackAnimalJson(Cattle cattle) {
+    final model = cattle is CattleModel
+        ? cattle
+        : CattleModel(
+            id: cattle.id,
+            tagNumber: cattle.tagNumber,
+            name: cattle.name,
+            breed: cattle.breed,
+            gender: cattle.gender,
+            dateOfBirth: cattle.dateOfBirth,
+            status: cattle.status,
+            createdAt: cattle.createdAt,
+            updatedAt: cattle.updatedAt,
+            color: cattle.color,
+            weight: cattle.weight,
+            imageUrl: cattle.imageUrl,
+            acquisitionType: cattle.acquisitionType,
+            parity: cattle.parity,
+            lastDeliveryDate: cattle.lastDeliveryDate,
+            dailyMilkProduction: cattle.dailyMilkProduction,
+            serialNumber: cattle.serialNumber,
+            motherId: cattle.motherId,
+            fatherId: cattle.fatherId,
+            motherName: cattle.motherName,
+            fatherName: cattle.fatherName,
+            dateOfAdult: cattle.dateOfAdult,
+            deathReason: cattle.deathReason,
+            deathDate: cattle.deathDate,
+            isRetired: cattle.isRetired,
+            isLactating: cattle.isLactating,
+            isHeifer: cattle.isHeifer,
+            isPregnant: cattle.isPregnant,
+            isDryOff: cattle.isDryOff,
+            cowGroup: cattle.cowGroup,
+            isHandicapped: cattle.isHandicapped,
+            handicapReason: cattle.handicapReason,
+            isUdderClosedFL: cattle.isUdderClosedFL,
+            isUdderClosedFR: cattle.isUdderClosedFR,
+            isUdderClosedBL: cattle.isUdderClosedBL,
+            isUdderClosedBR: cattle.isUdderClosedBR,
+            purchaseDate: cattle.purchaseDate,
+            purchasedFrom: cattle.purchasedFrom,
+            purchasePrice: cattle.purchasePrice,
+            ownerName: cattle.ownerName,
+            ownerMobile: cattle.ownerMobile,
+            retiredDate: cattle.retiredDate,
+            bullType: cattle.bullType,
+            bullView: cattle.bullView,
+            motherMilk: cattle.motherMilk,
+            grandmotherMilk: cattle.grandmotherMilk,
+          );
+
+    final fallback = Map<String, dynamic>.from(model.toJson());
+    fallback['id'] = cattle.id;
+    fallback['_id'] = cattle.id;
+    if (cattle.imageUrl != null && cattle.imageUrl!.isNotEmpty) {
+      fallback['photoUrl'] = cattle.imageUrl;
+      fallback['imageUrl'] = cattle.imageUrl;
+      fallback['viewUrl'] = cattle.imageUrl;
+    }
+    return fallback;
+  }
+
+  Map<String, dynamic> _mergeUpdatedAnimalPayload(
+    Cattle cattle,
+    dynamic responseData,
+  ) {
+    final combinedData = _buildFallbackAnimalJson(cattle);
+    if (responseData is Map) {
+      combinedData.addAll(Map<String, dynamic>.from(responseData));
+    }
+
+    combinedData['id'] =
+        combinedData['id']?.toString().isNotEmpty == true
+            ? combinedData['id'].toString()
+            : cattle.id;
+    combinedData['_id'] =
+        combinedData['_id']?.toString().isNotEmpty == true
+            ? combinedData['_id'].toString()
+            : combinedData['id'];
+
+    if (combinedData['gender'] == null ||
+        combinedData['gender'].toString().trim().isEmpty) {
+      combinedData['gender'] = cattle.gender;
+    }
+
+    return combinedData;
+  }
+
   @override
   Future<List<CattleModel>> getAllCattle() async {
     try {
@@ -191,9 +280,14 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
   }
 
   @override
-  Future<List<CattleModel>> getBulls() async {
+  Future<List<CattleModel>> getBulls({String? bullType}) async {
     try {
-      final response = await apiClient.get('/api/animal/bulls');
+      final response = await apiClient.get(
+        '/api/animal/bulls',
+        queryParameters: {
+          if (bullType != null && bullType.isNotEmpty) 'bullType': bullType,
+        },
+      );
       // API returns { success: true, bulls: [...], pagination: {...} }
       final List<dynamic> data =
           response.data['bulls'] ?? response.data['data'] ?? [];
@@ -284,7 +378,8 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
       // API returns { success, message, animal: {...} }
       final responseData =
           response.data['animal'] ?? response.data['data'] ?? response.data;
-      final Map<String, dynamic> combinedData = Map<String, dynamic>.from(
+      final Map<String, dynamic> combinedData = _mergeUpdatedAnimalPayload(
+        cattle,
         responseData,
       );
       // Ensure gender belongs to the animal we added
@@ -304,17 +399,27 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
       if (createdId.isNotEmpty) {
         try {
           final fetched = await getCattleById(createdId);
+          final mergedFetched = Map<String, dynamic>.from(fetched.toJson())
+            ..['id'] = fetched.id
+            ..['_id'] = fetched.id;
+
+          if ((mergedFetched['bullType']?.toString().trim().isEmpty ?? true) &&
+              (combinedData['bullType']?.toString().trim().isNotEmpty ?? false)) {
+            mergedFetched['bullType'] = combinedData['bullType'];
+          }
+          if ((mergedFetched['bullView']?.toString().trim().isEmpty ?? true) &&
+              (combinedData['bullView']?.toString().trim().isNotEmpty ?? false)) {
+            mergedFetched['bullView'] = combinedData['bullView'];
+          }
+
           if (!_isRenderableImageUrl(fetched.imageUrl) &&
               _isRenderableImageUrl(cattle.imageUrl)) {
-            return CattleModel.fromJson(
-              Map<String, dynamic>.from(fetched.toJson())
-                ..['id'] = fetched.id
-                ..['photoUrl'] = cattle.imageUrl
-                ..['imageUrl'] = cattle.imageUrl
-                ..['viewUrl'] = cattle.imageUrl,
-            );
+            mergedFetched['photoUrl'] = cattle.imageUrl;
+            mergedFetched['imageUrl'] = cattle.imageUrl;
+            mergedFetched['viewUrl'] = cattle.imageUrl;
           }
-          return fetched;
+
+          return CattleModel.fromJson(mergedFetched);
         } catch (_) {}
       }
       return CattleModel.fromJson(combinedData);
@@ -393,13 +498,7 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
       // API returns { success, message, animal: {...} }
       final responseData =
           response.data['animal'] ?? response.data['data'] ?? response.data;
-      final Map<String, dynamic> combinedData = Map<String, dynamic>.from(
-        responseData,
-      );
-      // Ensure gender remains correct
-      if (combinedData['gender'] == null) {
-        combinedData['gender'] = cattle.gender;
-      }
+      final combinedData = _mergeUpdatedAnimalPayload(cattle, responseData);
       if ((!_isRenderableImageUrl(combinedData['viewUrl']?.toString()) &&
               !_isRenderableImageUrl(combinedData['imageUrl']?.toString()) &&
               !_isRenderableImageUrl(combinedData['photoUrl']?.toString())) &&
@@ -413,17 +512,27 @@ class CattleRemoteDataSourceImpl implements CattleRemoteDataSource {
       if (updatedId.isNotEmpty) {
         try {
           final fetched = await getCattleById(updatedId);
+          final mergedFetched = Map<String, dynamic>.from(fetched.toJson())
+            ..['id'] = fetched.id
+            ..['_id'] = fetched.id;
+
+          if ((mergedFetched['bullType']?.toString().trim().isEmpty ?? true) &&
+              (combinedData['bullType']?.toString().trim().isNotEmpty ?? false)) {
+            mergedFetched['bullType'] = combinedData['bullType'];
+          }
+          if ((mergedFetched['bullView']?.toString().trim().isEmpty ?? true) &&
+              (combinedData['bullView']?.toString().trim().isNotEmpty ?? false)) {
+            mergedFetched['bullView'] = combinedData['bullView'];
+          }
+
           if (!_isRenderableImageUrl(fetched.imageUrl) &&
               _isRenderableImageUrl(cattle.imageUrl)) {
-            return CattleModel.fromJson(
-              Map<String, dynamic>.from(fetched.toJson())
-                ..['id'] = fetched.id
-                ..['photoUrl'] = cattle.imageUrl
-                ..['imageUrl'] = cattle.imageUrl
-                ..['viewUrl'] = cattle.imageUrl,
-            );
+            mergedFetched['photoUrl'] = cattle.imageUrl;
+            mergedFetched['imageUrl'] = cattle.imageUrl;
+            mergedFetched['viewUrl'] = cattle.imageUrl;
           }
-          return fetched;
+
+          return CattleModel.fromJson(mergedFetched);
         } catch (_) {}
       }
       return CattleModel.fromJson(combinedData);

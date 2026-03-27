@@ -7,6 +7,7 @@ import 'add_bulk_deworming_screen.dart';
 
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class DewormingInformationScreen extends StatefulWidget {
   const DewormingInformationScreen({super.key});
@@ -38,7 +39,7 @@ class _DewormingInformationScreenState
     });
 
     try {
-      final data = await sl<ApiService>().getDewormingRecords(
+      final data = await sl<ApiService>().getDewormingReport(
         from: DateTime(_fromDate.year, _fromDate.month, _fromDate.day),
         to: DateTime(_toDate.year, _toDate.month, _toDate.day),
       );
@@ -149,38 +150,74 @@ class _DewormingInformationScreenState
             child: Row(
               children: [
                 Expanded(
-                  child: Material(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    child: InkWell(
-                      onTap: () => _pickDateRange(context),
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade200),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${DateFormat('dd MMM, yyyy').format(_fromDate)}  to  ${DateFormat('dd MMM, yyyy').format(_toDate)}',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
+                  child: GestureDetector(
+                    onTap: () => _pickDate(true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            DateFormat('dd MMM, yyyy').format(_fromDate),
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
-                            const Icon(
-                              Icons.calendar_month_rounded,
-                              size: 16,
-                              color: Colors.black,
+                          ),
+                          const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 16,
+                            color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    'to',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _pickDate(false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            DateFormat('dd MMM, yyyy').format(_toDate),
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
-                          ],
-                        ),
+                          ),
+                          const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 16,
+                            color: Colors.black54,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -320,7 +357,13 @@ class _DewormingInformationScreenState
                 _fromDate = DateTime(today.year, today.month, today.day);
                 _toDate = DateTime(today.year, today.month, today.day);
               });
-              _fetchRecords();
+              await _fetchRecords();
+              if (context.mounted) {
+                await AppFeedback.showSuccess(
+                  context,
+                  'Deworming record added successfully',
+                );
+              }
             }
           } else {
             final result = await Navigator.push(
@@ -333,7 +376,13 @@ class _DewormingInformationScreenState
                 _fromDate = DateTime(today.year, today.month, today.day);
                 _toDate = DateTime(today.year, today.month, today.day);
               });
-              _fetchRecords();
+              await _fetchRecords();
+              if (context.mounted) {
+                await AppFeedback.showSuccess(
+                  context,
+                  'Deworming record added successfully',
+                );
+              }
             }
           }
         },
@@ -384,18 +433,19 @@ class _DewormingInformationScreenState
     );
   }
 
-  Future<void> _pickDateRange(BuildContext context) async {
-    final DateTimeRange? picked = await showDateRangePicker(
+  Future<void> _pickDate(bool isFrom) async {
+    final picked = await showDatePicker(
       context: context,
+      initialDate: isFrom ? _fromDate : _toDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      initialDateRange: DateTimeRange(start: _fromDate, end: _toDate),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
               primary: Color(0xFF99AA5A),
               onPrimary: Colors.white,
+              surface: Colors.white,
               onSurface: Colors.black,
             ),
           ),
@@ -405,8 +455,17 @@ class _DewormingInformationScreenState
     );
     if (picked != null) {
       setState(() {
-        _fromDate = picked.start;
-        _toDate = picked.end;
+        if (isFrom) {
+          _fromDate = DateTime(picked.year, picked.month, picked.day);
+          if (_fromDate.isAfter(_toDate)) {
+            _toDate = _fromDate;
+          }
+        } else {
+          _toDate = DateTime(picked.year, picked.month, picked.day);
+          if (_toDate.isBefore(_fromDate)) {
+            _fromDate = _toDate;
+          }
+        }
       });
       _fetchRecords();
     }
@@ -626,7 +685,9 @@ class _DewormingRecordCard extends StatelessWidget {
           _DetailRow(
             icon: Icons.calendar_today,
             label: 'Last Dose Date:',
-            value: '-',
+            value: record.lastDoseDate != null
+                ? fmt.format(record.lastDoseDate!)
+                : '-',
           ),
           _DetailRow(
             icon: Icons.event,

@@ -213,13 +213,7 @@ class _EditCowDetailsScreenState extends State<EditCowDetailsScreen> {
     return BlocListener<CattleBloc, CattleState>(
       listener: (context, state) {
         if (state is CattleUpdated) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cow updated successfully!'),
-              backgroundColor: Color(0xFFA4C639),
-            ),
-          );
-          Navigator.pop(context);
+          Navigator.pop(context, true);
         } else if (state is CattleError || state is CattleActionError) {
           final message = state is CattleError
               ? state.message
@@ -802,11 +796,21 @@ class _EditCowDetailsScreenState extends State<EditCowDetailsScreen> {
         type: 'PHOTO',
       );
 
-      final uploadUrl = presignedData['uploadUrl'] as String?;
-      final key =
-          presignedData['viewUrl'] as String? ?? presignedData['key'] as String?;
+      final uploadUrl = presignedData['uploadUrl']?.toString();
+      final viewUrl = presignedData['viewUrl']?.toString();
+      final key = presignedData['key']?.toString();
+      final storablePhotoUrl =
+          (viewUrl != null && viewUrl.isNotEmpty)
+              ? viewUrl
+              : ((uploadUrl != null && uploadUrl.isNotEmpty)
+                  ? uploadUrl.split('?').first
+                  : key);
 
-      if (uploadUrl == null || key == null) return null;
+      if (uploadUrl == null ||
+          storablePhotoUrl == null ||
+          storablePhotoUrl.isEmpty) {
+        return null;
+      }
 
       final Uint8List imageBytes = await imageFile.readAsBytes();
       final s3Response = await http.put(
@@ -822,8 +826,8 @@ class _EditCowDetailsScreenState extends State<EditCowDetailsScreen> {
         return 'ERROR_S3_${s3Response.statusCode}';
       }
 
-      debugPrint('[IMG] Upload success! Key: $key');
-      return key;
+      debugPrint('[IMG] Upload success! URL: $storablePhotoUrl');
+      return storablePhotoUrl;
     } catch (e) {
       debugPrint('Image upload exception: $e');
       return null;

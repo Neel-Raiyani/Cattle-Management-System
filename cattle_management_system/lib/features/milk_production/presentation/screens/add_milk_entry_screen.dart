@@ -12,8 +12,7 @@ import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../cow_group/presentation/bloc/cow_group_event.dart';
 import '../../../cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../cattle/presentation/bloc/cattle_state.dart';
-import '../../../milk_production/presentation/bloc/milk_production_bloc.dart';
-import '../../../milk_production/presentation/bloc/milk_production_event.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class AddMilkEntryScreen extends StatefulWidget {
   const AddMilkEntryScreen({super.key});
@@ -604,41 +603,24 @@ class _AddMilkEntryScreenState extends State<AddMilkEntryScreen> {
                       await sl<FeedLocalDataSource>()
                           .deductFeedStock(totalFeedUsed);
 
-                      // CRITICAL: Refresh the MilkProductionBloc with the normalized date
-                      if (context.mounted) {
-                        context.read<MilkProductionBloc>().add(
-                            LoadMilkProductionList(date: _selectedDate, cattleList: [])
-                        );
-                      }
                     }
 
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
+                      Navigator.pop(context, {
+                        'submitted': true,
+                        'message':
                             'Entries submitted. ${totalFeedUsed.toInt()} Kg feed deducted.',
-                          ),
-                          backgroundColor: AppTheme.primaryColor,
-                        ),
-                      );
-                      Navigator.pop(context);
+                      });
                     }
                   } on ServerException catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(e.message)),
-                      );
+                      AppFeedback.showError(context, e.message);
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(e
+                      AppFeedback.showError(context, e
                               .toString()
-                              .replaceAll('Exception:', '')),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                              .replaceAll('Exception:', ''));
                     }
                   } finally {
                     if (mounted) setState(() => _isSubmitting = false);

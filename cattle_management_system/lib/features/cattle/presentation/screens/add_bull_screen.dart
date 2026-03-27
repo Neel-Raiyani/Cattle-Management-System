@@ -205,13 +205,7 @@ class _AddBullScreenState extends State<AddBullScreen> {
           if (mounted) {
             setState(() => _isSubmitting = false);
           }
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Bull added successfully!'),
-              backgroundColor: Color(0xff99AA5A),
-            ),
-          );
-          Navigator.pop(context);
+          Navigator.pop(context, true);
         } else if (state is CattleError || state is CattleActionError) {
           if (mounted) {
             setState(() => _isSubmitting = false);

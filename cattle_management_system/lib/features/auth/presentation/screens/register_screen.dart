@@ -7,6 +7,7 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../../../../presentation/screens/home_screen.dart';
+import '../../../../core/utils/app_feedback.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -275,13 +276,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       );
                     } else if (state is AuthAuthenticated) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Registration Successful!'),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      AppFeedback.showSuccess(context, 'Registration Successful!');
 
                       Navigator.pushAndRemoveUntil(
                         context,
@@ -291,12 +286,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         (route) => false,
                       );
                     } else if (state is AuthError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                      AppFeedback.showError(context, state.message);
                     }
                   },
                   builder: (context, state) {
