@@ -261,6 +261,7 @@ export const getBulls = async (req: AuthRequest, res: Response, next: NextFuncti
                     birthDate: true,
                     adultDate: true,
                     isRetired: true,
+                    bullType: true,
                     photoUrl: true
                 },
                 orderBy: { createdAt: 'desc' }
