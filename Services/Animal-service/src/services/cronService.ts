@@ -19,6 +19,9 @@ export const initHeiferCron = () => {
 
         try {
             const now = new Date();
+            // Add 1 day buffer to cover timezone differences (e.g. IST is 5.5h ahead of UTC)
+            // Without this, cron at midnight IST sees "yesterday 6:30 PM UTC" and misses today's adultDate
+            now.setDate(now.getDate() + 1);
 
             // Find animals to update
             const animalsToUpdate = await prisma.animal.findMany({
@@ -29,7 +32,8 @@ export const initHeiferCron = () => {
                     adultDate: {
                         lte: now
                     },
-                    status: 'ACTIVE'
+                    status: 'ACTIVE',
+                    isActive: true
                 },
                 select: { id: true, name: true, tagNumber: true }
             });

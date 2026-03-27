@@ -24,7 +24,7 @@ export const getDewormingReport = async (req: AuthRequest, res: Response, next: 
         if (from || to) {
             where.doseDate = {};
             if (from) (where.doseDate as Prisma.DateTimeFilter).gte = new Date(from);
-            if (to) (where.doseDate as Prisma.DateTimeFilter).lte = new Date(to);
+            if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.doseDate as Prisma.DateTimeFilter).lte = toDate; }
         }
 
         // FIX #1: Fetch records + all deworming history for last-dose calculation in parallel
@@ -165,7 +165,7 @@ export const getMedicalReport = async (req: AuthRequest, res: Response, next: Ne
         if (from || to) {
             where.visitDate = {};
             if (from) (where.visitDate as Prisma.DateTimeFilter).gte = new Date(from);
-            if (to) (where.visitDate as Prisma.DateTimeFilter).lte = new Date(to);
+            if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.visitDate as Prisma.DateTimeFilter).lte = toDate; }
         }
 
         const [total, records] = await Promise.all([
@@ -262,7 +262,7 @@ export const getVaccineReport = async (req: AuthRequest, res: Response, next: Ne
         if (from || to) {
             where.doseDate = {};
             if (from) (where.doseDate as Prisma.DateTimeFilter).gte = new Date(from);
-            if (to) (where.doseDate as Prisma.DateTimeFilter).lte = new Date(to);
+            if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.doseDate as Prisma.DateTimeFilter).lte = toDate; }
         }
 
         const [total, records] = await Promise.all([
@@ -351,7 +351,7 @@ export const getLabReport = async (req: AuthRequest, res: Response, next: NextFu
         if (from || to) {
             where.sampleDate = {};
             if (from) where.sampleDate.gte = new Date(from);
-            if (to) where.sampleDate.lte = new Date(to);
+            if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); where.sampleDate.lte = toDate; }
         }
 
         const [total, records] = await Promise.all([

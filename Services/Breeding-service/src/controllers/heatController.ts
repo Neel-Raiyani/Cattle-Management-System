@@ -60,7 +60,7 @@ export const getHeatRecords = async (req: AuthRequest, res: Response, next: Next
         if (from || to) {
             where.date = {};
             if (from) (where.date as Prisma.DateTimeFilter).gte = new Date(from);
-            if (to) (where.date as Prisma.DateTimeFilter).lte = new Date(to);
+            if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.date as Prisma.DateTimeFilter).lte = toDate; }
         }
 
         const records = await prisma.heatRecord.findMany({

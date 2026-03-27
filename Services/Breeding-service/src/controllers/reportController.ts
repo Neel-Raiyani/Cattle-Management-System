@@ -20,7 +20,7 @@ export const getHeatReport = async (req: AuthRequest, res: Response, next: NextF
         if (from || to) {
             where.date = {};
             if (from) (where.date as Prisma.DateTimeFilter).gte = new Date(from);
-            if (to) (where.date as Prisma.DateTimeFilter).lte = new Date(to);
+            if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.date as Prisma.DateTimeFilter).lte = toDate; }
         }
 
         const [total, records] = await Promise.all([
@@ -97,7 +97,7 @@ export const getPregnancyReport = async (req: AuthRequest, res: Response, next: 
         if (from || to) {
             where.conceiveDate = {};
             if (from) (where.conceiveDate as Prisma.DateTimeFilter).gte = new Date(from);
-            if (to) (where.conceiveDate as Prisma.DateTimeFilter).lte = new Date(to);
+            if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.conceiveDate as Prisma.DateTimeFilter).lte = toDate; }
         }
 
         const [total, journeys] = await Promise.all([
@@ -177,7 +177,7 @@ export const getDeliveryReport = async (req: AuthRequest, res: Response, next: N
         if (from || to) {
             where.deliveryDate = {};
             if (from) (where.deliveryDate as Prisma.DateTimeFilter).gte = new Date(from);
-            if (to) (where.deliveryDate as Prisma.DateTimeFilter).lte = new Date(to);
+            if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.deliveryDate as Prisma.DateTimeFilter).lte = toDate; }
         }
 
         const [total, journeys] = await Promise.all([
