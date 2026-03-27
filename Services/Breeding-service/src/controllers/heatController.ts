@@ -59,7 +59,7 @@ export const getHeatRecords = async (req: AuthRequest, res: Response, next: Next
 
         if (from || to) {
             where.date = {};
-            if (from) (where.date as Prisma.DateTimeFilter).gte = new Date(from);
+            if (from) { const fromDate = new Date(from); fromDate.setHours(0, 0, 0, 0); (where.date as Prisma.DateTimeFilter).gte = fromDate; }
             if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.date as Prisma.DateTimeFilter).lte = toDate; }
         }
 

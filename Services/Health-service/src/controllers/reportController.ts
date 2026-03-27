@@ -23,7 +23,7 @@ export const getDewormingReport = async (req: AuthRequest, res: Response, next: 
         if (animalId) where.animalId = animalId;
         if (from || to) {
             where.doseDate = {};
-            if (from) (where.doseDate as Prisma.DateTimeFilter).gte = new Date(from);
+            if (from) { const fromDate = new Date(from); fromDate.setHours(0, 0, 0, 0); (where.doseDate as Prisma.DateTimeFilter).gte = fromDate; }
             if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.doseDate as Prisma.DateTimeFilter).lte = toDate; }
         }
 
@@ -164,7 +164,7 @@ export const getMedicalReport = async (req: AuthRequest, res: Response, next: Ne
         if (diseaseId) where.diseaseId = diseaseId;
         if (from || to) {
             where.visitDate = {};
-            if (from) (where.visitDate as Prisma.DateTimeFilter).gte = new Date(from);
+            if (from) { const fromDate = new Date(from); fromDate.setHours(0, 0, 0, 0); (where.visitDate as Prisma.DateTimeFilter).gte = fromDate; }
             if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.visitDate as Prisma.DateTimeFilter).lte = toDate; }
         }
 
@@ -261,7 +261,7 @@ export const getVaccineReport = async (req: AuthRequest, res: Response, next: Ne
         if (vaccineId) where.vaccineId = vaccineId;
         if (from || to) {
             where.doseDate = {};
-            if (from) (where.doseDate as Prisma.DateTimeFilter).gte = new Date(from);
+            if (from) { const fromDate = new Date(from); fromDate.setHours(0, 0, 0, 0); (where.doseDate as Prisma.DateTimeFilter).gte = fromDate; }
             if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); (where.doseDate as Prisma.DateTimeFilter).lte = toDate; }
         }
 
@@ -350,7 +350,7 @@ export const getLabReport = async (req: AuthRequest, res: Response, next: NextFu
         if (labtestId) where.labtestId = labtestId;
         if (from || to) {
             where.sampleDate = {};
-            if (from) where.sampleDate.gte = new Date(from);
+            if (from) { const fromDate = new Date(from); fromDate.setHours(0, 0, 0, 0); where.sampleDate.gte = fromDate; }
             if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); where.sampleDate.lte = toDate; }
         }
 
