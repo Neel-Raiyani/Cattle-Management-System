@@ -25,8 +25,6 @@ import '../../../../features/photo_gallery/presentation/screens/photo_gallery_sc
 import '../../../../features/photo_gallery/presentation/screens/video_gallery_screen.dart';
 import '../../../../features/animal_health/presentation/screens/sick_animal_screen.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
-import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
-import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/conception/domain/entities/conception_record.dart';
 import '../../../../features/milk_production/presentation/bloc/milk_production_bloc.dart';
@@ -52,6 +50,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
   static const String _deliveredJourneyIdsKey =
       'LOCALLY_DELIVERED_CONCEPTION_IDS';
   Map<String, dynamic>? _summary;
+  List<Cattle> _dashboardCattleList = const <Cattle>[];
   int? _derivedSickAnimalCount;
   int? _heatRecordCount;
   int? _conceptionCount;
@@ -90,23 +89,16 @@ class _GaushalaTabState extends State<GaushalaTab> {
     final cattleBloc = context.read<CattleBloc>();
     final milkBloc = context.read<MilkProductionBloc>();
 
-    cattleBloc.add(const LoadCattleList());
-
     List<Cattle> cattleList = [];
-    final currentState = cattleBloc.state;
-    if (currentState is CattleListLoaded) {
-      cattleList = currentState.cattleList;
-    } else {
-      final loadedState = await cattleBloc.stream.firstWhere(
-        (state) =>
-            state is CattleListLoaded ||
-            state is CattleEmpty ||
-            state is CattleError,
-      );
+    final result = await cattleBloc.repository.getAllCattle();
+    result.fold((_) {}, (items) {
+      cattleList = items;
+    });
 
-      if (loadedState is CattleListLoaded) {
-        cattleList = loadedState.cattleList;
-      }
+    if (mounted && cattleList.isNotEmpty) {
+      setState(() {
+        _dashboardCattleList = List<Cattle>.from(cattleList);
+      });
     }
 
     milkBloc.add(
@@ -315,11 +307,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
   }
 
   List<Cattle> _getCurrentCattleList() {
-    final cattleState = context.read<CattleBloc>().state;
-    if (cattleState is CattleListLoaded) {
-      return cattleState.cattleList;
-    }
-    return const <Cattle>[];
+    return _dashboardCattleList;
   }
 
   List<Cattle> _getActiveCattle() {
@@ -327,10 +315,18 @@ class _GaushalaTabState extends State<GaushalaTab> {
   }
 
   int _summaryCount(List<String> keys, {int fallback = 0}) {
-    for (final key in keys) {
-      final raw = _summary?[key];
-      final parsed = int.tryParse(raw?.toString() ?? '');
-      if (parsed != null) return parsed;
+    final candidates = <Map<String, dynamic>>[
+      if (_summary != null) _summary!,
+      if (_summary?['summary'] is Map)
+        Map<String, dynamic>.from(_summary!['summary'] as Map),
+    ];
+
+    for (final section in candidates) {
+      for (final key in keys) {
+        final raw = section[key];
+        final parsed = int.tryParse(raw?.toString() ?? '');
+        if (parsed != null) return parsed;
+      }
     }
     return fallback;
   }
@@ -340,10 +336,18 @@ class _GaushalaTabState extends State<GaushalaTab> {
     String child, {
     int fallback = 0,
   }) {
-    final section = _summary?[parent];
-    if (section is Map) {
-      final parsed = int.tryParse(section[child]?.toString() ?? '');
-      if (parsed != null) return parsed;
+    final containers = <Map<String, dynamic>>[
+      if (_summary != null) _summary!,
+      if (_summary?['summary'] is Map)
+        Map<String, dynamic>.from(_summary!['summary'] as Map),
+    ];
+
+    for (final container in containers) {
+      final section = container[parent];
+      if (section is Map) {
+        final parsed = int.tryParse(section[child]?.toString() ?? '');
+        if (parsed != null) return parsed;
+      }
     }
     return fallback;
   }
@@ -392,81 +396,85 @@ class _GaushalaTabState extends State<GaushalaTab> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CattleBloc, CattleState>(
-      builder: (context, cattleState) {
-        return BlocBuilder<MilkProductionBloc, MilkProductionState>(
-          builder: (context, milkState) {
-            final cattleList = _getCurrentCattleList();
-            // Removed direct Event triggers from Build to prevent UI lag/loops
+    return BlocBuilder<MilkProductionBloc, MilkProductionState>(
+      builder: (context, milkState) {
+        final cattleList = _getCurrentCattleList();
+        // Removed direct Event triggers from Build to prevent UI lag/loops
 
-            List<MilkProductionEntry> milkEntries = [];
-            if (milkState is MilkProductionLoaded) {
-              milkEntries = milkState.entries;
-            }
+        List<MilkProductionEntry> milkEntries = [];
+        if (milkState is MilkProductionLoaded) {
+          milkEntries = milkState.entries;
+        }
 
-            // Calculate cattle counts
-            final List<Cattle> activeCattle = cattleList
-                .where(
-                  (c) =>
-              (c.status.toUpperCase() == 'ACTIVE' ||
-                  c.status.toLowerCase() == 'bull') &&
+        // Calculate cattle counts
+        final List<Cattle> activeCattle = cattleList
+            .where(
+              (c) =>
+                  (c.status.toUpperCase() == 'ACTIVE' ||
+                      c.status.toLowerCase() == 'bull') &&
                   c.isRetired != true,
             )
-                .toList();
+            .toList();
 
-            final int allCowCount = activeCattle
-                .where((c) => c.isFemaleGender)
-                .length;
+        final visibleCows = activeCattle
+            .where((c) => c.isFemaleGender)
+            .toList();
 
-            final int allBullCount = activeCattle
-                .where((c) => c.isMaleGender)
-                .length;
+        final visibleBulls = activeCattle.where((c) {
+          final isAiBull =
+              c.normalizedBullType == 'AI' || c.normalizedBullView == 'AI';
+          return c.isMaleGender && !isAiBull;
+        }).toList();
 
-            final int lactatingCount = activeCattle
-                .where((c) => c.effectiveIsLactating)
-                .length;
+        final int allCowCount = visibleCows.length;
 
-            final int heiferCount = activeCattle
-                .where(_isHeiferCandidate)
-                .length;
+        final int allBullCount = visibleBulls.length;
 
-            final int calvingCount = _pregnantJourneyCount ??
-                activeCattle.where((c) => c.effectiveIsPregnant).length;
+        final int lactatingCount = visibleCows
+            .where((c) => c.effectiveIsLactating)
+            .length;
 
-            final int dryCount = _dryJourneyCount ??
-                activeCattle.where((c) => c.effectiveIsDryOff).length;
+        final int heiferCount = visibleCows
+            .where(_isHeiferCandidate)
+            .length;
 
-            final String sickAnimalCount = _summaryCount(
-              ['sickAnimalCount', 'sickCount'],
-              fallback: 0,
-            ).toString();
-            final String visibleSickAnimalCount =
-                (_derivedSickAnimalCount ??
-                        int.tryParse(sickAnimalCount) ??
-                        0)
-                    .toString();
-            final String heatRecordCount = (_heatRecordCount ?? 0).toString();
-            final String pregnancyStatusCount =
-                (_conceptionCount ?? calvingCount).toString();
-            final String dryOffTargetCount =
-                (_dryJourneyCount ?? _dryOffRecordCount ?? dryCount).toString();
+        final int calvingCount = _pregnantJourneyCount ??
+            activeCattle.where((c) => c.effectiveIsPregnant).length;
 
-            final double totalMorningMilk = milkEntries.fold<double>(
-              0.0,
-                  (sum, entry) => sum + entry.morningMilk,
-            );
-            final double totalEveningMilk = milkEntries.fold<double>(
-              0.0,
-                  (sum, entry) => sum + entry.eveningMilk,
-            );
-            final double totalTodayMilk = totalMorningMilk + totalEveningMilk;
+        final int dryCount = _dryJourneyCount ??
+            activeCattle.where((c) => c.effectiveIsDryOff).length;
 
-            String formatCount(int count) {
-              return count.toString().padLeft(2, '0');
-            }
-            String formatAmount(double amount) => amount.toStringAsFixed(1);
+        final String sickAnimalCount = _summaryCount(
+          ['sickAnimalCount', 'sickCount'],
+          fallback: 0,
+        ).toString();
+        final String visibleSickAnimalCount =
+            (_derivedSickAnimalCount ??
+                    int.tryParse(sickAnimalCount) ??
+                    0)
+                .toString();
+        final String heatRecordCount = (_heatRecordCount ?? 0).toString();
+        final String pregnancyStatusCount =
+            (_conceptionCount ?? calvingCount).toString();
+        final String dryOffTargetCount =
+            (_dryJourneyCount ?? _dryOffRecordCount ?? dryCount).toString();
 
-            return SingleChildScrollView(
+        final double totalMorningMilk = milkEntries.fold<double>(
+          0.0,
+          (sum, entry) => sum + entry.morningMilk,
+        );
+        final double totalEveningMilk = milkEntries.fold<double>(
+          0.0,
+          (sum, entry) => sum + entry.eveningMilk,
+        );
+        final double totalTodayMilk = totalMorningMilk + totalEveningMilk;
+
+        String formatCount(int count) {
+          return count.toString().padLeft(2, '0');
+        }
+        String formatAmount(double amount) => amount.toStringAsFixed(1);
+
+        return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1133,8 +1141,6 @@ class _GaushalaTabState extends State<GaushalaTab> {
                   const SizedBox(height: 32),
                 ],
               ),
-            );
-          },
         );
       },
     );

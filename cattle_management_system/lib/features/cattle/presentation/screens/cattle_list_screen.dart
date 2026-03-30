@@ -43,7 +43,7 @@ class _CattleListScreenState extends State<CattleListScreen> {
       // Will be reconciled once filterOptions is built in build()
       _selectedFilter = widget.initialFilter;
     }
-    context.read<CattleBloc>().add(const LoadCattleList());
+    context.read<CattleBloc>().add(const LoadCattleList(forceRefresh: true));
   }
 
   @override
@@ -371,12 +371,12 @@ class _CattleListScreenState extends State<CattleListScreen> {
                 _isSearching ? Icons.close : Icons.search,
                 const Color(0xFFA4C639),
                 () {
-                  setState(() {
-                    _isSearching = !_isSearching;
-                    if (!_isSearching) {
-                      _searchController.clear();
-                      context.read<CattleBloc>().add(
-                        const LoadCattleList(),
+                    setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) {
+                        _searchController.clear();
+                        context.read<CattleBloc>().add(
+                        const LoadCattleList(forceRefresh: true),
                       ); // Reset search
                     }
                   });
