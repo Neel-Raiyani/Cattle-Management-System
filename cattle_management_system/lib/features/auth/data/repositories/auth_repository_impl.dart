@@ -8,6 +8,7 @@ import '../datasources/auth_remote_data_source.dart';
 import '../datasources/auth_local_data_source.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../../../core/services/push_notification_service.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
@@ -56,6 +57,7 @@ class AuthRepositoryImpl implements AuthRepository {
           // Profile name will be fetched lazily when requested via getUserName()
           // or on the dashboard, to keep login fast.
           await localDataSource.loginUser(mobile, mobile); // simulate local
+          await PushNotificationService().syncTokenToBackendIfPossible();
         }
         return Right(token ?? 'UnknownToken');
       } on ServerException catch (e) {
@@ -103,6 +105,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> logout() async {
     try {
+      await PushNotificationService().clearSyncedTokenMarker();
       await sharedPreferences.remove('auth_token');
       await sharedPreferences.remove('gaushala_id');
       await sharedPreferences.remove('user_name');

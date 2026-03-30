@@ -14,6 +14,7 @@ abstract class AuthRemoteDataSource {
     int totalCattle,
   );
   Future<Map<String, dynamic>> getProfile();
+  Future<Map<String, dynamic>> registerFcmToken(String fcmToken);
   Future<Map<String, dynamic>> changePassword({
     required String oldPassword,
     required String newPassword,
@@ -111,6 +112,30 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to get profile', 500);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> registerFcmToken(String fcmToken) async {
+    try {
+      final response = await apiClient.post(
+        '/api/auth/profile/fcm-token',
+        data: {'fcmToken': fcmToken},
+      );
+      return response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data is Map) {
+        throw ServerException(
+          e.response!.data['message'] ?? 'Failed to register FCM token',
+          e.response!.statusCode ?? 400,
+        );
+      }
+      throw ServerException('Failed to register FCM token', 500);
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Failed to register FCM token', 500);
     }
   }
 

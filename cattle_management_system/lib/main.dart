@@ -17,12 +17,21 @@ import 'features/cow_group/presentation/bloc/cow_group_bloc.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'core/services/push_notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
 
+  // Initialize Firebase (for android google-services.json)
+  await Firebase.initializeApp();
+
   // Initialize dependency injection
   await di.initializeDependencies();
+
+  // Initialize Push Notifications after DI so auth-aware sync can use app services.
+  await PushNotificationService().initialize();
 
   runApp(const MyApp());
 }

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/network/api_client.dart';
 import '../../core/error/exceptions.dart';
+import '../../core/utils/animal_image_url.dart';
 import '../di/injection_container.dart';
 
 /// Centralized API service for all backend calls.
@@ -1293,9 +1294,11 @@ class ApiService {
         raw['photoUrl']?.toString() ??
         raw['attachmentUrl']?.toString();
 
-    // Older callers expect `key`. For Animal Service uploads the live contract
-    // returns `viewUrl`, so keep `key` aliased to the final storable URL.
-    raw['key'] = raw['key']?.toString() ?? raw['viewUrl']?.toString();
+    raw['key'] = deriveAnimalImageStorageKey(
+      key: raw['key']?.toString(),
+      uploadUrl: raw['uploadUrl']?.toString(),
+      viewUrl: raw['viewUrl']?.toString(),
+    );
 
     return raw;
   }
@@ -1586,11 +1589,14 @@ class ApiService {
         animal['animalNo']?.toString() ??
         animal['number']?.toString() ??
         '';
-    animal['imageUrl'] =
-        animal['imageUrl'] ??
-        animal['viewUrl'] ??
-        animal['photoUrl'] ??
-        animal['photo'];
+    animal['imageUrl'] = normalizeAnimalImageUrl(
+      animal['imageUrl']?.toString(),
+      fallbacks: [
+        animal['viewUrl']?.toString(),
+        animal['photoUrl']?.toString(),
+        animal['photo']?.toString(),
+      ],
+    );
     return animal;
   }
 

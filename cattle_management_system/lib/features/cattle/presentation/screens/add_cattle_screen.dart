@@ -18,6 +18,7 @@ import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../cow_group/presentation/bloc/cow_group_event.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/animal_image_url.dart';
 import '../../../../core/utils/app_feedback.dart';
 import '../../../../core/utils/media_file_utils.dart';
 
@@ -181,8 +182,11 @@ class _AddCattleScreenState extends State<AddCattleScreen> {
       );
 
       final uploadUrl = presignedData['uploadUrl'] as String?;
-      final key =
-          presignedData['viewUrl'] as String? ?? presignedData['key'] as String?;
+      final key = deriveAnimalImageStorageKey(
+        key: presignedData['key']?.toString(),
+        uploadUrl: uploadUrl,
+        viewUrl: presignedData['viewUrl']?.toString(),
+      );
 
       if (uploadUrl == null || key == null) return null;
 

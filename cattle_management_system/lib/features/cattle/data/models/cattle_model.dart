@@ -1,4 +1,5 @@
 import '../../domain/entities/cattle.dart';
+import '../../../../core/utils/animal_image_url.dart';
 
 class CattleModel extends Cattle {
   const CattleModel({
@@ -64,16 +65,20 @@ class CattleModel extends Cattle {
         json['birth_date'] ??
         json['date_of_birth'];
     final adultDateRaw = json['adultDate'] ?? json['dateOfAdult'];
-    final imageUrlRaw = json['viewUrl'] ??
-        json['imageUrl'] ??
-        json['photoUrl'] ??
-        (json['photo'] is String ? json['photo'] : null) ??
-        mediaMap['viewUrl'] ??
-        mediaMap['imageUrl'] ??
-        mediaMap['photoUrl'] ??
-        mediaMap['url'] ??
-        mediaMap['location'] ??
-        mediaMap['path'];
+    final imageUrlRaw = normalizeAnimalImageUrl(
+      json['viewUrl']?.toString(),
+      fallbacks: [
+        json['imageUrl']?.toString(),
+        json['photoUrl']?.toString(),
+        json['photo'] is String ? json['photo']?.toString() : null,
+        mediaMap['viewUrl']?.toString(),
+        mediaMap['imageUrl']?.toString(),
+        mediaMap['photoUrl']?.toString(),
+        mediaMap['url']?.toString(),
+        mediaMap['location']?.toString(),
+        mediaMap['path']?.toString(),
+      ],
+    );
     DateTime _parseDate(dynamic val) {
       if (val == null) return DateTime.now();
       final dateStr = val.toString();

@@ -12,6 +12,7 @@ import '../../domain/entities/cattle.dart';
 import '../bloc/cattle_bloc.dart';
 import '../bloc/cattle_event.dart';
 import '../bloc/cattle_state.dart';
+import '../../../../core/utils/animal_image_url.dart';
 import '../../../../core/utils/media_file_utils.dart';
 import '../../../../core/utils/app_feedback.dart';
 
@@ -99,14 +100,11 @@ class _EditAiBullScreenState extends State<EditAiBullScreen> {
         type: 'PHOTO',
       );
       final uploadUrl = presignedData['uploadUrl']?.toString();
-      final viewUrl = presignedData['viewUrl']?.toString();
-      final key = presignedData['key']?.toString();
-      final storablePhotoUrl =
-          (viewUrl != null && viewUrl.isNotEmpty)
-              ? viewUrl
-              : ((uploadUrl != null && uploadUrl.isNotEmpty)
-                  ? uploadUrl.split('?').first
-                  : key);
+      final storablePhotoUrl = deriveAnimalImageStorageKey(
+        key: presignedData['key']?.toString(),
+        uploadUrl: uploadUrl,
+        viewUrl: presignedData['viewUrl']?.toString(),
+      );
 
       if (uploadUrl == null ||
           storablePhotoUrl == null ||
