@@ -221,8 +221,8 @@ export const runDailyAlertCheck = async () => {
     }
 };
 
-// Schedule: 9:00 AM every day
+// Schedule: Every 2 hours from 6 AM to midnight IST
 export const setupAlertCron = () => {
-    cron.schedule('0 9 * * *', runDailyAlertCheck);
-    logger.info('[cron]: Alert notification job scheduled (09:00 AM daily)');
+    cron.schedule('0 0,6,8,10,12,14,16,18,20,22 * * *', runDailyAlertCheck, { timezone: 'Asia/Kolkata' });
+    logger.info('[cron]: Alert notification job scheduled (every 2 hours, 6 AM - 12 AM IST)');
 };

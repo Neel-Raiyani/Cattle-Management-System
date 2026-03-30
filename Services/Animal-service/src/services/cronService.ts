@@ -63,7 +63,7 @@ export const initHeiferCron = () => {
         } catch (error) {
             logger.error('Error in Heifer Status Update Cron Job:', error);
         }
-    });
+    }, { timezone: 'Asia/Kolkata' });
 
     logger.info('Heifer Status Update Cron Job initialized to run daily at midnight.');
 };
