@@ -214,6 +214,66 @@ class _LocalizedUi {
         hi: '\u0926\u0942\u0927 \u0935\u093f\u0924\u0930\u0923',
       );
 
+  String get trackDailyDelivery => _pick(
+        en: 'Track daily delivery',
+        gu: '\u0aa6\u0ac8\u0aa8\u0abf\u0a95 \u0ab5\u0abf\u0aa4\u0ab0\u0aa3 \u0a9f\u0acd\u0ab0\u0ac7\u0a95 \u0a95\u0ab0\u0acb',
+        hi: '\u0926\u0948\u0928\u093f\u0915 \u0935\u093f\u0924\u0930\u0923 \u091f\u094d\u0930\u0948\u0915 \u0915\u0930\u0947\u0902',
+      );
+
+  String get reports => _pick(
+        en: 'Reports',
+        gu: '\u0ab0\u0abf\u0aaa\u0acb\u0ab0\u0acd\u0a9f\u0acd\u0ab8',
+        hi: '\u0930\u093f\u092a\u094b\u0930\u094d\u091f\u094d\u0938',
+      );
+
+  String get alerts => _pick(
+        en: 'Alerts',
+        gu: '\u0a8f\u0ab2\u0ab0\u0acd\u0a9f\u0acd\u0ab8',
+        hi: '\u0905\u0932\u0930\u094d\u091f\u094d\u0938',
+      );
+
+  String get viewAnalytics => _pick(
+        en: 'View Analytics',
+        gu: '\u0ab5\u0abf\u0ab6\u0acd\u0ab2\u0ac7\u0ab7\u0aa3 \u0a9c\u0ac1\u0a93',
+        hi: '\u090f\u0928\u093e\u0932\u093f\u091f\u093f\u0915\u094d\u0938 \u0926\u0947\u0916\u0947\u0902',
+      );
+
+  String get viewAlerts => _pick(
+        en: 'View Alerts',
+        gu: '\u0a8f\u0ab2\u0ab0\u0acd\u0a9f\u0acd\u0ab8 \u0a9c\u0ac1\u0a93',
+        hi: '\u0905\u0932\u0930\u094d\u091f\u094d\u0938 \u0926\u0947\u0916\u0947\u0902',
+      );
+
+  String get feedInventory => _pick(
+        en: 'Feed Inventory',
+        gu: '\u0a9a\u0abe\u0ab0\u0abe \u0a87\u0aa8\u0acd\u0ab5\u0ac7\u0a82\u0a9f\u0ab0\u0ac0',
+        hi: '\u091a\u093e\u0930\u093e \u0907\u0928\u094d\u0935\u0947\u0902\u091f\u0930\u0940',
+      );
+
+  String get medicalReport => _pick(
+        en: 'Medical Report',
+        gu: '\u0aae\u0ac7\u0aa1\u0abf\u0a95\u0ab2 \u0ab0\u0abf\u0aaa\u0acb\u0ab0\u0acd\u0a9f',
+        hi: '\u092e\u0947\u0921\u093f\u0915\u0932 \u0930\u093f\u092a\u094b\u0930\u094d\u091f',
+      );
+
+  String get animalWiseMedicalReport => _pick(
+        en: 'Animal Wise Medical Report',
+        gu: '\u0aaa\u0ab6\u0ac1 \u0ab5\u0abe\u0a87\u0a9d \u0aae\u0ac7\u0aa1\u0abf\u0a95\u0ab2 \u0ab0\u0abf\u0aaa\u0acb\u0ab0\u0acd\u0a9f',
+        hi: '\u092a\u0936\u0941 \u0935\u093e\u0907\u091c \u092e\u0947\u0921\u093f\u0915\u0932 \u0930\u093f\u092a\u094b\u0930\u094d\u091f',
+      );
+
+  String get dateWiseMedicalReport => _pick(
+        en: 'Date Wise Medical Report',
+        gu: '\u0aa4\u0abe\u0ab0\u0ac0\u0a96 \u0ab5\u0abe\u0a87\u0a9d \u0aae\u0ac7\u0aa1\u0abf\u0a95\u0ab2 \u0ab0\u0abf\u0aaa\u0acb\u0ab0\u0acd\u0a9f',
+        hi: '\u0924\u093e\u0930\u0940\u0916 \u0935\u093e\u0907\u091c \u092e\u0947\u0921\u093f\u0915\u0932 \u0930\u093f\u092a\u094b\u0930\u094d\u091f',
+      );
+
+  String get diseaseWiseReport => _pick(
+        en: 'Disease Wise Report',
+        gu: '\u0ab0\u0acb\u0a97 \u0ab5\u0abe\u0a87\u0a9d \u0ab0\u0abf\u0aaa\u0acb\u0ab0\u0acd\u0a9f',
+        hi: '\u0930\u094b\u0917 \u0935\u093e\u0907\u091c \u0930\u093f\u092a\u094b\u0930\u094d\u091f',
+      );
+
   String get milkProduction => _pick(
         en: 'Milk Production',
         gu: '\u0aa6\u0ac2\u0aa7 \u0a89\u0aa4\u0acd\u0aaa\u0abe\u0aa6\u0aa8',

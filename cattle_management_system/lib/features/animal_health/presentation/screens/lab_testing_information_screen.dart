@@ -152,38 +152,74 @@ class _LabTestingInformationScreenState
             child: Row(
               children: [
                 Expanded(
-                  child: Material(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    child: InkWell(
-                      onTap: () => _pickDateRange(context),
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade200),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${DateFormat('dd MMM, yyyy').format(_fromDate)}  to  ${DateFormat('dd MMM, yyyy').format(_toDate)}',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
+                  child: GestureDetector(
+                    onTap: () => _pickDate(true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            DateFormat('dd MMM, yyyy').format(_fromDate),
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
-                            const Icon(
-                              Icons.calendar_month_rounded,
-                              size: 16,
-                              color: Colors.black,
+                          ),
+                          const Icon(
+                            Icons.calendar_month_rounded,
+                            size: 16,
+                            color: Colors.black,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    'to',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _pickDate(false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            DateFormat('dd MMM, yyyy').format(_toDate),
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
-                          ],
-                        ),
+                          ),
+                          const Icon(
+                            Icons.calendar_month_rounded,
+                            size: 16,
+                            color: Colors.black,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -332,12 +368,12 @@ class _LabTestingInformationScreenState
     return filtered;
   }
 
-  Future<void> _pickDateRange(BuildContext context) async {
-    final DateTimeRange? picked = await showDateRangePicker(
+  Future<void> _pickDate(bool isFrom) async {
+    final picked = await showDatePicker(
       context: context,
+      initialDate: isFrom ? _fromDate : _toDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      initialDateRange: DateTimeRange(start: _fromDate, end: _toDate),
+      lastDate: DateTime(2035),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -351,13 +387,19 @@ class _LabTestingInformationScreenState
         );
       },
     );
-    if (picked != null) {
-      setState(() {
-        _fromDate = picked.start;
-        _toDate = picked.end;
-      });
-      _fetchRecords();
-    }
+    if (picked == null) return;
+
+    setState(() {
+      if (isFrom) {
+        _fromDate = picked;
+        if (_toDate.isBefore(_fromDate)) {
+          _toDate = _fromDate;
+        }
+      } else {
+        _toDate = picked;
+      }
+    });
+    _fetchRecords();
   }
 
   void _showDeleteDialog(HealthEvent record) {

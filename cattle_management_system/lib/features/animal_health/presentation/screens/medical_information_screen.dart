@@ -419,12 +419,20 @@ class _MedicalInformationScreenState extends State<MedicalInformationScreen> {
           record.cowName.toLowerCase().contains(_searchQuery) ||
           record.cowTagNumber.toLowerCase().contains(_searchQuery);
 
-      final matchesAnimalType =
-          _selectedAnimalType == 'All' ||
-          record.eventType ==
-              _selectedAnimalType;
+      final normalizedGender = record.animalGender?.trim().toUpperCase() ?? '';
+      final matchesAnimalType = switch (_selectedAnimalType) {
+        'Cow' =>
+          normalizedGender.startsWith('F') || normalizedGender == 'COW',
+        'Bull' =>
+          normalizedGender.startsWith('M') || normalizedGender == 'BULL',
+        _ => true,
+      };
 
-      final eventD = DateTime(record.eventDate.year, record.eventDate.month, record.eventDate.day);
+      final eventD = DateTime(
+        record.eventDate.year,
+        record.eventDate.month,
+        record.eventDate.day,
+      );
       final fromD = DateTime(_fromDate.year, _fromDate.month, _fromDate.day);
       final toD = DateTime(_toDate.year, _toDate.month, _toDate.day);
       final matchesDate = !eventD.isBefore(fromD) && !eventD.isAfter(toD);

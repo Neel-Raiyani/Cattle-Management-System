@@ -196,7 +196,10 @@ class ApiService {
                 _isVisibleAnimal(item) &&
                 (bullType == null ||
                     bullType.isEmpty ||
-                    (item['bullType']?.toString().trim().toUpperCase() == bullType)),
+                    (item['bullType']?.toString().trim().toUpperCase() ==
+                            bullType ||
+                        item['bullView']?.toString().trim().toUpperCase() ==
+                            bullType)),
           )
           .take(limit)
           .toList();

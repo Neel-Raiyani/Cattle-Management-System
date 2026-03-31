@@ -175,11 +175,14 @@ class _AddMedicalRecordScreenState extends State<AddMedicalRecordScreen> {
           medicalStatus: _medicalStatus.toUpperCase(),
           symptoms: _symptomsCtrl.text.isEmpty ? null : _symptomsCtrl.text,
           treatment: _treatmentCtrl.text.isEmpty ? null : _treatmentCtrl.text,
-        );
-        if (mounted) {
-          AppFeedback.showSuccess(context, 'Medical record added successfully');
-          Navigator.pop(context, true);
-        }
+          );
+          if (mounted) {
+            await AppFeedback.showSuccess(
+              context,
+              'Medical record added successfully',
+            );
+            Navigator.pop(context, true);
+          }
       } on ServerException catch (e) {
         if (mounted) {
           AppFeedback.showError(context, e.message);

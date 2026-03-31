@@ -158,8 +158,24 @@ class Cattle extends Equatable {
   String? get normalizedBullType {
     final trimmed = bullType?.trim().toUpperCase();
     if (trimmed == null || trimmed.isEmpty) return null;
-    if (trimmed == 'GAUSHALA' || trimmed == 'AI') return trimmed;
-    return null;
+    if (trimmed == 'AI' || trimmed == 'GAUSHALA') return trimmed;
+    if (trimmed.contains('AI')) return 'AI';
+    if (trimmed.contains('GAUSHALA')) return 'GAUSHALA';
+    return trimmed;
+  }
+
+  bool get isAiBull {
+    final typeOrView = normalizedBullType ?? normalizedBullView;
+    if (typeOrView == 'AI') return true;
+    final group = normalizedCowGroup?.toUpperCase() ?? '';
+    if (group == 'AI' || group.contains('AI')) return true;
+    return false;
+  }
+
+  bool get isGaushalaBull {
+    final typeOrView = normalizedBullType ?? normalizedBullView;
+    if (typeOrView == 'GAUSHALA') return true;
+    return false;
   }
 
   String? get normalizedCowGroup {

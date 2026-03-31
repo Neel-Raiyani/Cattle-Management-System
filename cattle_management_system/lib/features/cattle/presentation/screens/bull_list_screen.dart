@@ -35,10 +35,7 @@ class _BullListScreenState extends State<BullListScreen> {
   @override
   void initState() {
     super.initState();
-    // Refresh list to ensure we have latest data
-    context.read<CattleBloc>().add(
-      const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'),
-    );
+    context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'));
   }
 
   @override
@@ -56,10 +53,7 @@ class _BullListScreenState extends State<BullListScreen> {
       body: BlocListener<CattleBloc, CattleState>(
         listener: (context, state) {
           if (state is CattleAdded || state is CattleUpdated) {
-            // Refresh the list when an animal is added, deleted, or updated
-            context.read<CattleBloc>().add(
-              const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'),
-            );
+            context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'));
           }
         },
         child: Column(
@@ -178,9 +172,7 @@ class _BullListScreenState extends State<BullListScreen> {
           );
           if (!context.mounted) return;
           if (added == true) {
-            context.read<CattleBloc>().add(
-              const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'),
-            );
+            context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'));
             await AppFeedback.showSuccess(context, 'Bull added successfully!');
           }
         },
@@ -275,9 +267,7 @@ class _BullListScreenState extends State<BullListScreen> {
                     _isSearching = !_isSearching;
                     if (!_isSearching) {
                       _searchController.clear();
-                      context.read<CattleBloc>().add(
-                        const LoadCattleList(),
-                      ); // Reset search
+                      context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'));
                     }
                   });
                 },
@@ -339,11 +329,8 @@ class _BullListScreenState extends State<BullListScreen> {
   }
 
   List<Cattle> _filterBulls(List<Cattle> cattleList) {
-    // Basic filter: Male cattle
     final males = cattleList.where((c) {
-      final isAiBull =
-          c.normalizedBullType == 'AI' || c.normalizedBullView == 'AI';
-      return c.isMaleGender && !_isTerminalStatus(c.status) && !isAiBull;
+      return c.isMaleGender && !_isTerminalStatus(c.status) && !c.isAiBull;
     }).toList();
 
     if (_selectedFilter == 'all_bull') {
@@ -587,12 +574,7 @@ class _BullCard extends StatelessWidget {
                         ),
                       );
                       if (updated == true && context.mounted) {
-                        context.read<CattleBloc>().add(
-                          const LoadBullsList(
-                            forceRefresh: true,
-                            bullType: 'GAUSHALA',
-                          ),
-                        );
+                        context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'));
                       }
                     },
                     child: Container(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/localization/localized_ui.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../data/datasources/feed_local_data_source.dart';
@@ -197,7 +198,7 @@ class _FeedInventoryScreenState extends State<FeedInventoryScreen> {
           ),
         ),
         title: Text(
-          'Feed Inventory',
+          context.ui.feedInventory,
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.bold,

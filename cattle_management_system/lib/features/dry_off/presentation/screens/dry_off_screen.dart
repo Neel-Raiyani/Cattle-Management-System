@@ -36,6 +36,7 @@ class DryOffScreen extends StatefulWidget {
 class _DryOffScreenState extends State<DryOffScreen> {
   List<DryOffRecord> _records = [];
   List<DryOffRecord> _localRecords = [];
+  List<Cattle> _cowCandidates = const <Cattle>[];
   bool _isLoading = true;
   String? _errorMessage;
   DateTime _fromDate = DateTime.now();
@@ -48,20 +49,21 @@ class _DryOffScreenState extends State<DryOffScreen> {
   @override
   void initState() {
     super.initState();
-    final cattleBloc = context.read<CattleBloc>();
-    if (cattleBloc.state is! CattleListLoaded) {
-      cattleBloc.add(const LoadCowsList());
-    }
+    context.read<CattleBloc>().add(const LoadCowsList(forceRefresh: true));
     _fetchRecords();
   }
 
   List<Cattle> _getCowCandidates() {
-    final cattleState = context.read<CattleBloc>().state;
-    if (cattleState is! CattleListLoaded) return const <Cattle>[];
+    return _cowCandidates;
+  }
 
-    return cattleState.cattleList.where((c) {
-      return c.gender.toUpperCase().startsWith('F');
-    }).toList();
+  Future<List<Cattle>> _loadCowCandidates() async {
+    final result = await context.read<CattleBloc>().repository.getAllCattle();
+    List<Cattle> cows = const <Cattle>[];
+    result.fold((_) {}, (items) {
+      cows = items.where((c) => c.isFemaleGender && c.isActive).toList();
+    });
+    return cows;
   }
 
   Future<void> _fetchRecords() async {
@@ -72,10 +74,11 @@ class _DryOffScreenState extends State<DryOffScreen> {
     });
 
     try {
-      final cows = _getCowCandidates();
+      final cows = await _loadCowCandidates();
       if (cows.isEmpty) {
         if (!mounted) return;
         setState(() {
+          _cowCandidates = const <Cattle>[];
           _records = [];
           _isLoading = false;
           _errorMessage = null;
@@ -118,6 +121,7 @@ class _DryOffScreenState extends State<DryOffScreen> {
       if (!mounted) return;
       final fetchedRecords = uniqueById.values.toList();
       setState(() {
+        _cowCandidates = cows;
         _localRecords = _localRecords.where((local) {
           return !fetchedRecords.any(
             (remote) =>

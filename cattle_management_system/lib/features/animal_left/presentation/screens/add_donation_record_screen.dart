@@ -1,9 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/app_feedback_service.dart';
 import '../../../../core/di/injection_container.dart';
@@ -13,6 +18,8 @@ import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
+import '../../../../core/utils/media_file_utils.dart';
+import '../../../../core/utils/animal_image_url.dart';
 
 class AddDonationRecordScreen extends StatefulWidget {
   const AddDonationRecordScreen({super.key});
@@ -33,12 +40,23 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
   final _gaushalaNameCtrl = TextEditingController();
   final _mobileCtrl = TextEditingController();
   final _refCtrl = TextEditingController();
+  File? _selectedPhoto;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     context.read<CattleBloc>().add(const LoadCattleList());
+  }
+
+  Future<void> _pickDonationPhoto() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null || !mounted) return;
+
+    setState(() {
+      _selectedPhoto = File(pickedFile.path);
+    });
   }
 
   List<Cattle> _getAvailableAnimals(List<Cattle> allCattle) {
@@ -95,7 +113,7 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
           } else if (state is CattleDetailLoaded) {
             cattleList = [state.cattle];
           }
-          final _availableAnimals = _getAvailableAnimals(cattleList);
+          final availableAnimals = _getAvailableAnimals(cattleList);
 
           return Stack(
             children: [
@@ -137,7 +155,7 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
                     const SizedBox(height: 24),
 
                     // Fields
-                    _FieldLabel(label: 'Name'),
+                    const _FieldLabel(label: 'Name'),
                     const SizedBox(height: 8),
                     GestureDetector(
                       onTap: () => setState(
@@ -175,7 +193,7 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    _FieldLabel(label: 'Gaushala Name'),
+                    const _FieldLabel(label: 'Gaushala Name'),
                     const SizedBox(height: 8),
                     _CustomTextField(
                       hint: 'Enter gaushala name',
@@ -183,7 +201,7 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    _FieldLabel(label: 'Mobile No.'),
+                    const _FieldLabel(label: 'Mobile No.'),
                     const SizedBox(height: 8),
                     _CustomTextField(
                       hint: 'Enter mobile number',
@@ -192,7 +210,7 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    _FieldLabel(label: 'Reference By'),
+                    const _FieldLabel(label: 'Reference By'),
                     const SizedBox(height: 8),
                     _CustomTextField(
                       hint: 'Enter reference name',
@@ -200,51 +218,72 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    _FieldLabel(label: 'Photo at Time of Donation'),
+                    const _FieldLabel(label: 'Photo at Time of Donation'),
                     const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8F9),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade100),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(
-                            Icons.cloud_upload,
-                            color: Colors.grey,
-                            size: 32,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Select Photo',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF99AA5A),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'Select Photo',
-                              style: GoogleFonts.poppins(
+                    GestureDetector(
+                      onTap: _pickDonationPhoto,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F8F9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade100),
+                        ),
+                        child: Column(
+                          children: [
+                            if (_selectedPhoto != null)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  _selectedPhoto!,
+                                  height: 120,
+                                  width: 120,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            else
+                              const Icon(
+                                Icons.cloud_upload,
+                                color: Colors.grey,
+                                size: 32,
+                              ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _selectedPhoto == null
+                                  ? 'Select Photo'
+                                  : _selectedPhoto!.path
+                                      .split(Platform.pathSeparator)
+                                      .last,
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                color: Colors.grey,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF99AA5A),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _selectedPhoto == null
+                                    ? 'Select Photo'
+                                    : 'Change Photo',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -318,13 +357,13 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
                               child: ListView.separated(
                                 shrinkWrap: true,
                                 padding: EdgeInsets.zero,
-                                itemCount: _availableAnimals.length,
+                                itemCount: availableAnimals.length,
                                 separatorBuilder: (_, __) => Divider(
                                   height: 1,
                                   color: Colors.grey.shade100,
                                 ),
                                 itemBuilder: (ctx, i) {
-                                  final a = _availableAnimals[i];
+                                  final a = availableAnimals[i];
                                   return InkWell(
                                     onTap: () {
                                       setState(() {
@@ -404,6 +443,46 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
     );
   }
 
+  Future<String?> _uploadImageAndGetKey(File imageFile) async {
+    try {
+      final fileName = imageFile.path.split(Platform.isWindows ? '\\' : '/').last;
+      final contentType = resolveMimeTypeFromFileName(fileName);
+
+      final presignedData = await sl<ApiService>().getPresignedUrl(
+        fileName: fileName,
+        contentType: contentType,
+        type: 'PHOTO',
+      );
+      
+      final uploadUrl = presignedData['uploadUrl']?.toString();
+      final storablePhotoUrl = deriveAnimalImageStorageKey(
+        key: presignedData['key']?.toString(),
+        uploadUrl: uploadUrl,
+        viewUrl: presignedData['viewUrl']?.toString(),
+      );
+
+      if (uploadUrl == null || storablePhotoUrl == null || storablePhotoUrl.isEmpty) {
+        return null;
+      }
+
+      final Uint8List imageBytes = await imageFile.readAsBytes();
+      final s3Response = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {'Content-Type': contentType},
+        body: imageBytes,
+      );
+
+      if (s3Response.statusCode != 200 && s3Response.statusCode != 204) {
+        return null;
+      }
+
+      return storablePhotoUrl;
+    } catch (e) {
+      debugPrint('[Donation] Upload exception: $e');
+      return null;
+    }
+  }
+
   Future<void> _submitDonation() async {
     FocusScope.of(context).unfocus();
 
@@ -428,31 +507,41 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
       );
       return;
     }
+
     setState(() => _isSubmitting = true);
+    
     try {
+      String? photoUrl;
+      if (_selectedPhoto != null) {
+        photoUrl = await _uploadImageAndGetKey(_selectedPhoto!);
+        if (photoUrl == null) {
+          AppFeedbackService.showPopup(
+            message: 'Image upload failed. Saving without photo...',
+            type: AppFeedbackType.warning,
+          );
+        }
+      }
+
       final donatedAt = DateTime.now();
       await sl<ApiService>().recordDonation(
         animalId: _selectedAnimal!.id,
         gaushalaName: _gaushalaNameCtrl.text,
         mobileNumber: _mobileCtrl.text,
         referenceBy: _refCtrl.text.isNotEmpty ? _refCtrl.text : null,
+        photoUrl: photoUrl,
         donatedAt: donatedAt,
       );
-      await _updateCachedAnimal(
-        _selectedAnimal!.copyWith(
-          status: 'DONATED',
-          updatedAt: donatedAt,
-        ),
+
+      // Local update
+      final updatedAnimal = _selectedAnimal!.copyWith(
+        status: 'DONATED',
+        updatedAt: donatedAt,
       );
+
+      await _updateCachedAnimal(updatedAnimal);
+
       if (mounted) {
-        context.read<CattleBloc>().add(
-          UpsertLocalCattle(
-            _selectedAnimal!.copyWith(
-              status: 'DONATED',
-              updatedAt: donatedAt,
-            ),
-          ),
-        );
+        context.read<CattleBloc>().add(UpsertLocalCattle(updatedAnimal));
         await Future<void>.delayed(const Duration(milliseconds: 16));
         if (!mounted) return;
         Navigator.pop(context, true);
@@ -477,69 +566,83 @@ class _AddDonationRecordScreenState extends State<AddDonationRecordScreen> {
   }
 
   Future<void> _updateCachedAnimal(Cattle updatedAnimal) async {
-    final prefs = sl<SharedPreferences>();
-    final cached = prefs.getString(_cattleCacheKey);
-    if (cached == null || cached.isEmpty) return;
+    try {
+      final prefs = sl<SharedPreferences>();
+      final cached = prefs.getString(_cattleCacheKey);
+      if (cached == null || cached.isEmpty) return;
 
-    final decoded = (jsonDecode(cached) as List<dynamic>)
-        .map((item) => CattleModel.fromJson(Map<String, dynamic>.from(item)))
-        .toList();
+      final decoded = (jsonDecode(cached) as List<dynamic>)
+          .map((item) => CattleModel.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
 
-    final index = decoded.indexWhere((animal) => animal.id == updatedAnimal.id);
-    if (index == -1) return;
+      final index = decoded.indexWhere((animal) => animal.id == updatedAnimal.id);
+      if (index == -1) return;
 
-    decoded[index] = CattleModel(
-      id: updatedAnimal.id,
-      tagNumber: updatedAnimal.tagNumber,
-      name: updatedAnimal.name,
-      breed: updatedAnimal.breed,
-      gender: updatedAnimal.gender,
-      dateOfBirth: updatedAnimal.dateOfBirth,
-      color: updatedAnimal.color,
-      weight: updatedAnimal.weight,
-      status: updatedAnimal.status,
-      imageUrl: updatedAnimal.imageUrl,
-      acquisitionType: updatedAnimal.acquisitionType,
-      isLactating: updatedAnimal.isLactating,
-      isHeifer: updatedAnimal.isHeifer,
-      isPregnant: updatedAnimal.isPregnant,
-      isDryOff: updatedAnimal.isDryOff,
-      isRetired: updatedAnimal.isRetired,
-      createdAt: updatedAnimal.createdAt,
-      updatedAt: updatedAnimal.updatedAt,
-      parity: updatedAnimal.parity,
-      lastDeliveryDate: updatedAnimal.lastDeliveryDate,
-      dailyMilkProduction: updatedAnimal.dailyMilkProduction,
-      serialNumber: updatedAnimal.serialNumber,
-      motherId: updatedAnimal.motherId,
-      fatherId: updatedAnimal.fatherId,
-      motherName: updatedAnimal.motherName,
-      fatherName: updatedAnimal.fatherName,
-      dateOfAdult: updatedAnimal.dateOfAdult,
-      deathReason: updatedAnimal.deathReason,
-      deathDate: updatedAnimal.deathDate,
-      cowGroup: updatedAnimal.cowGroup,
-      isHandicapped: updatedAnimal.isHandicapped,
-      handicapReason: updatedAnimal.handicapReason,
-      isUdderClosedFL: updatedAnimal.isUdderClosedFL,
-      isUdderClosedFR: updatedAnimal.isUdderClosedFR,
-      isUdderClosedBL: updatedAnimal.isUdderClosedBL,
-      isUdderClosedBR: updatedAnimal.isUdderClosedBR,
-      purchaseDate: updatedAnimal.purchaseDate,
-      purchasedFrom: updatedAnimal.purchasedFrom,
-      purchasePrice: updatedAnimal.purchasePrice,
-      ownerName: updatedAnimal.ownerName,
-      ownerMobile: updatedAnimal.ownerMobile,
-      retiredDate: updatedAnimal.retiredDate,
-      bullView: updatedAnimal.bullView,
-      motherMilk: updatedAnimal.motherMilk,
-      grandmotherMilk: updatedAnimal.grandmotherMilk,
-    );
+      // Update in list
+      // Note: Model and Entity have same fields mostly, but we use the result from copyWith which is Entity
+      // We should ideally convert Entity to Model if they differ, but CattleModel.fromJson handles it.
+      // Easiest is to replace with a new CattleModel.
+      
+      // Since we don't have a direct Entity to Model mapper here, let's just use json mapping
+      // Or manually create it.
+      
+      final model = CattleModel(
+        id: updatedAnimal.id,
+        tagNumber: updatedAnimal.tagNumber,
+        name: updatedAnimal.name,
+        breed: updatedAnimal.breed,
+        gender: updatedAnimal.gender,
+        dateOfBirth: updatedAnimal.dateOfBirth,
+        color: updatedAnimal.color,
+        weight: updatedAnimal.weight,
+        status: updatedAnimal.status,
+        imageUrl: updatedAnimal.imageUrl,
+        acquisitionType: updatedAnimal.acquisitionType,
+        isLactating: updatedAnimal.isLactating,
+        isHeifer: updatedAnimal.isHeifer,
+        isPregnant: updatedAnimal.isPregnant,
+        isDryOff: updatedAnimal.isDryOff,
+        isRetired: updatedAnimal.isRetired,
+        createdAt: updatedAnimal.createdAt,
+        updatedAt: updatedAnimal.updatedAt,
+        parity: updatedAnimal.parity,
+        lastDeliveryDate: updatedAnimal.lastDeliveryDate,
+        dailyMilkProduction: updatedAnimal.dailyMilkProduction,
+        serialNumber: updatedAnimal.serialNumber,
+        motherId: updatedAnimal.motherId,
+        fatherId: updatedAnimal.fatherId,
+        motherName: updatedAnimal.motherName,
+        fatherName: updatedAnimal.fatherName,
+        dateOfAdult: updatedAnimal.dateOfAdult,
+        deathReason: updatedAnimal.deathReason,
+        deathDate: updatedAnimal.deathDate,
+        cowGroup: updatedAnimal.cowGroup,
+        isHandicapped: updatedAnimal.isHandicapped,
+        handicapReason: updatedAnimal.handicapReason,
+        isUdderClosedFL: updatedAnimal.isUdderClosedFL,
+        isUdderClosedFR: updatedAnimal.isUdderClosedFR,
+        isUdderClosedBL: updatedAnimal.isUdderClosedBL,
+        isUdderClosedBR: updatedAnimal.isUdderClosedBR,
+        purchaseDate: updatedAnimal.purchaseDate,
+        purchasedFrom: updatedAnimal.purchasedFrom,
+        purchasePrice: updatedAnimal.purchasePrice,
+        ownerName: updatedAnimal.ownerName,
+        ownerMobile: updatedAnimal.ownerMobile,
+        retiredDate: updatedAnimal.retiredDate,
+        bullView: updatedAnimal.bullView,
+        motherMilk: updatedAnimal.motherMilk,
+        grandmotherMilk: updatedAnimal.grandmotherMilk,
+      );
 
-    await prefs.setString(
-      _cattleCacheKey,
-      jsonEncode(decoded.map((animal) => animal.toJson()).toList()),
-    );
+      decoded[index] = model;
+
+      await prefs.setString(
+        _cattleCacheKey,
+        jsonEncode(decoded.map((animal) => animal.toJson()).toList()),
+      );
+    } catch (e) {
+      debugPrint('Cache update error: $e');
+    }
   }
 }
 

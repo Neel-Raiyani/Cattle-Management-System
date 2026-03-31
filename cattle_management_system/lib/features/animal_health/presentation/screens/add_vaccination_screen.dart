@@ -499,11 +499,14 @@ class _AddVaccinationScreenState extends State<AddVaccinationScreen> {
             : 'BOOSTER',
         vaccineId: resolvedVaccineId,
         remark: _remarkController.text,
-      );
-      if (mounted) {
-        AppFeedback.showSuccess(context, 'Vaccination record added successfully');
-        Navigator.pop(context, true);
-      }
+        );
+        if (mounted) {
+          await AppFeedback.showSuccess(
+            context,
+            'Vaccination record added successfully',
+          );
+          Navigator.pop(context, true);
+        }
     } on ServerException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

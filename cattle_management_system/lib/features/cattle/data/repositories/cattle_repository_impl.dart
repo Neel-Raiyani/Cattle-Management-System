@@ -171,13 +171,40 @@ class CattleRepositoryImpl implements CattleRepository {
   @override
   Future<Either<Failure, List<Cattle>>> getBulls({String? bullType}) async {
     final cachedCattle = await localDataSource.getLastCattleList();
-    final cachedBulls = cachedCattle
-        .where((c) => c.gender.toUpperCase().startsWith('M'))
-        .toList();
+    final cachedBulls = cachedCattle.where((c) {
+      if (!c.gender.toUpperCase().startsWith('M')) return false;
+      if (bullType == null || bullType.trim().isEmpty) return true;
+      final normalizedRequested = bullType.trim().toUpperCase();
+      return c.normalizedBullType == normalizedRequested ||
+          c.normalizedBullView == normalizedRequested;
+    }).toList();
 
     if (await networkInfo.isConnected) {
       try {
         final remoteBulls = await remoteDataSource.getBulls(bullType: bullType);
+        if (remoteBulls.isNotEmpty) {
+          return Right(remoteBulls);
+        }
+
+        if (cachedBulls.isNotEmpty) {
+          return Right(cachedBulls);
+        }
+
+        if (bullType != null && bullType.trim().isNotEmpty) {
+          final allCattleResult = await getAllCattle();
+          return allCattleResult.fold(
+            Left.new,
+            (allCattle) {
+              final normalizedRequested = bullType.trim().toUpperCase();
+              final matchingBulls = allCattle.where((c) {
+                if (!c.isMaleGender || !c.isActive) return false;
+                return c.normalizedBullType == normalizedRequested ||
+                    c.normalizedBullView == normalizedRequested;
+              }).toList();
+              return Right(matchingBulls);
+            },
+          );
+        }
         return Right(remoteBulls);
       } on ServerException catch (e) {
         return cachedBulls.isNotEmpty

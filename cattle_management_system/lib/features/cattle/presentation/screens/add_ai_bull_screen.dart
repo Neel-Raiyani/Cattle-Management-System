@@ -321,23 +321,21 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
                     Expanded(
                       child: BlocBuilder<CowGroupBloc, CowGroupState>(
                         builder: (context, state) {
-                          List<String> groupNames = [
-                            'Milking',
-                            'Dry',
-                            'Heifer',
-                            'Calf',
-                          ];
-                          if (state is CowGroupLoaded) {
-                            if (state.groups.isNotEmpty) {
-                              groupNames = state.groups.map((g) => g.name).toList();
-                            }
-                          }
+                          final groupNames = state is CowGroupLoaded
+                              ? state.groups.map((g) => g.name).toList()
+                              : const <String>[];
+                          final hasGroups = groupNames.isNotEmpty;
                           return _buildDropdown(
                             'Bull Group',
-                            'Select bull group',
+                            hasGroups
+                                ? 'Select bull group'
+                                : 'No bull groups available',
                             groupNames,
                             _selectedCowGroup,
-                                (val) => setState(() => _selectedCowGroup = val),
+                            hasGroups
+                                ? (val) =>
+                                    setState(() => _selectedCowGroup = val)
+                                : null,
                           );
                         },
                       ),
@@ -442,7 +440,7 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
     String hint,
     List<String> items,
     String? value,
-    ValueChanged<String?> onChanged,
+    ValueChanged<String?>? onChanged,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,7 +461,10 @@ class _AddAiBullScreenState extends State<AddAiBullScreen> {
               value: (value != null && items.contains(value)) ? value : null,
               hint: Text(
                 hint,
-                style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
               ),
               style: GoogleFonts.inter(fontSize: 14, color: Colors.black),
               isExpanded: true,

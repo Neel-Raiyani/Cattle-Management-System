@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../features/animal_health/domain/entities/health_event.dart';
 import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
+import '../../../../core/localization/localized_ui.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ============================================================
 // CONSTANTS & COLORS
@@ -20,6 +25,7 @@ class _NoDataFound extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -27,7 +33,7 @@ class _NoDataFound extends StatelessWidget {
           Image.asset('assets/icons/no_data_found.png', width: 200),
           const SizedBox(height: 16),
           Text(
-            'No Data Found',
+            l10n?.noDataFound ?? 'No Data Found',
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -113,7 +119,7 @@ class MedicalReportHubScreen extends StatelessWidget {
         elevation: 0,
         leading: _circleBack(context),
         title: Text(
-          'Medical Report',
+          context.ui.medicalReport,
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -125,7 +131,7 @@ class MedicalReportHubScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _HubTile(
-            label: 'Animal Wise Medical Report',
+            label: context.ui.animalWiseMedicalReport,
             leadingIcon: Image.asset(
               'assets/icons/mother_cow.png',
               fit: BoxFit.contain,
@@ -140,7 +146,7 @@ class MedicalReportHubScreen extends StatelessWidget {
             ),
           ),
           _HubTile(
-            label: 'Date Wise Medical Report',
+            label: context.ui.dateWiseMedicalReport,
             leadingIcon: const Icon(
               Icons.calendar_month_rounded,
               color: Color(0xFF5B8FD4),
@@ -154,7 +160,7 @@ class MedicalReportHubScreen extends StatelessWidget {
             ),
           ),
           _HubTile(
-            label: 'Disease Wise Report',
+            label: context.ui.diseaseWiseReport,
             leadingIcon: const Icon(
               Icons.sick_outlined,
               color: Colors.blueGrey,
@@ -224,10 +230,56 @@ class _AnimalWiseMedicalReportScreenState
     extends State<AnimalWiseMedicalReportScreen> {
   String? _selectedType;
   Cattle? _selectedAnimal;
+  List<HealthEvent> _medicalRecords = [];
+  bool _isLoadingRecords = false;
+  String? _recordsError;
   bool _showTypeDropdown = false;
   bool _showAnimalDropdown = false;
   final _searchCtrl = TextEditingController();
   String _searchQ = '';
+
+  Future<void> _loadMedicalRecordsForSelectedAnimal() async {
+    final animalId = _selectedAnimal?.id;
+    if (animalId == null || animalId.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _medicalRecords = [];
+        _recordsError = null;
+        _isLoadingRecords = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingRecords = true;
+      _recordsError = null;
+    });
+
+    try {
+      final records = await sl<ApiService>().getMedicalHistory(animalId: animalId);
+      if (!mounted) return;
+      setState(() {
+        _medicalRecords = records
+            .whereType<Map>()
+            .map(
+              (json) => HealthEvent.fromJson(
+                Map<String, dynamic>.from(json),
+                'Medical',
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.eventDate.compareTo(a.eventDate));
+        _isLoadingRecords = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _medicalRecords = [];
+        _recordsError = e.toString().replaceFirst('Exception: ', '');
+        _isLoadingRecords = false;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -313,47 +365,81 @@ class _AnimalWiseMedicalReportScreenState
                 ),
               ),
               if (_showTypeDropdown)
-                Flexible(
-                  child: _DropdownListOverlay(
-                    items: const ['Cow', 'Bull'],
-                    onSelect: (val) => setState(() {
-                      _selectedType = val;
-                      _showTypeDropdown = false;
-                      _selectedAnimal = null;
-                    }),
-                  ),
-                )
+                  Flexible(
+                    child: _DropdownListOverlay(
+                      items: const ['Cow', 'Bull'],
+                      onSelect: (val) => setState(() {
+                        _selectedType = val;
+                        _showTypeDropdown = false;
+                        _selectedAnimal = null;
+                        _medicalRecords = [];
+                        _recordsError = null;
+                      }),
+                    ),
+                  )
               else if (_showAnimalDropdown)
                 Flexible(
                   child: _DropdownListOverlay(
                     items: filteredAnimals.map((a) => a.name).toList(),
                     hasSearch: true,
                     searchCtrl: _searchCtrl,
-                    onSearchChanged: (v) => setState(() => _searchQ = v),
-                    onSelect: (name) => setState(() {
-                      _selectedAnimal = filteredAnimals.firstWhere(
-                        (a) => a.name == name,
-                      );
-                      _showAnimalDropdown = false;
-                    }),
+                      onSearchChanged: (v) => setState(() => _searchQ = v),
+                      onSelect: (name) => setState(() {
+                        _selectedAnimal = filteredAnimals.firstWhere(
+                          (a) => a.name == name,
+                        );
+                        _showAnimalDropdown = false;
+                        _loadMedicalRecordsForSelectedAnimal();
+                      }),
+                    ),
                   ),
-                ),
               if (!_showTypeDropdown && !_showAnimalDropdown)
                 Expanded(
                   child: _selectedAnimal == null
                       ? const SizedBox.shrink()
                       : SingleChildScrollView(
                           padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _AnimalProfileCard(animal: _selectedAnimal!),
-                              const SizedBox(height: 16),
-                              // Medical records not yet implemented in Cattle entity/API
-                              const _NoDataFound(),
-                            ],
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _AnimalProfileCard(animal: _selectedAnimal!),
+                                const SizedBox(height: 16),
+                                if (_isLoadingRecords)
+                                  const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.only(top: 24),
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                else if (_recordsError != null)
+                                  Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 24),
+                                      child: Text(
+                                        _recordsError!,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  )
+                                else if (_medicalRecords.isEmpty)
+                                  const _NoDataFound()
+                                else
+                                  Column(
+                                    children: _medicalRecords
+                                        .map(
+                                          (record) => _MedicalRecordCard(
+                                            record: record,
+                                          ),
+                                        )
+                                        .toList(),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
                 ),
             ],
           );
@@ -934,7 +1020,7 @@ class _AnimalProfileCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      animal.gender == 'Female' ||
+                      animal.isFemaleGender ||
                               animal.gender.toLowerCase() == 'cow'
                           ? 'Cow'
                           : 'Bull',
@@ -1048,15 +1134,15 @@ class _MedicalRecordCardState extends State<_MedicalRecordCard> {
           _IconRow(
             icon: Icons.calendar_today_outlined,
             label: 'Visit Date:',
-            value: (r is Map) ? fmt.format(r['date']) : fmt.format(r.date),
+            value: (r is Map) ? fmt.format(r['date']) : fmt.format(r.eventDate),
           ),
 
           if (((r is Map && r['symptoms'] != null) ||
-                  (r is! Map && r.symptoms.isNotEmpty)) ||
+                  (r is! Map && r.symptoms != null)) ||
               ((r is Map && r['treatment'] != null) ||
-                  (r is! Map && r.treatment.isNotEmpty)) ||
+                  (r is! Map && r.treatment != null)) ||
               ((r is Map && r['rescueProcedure'] != null) ||
-                  (r is! Map && r.rescueProcedure.isNotEmpty))) ...[
+                  (r is! Map && r.rescueProcedure != null))) ...[
             const SizedBox(height: 12),
             const Divider(height: 1),
             const SizedBox(height: 8),
@@ -1206,7 +1292,7 @@ class _MedicalAnimalDoseCard extends StatelessWidget {
             label: 'Visit Date:',
             value: (record is Map)
                 ? (record['date'] != null ? fmt.format(record['date']) : '-')
-                : fmt.format(record.date),
+                : fmt.format(record.eventDate),
           ),
         ],
       ),
@@ -1270,7 +1356,7 @@ class _IconRow extends StatelessWidget {
 
 class _ExpandableSection extends StatefulWidget {
   final String title;
-  final List<String> items;
+  final dynamic items; // Can be List<String> or String
   final bool isLast;
   const _ExpandableSection({
     required this.title,
@@ -1287,7 +1373,15 @@ class _ExpandableSectionState extends State<_ExpandableSection> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.items.isEmpty) return const SizedBox.shrink();
+    List<String> list = [];
+    if (widget.items is List) {
+      list = (widget.items as List).map((e) => e.toString()).toList();
+    } else if (widget.items is String) {
+      final s = widget.items as String;
+      if (s.isNotEmpty) list = [s];
+    }
+
+    if (list.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: EdgeInsets.only(bottom: widget.isLast ? 0 : 8),
@@ -1316,23 +1410,29 @@ class _ExpandableSectionState extends State<_ExpandableSection> {
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: widget.items
+                children: list
                     .map(
                       (item) => Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.circle,
-                              size: 4,
-                              color: Colors.grey,
+                            const Padding(
+                              padding: EdgeInsets.only(top: 6),
+                              child: Icon(
+                                Icons.circle,
+                                size: 4,
+                                color: Colors.grey,
+                              ),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              item,
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: Colors.black87,
+                            Expanded(
+                              child: Text(
+                                item,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: Colors.black87,
+                                ),
                               ),
                             ),
                           ],

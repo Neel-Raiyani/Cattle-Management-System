@@ -3,6 +3,7 @@ class HealthEvent {
   final String cowName;
   final String cowTagNumber;
   final String cowSerialNumber;
+  final String? animalGender;
   final String? cowImageUrl;
   final String
   eventType; // 'Medical' | 'Vaccination' | 'Deworming' | 'Lab Testing'
@@ -33,6 +34,7 @@ class HealthEvent {
     required this.cowName,
     required this.cowTagNumber,
     required this.cowSerialNumber,
+    this.animalGender,
     this.cowImageUrl,
     required this.eventType,
     this.diagnosis,
@@ -62,6 +64,7 @@ class HealthEvent {
     String? cowName,
     String? cowTagNumber,
     String? cowSerialNumber,
+    String? animalGender,
     String? cowImageUrl,
     String? eventType,
     String? diagnosis,
@@ -90,6 +93,7 @@ class HealthEvent {
       cowName: cowName ?? this.cowName,
       cowTagNumber: cowTagNumber ?? this.cowTagNumber,
       cowSerialNumber: cowSerialNumber ?? this.cowSerialNumber,
+      animalGender: animalGender ?? this.animalGender,
       cowImageUrl: cowImageUrl ?? this.cowImageUrl,
       eventType: eventType ?? this.eventType,
       diagnosis: diagnosis ?? this.diagnosis,
@@ -122,6 +126,7 @@ class HealthEvent {
     String cowName = '-';
     String cowTag = '-';
     String cowSerial = '-';
+    String? animalGender;
     String? cowImage;
 
     if (animal != null) {
@@ -129,6 +134,7 @@ class HealthEvent {
       cowTag = animal['tagNumber'] ?? animal['tagno'] ?? '-';
       cowSerial =
           animal['animalNumber'] ?? animal['serialNumber'] ?? animal['animalNo'] ?? '-';
+      animalGender = animal['gender']?.toString();
       cowImage =
           animal['imageUrl'] ?? animal['viewUrl'] ?? animal['photoUrl'] ?? animal['photo'];
     } else {
@@ -140,6 +146,7 @@ class HealthEvent {
           json['serialNumber'] ??
           json['animalNo'] ??
           '-';
+      animalGender = json['animalGender']?.toString() ?? json['gender']?.toString();
       cowImage = json['animalImageUrl'] ??
           json['imageUrl'] ??
           json['viewUrl'] ??
@@ -168,6 +175,7 @@ class HealthEvent {
       cowName: cowName,
       cowTagNumber: cowTag,
       cowSerialNumber: cowSerial,
+      animalGender: animalGender,
       cowImageUrl: cowImage,
       eventType: type,
       eventDate: DateTime.parse(
@@ -202,7 +210,13 @@ class HealthEvent {
       remark: json['remark'] ?? json['remarks'],
       vaccineName: json['vaccine'] is Map
           ? json['vaccine']['name']
-          : (json['vaccineName'] ?? json['vaccinationName']),
+          : json['vaccineId'] is Map
+              ? (json['vaccineId']['name'] ?? json['vaccineId']['title'])
+              : json['vaccineId'] is String
+                  ? json['vaccineId']
+                  : (json['vaccineName'] ??
+                      json['vaccinationName'] ??
+                      json['vaccine']),
       doseType: displayDoseType,
       dewormingDrug:
           json['companyName'] ??
@@ -218,7 +232,10 @@ class HealthEvent {
                   ? json['labtestId']['name']
                   : json['labTestId'] is Map
                       ? json['labTestId']['name']
-                      : (json['labTestName'] ?? json['testName']),
+                      : (json['labTestName'] ??
+                          json['labtestName'] ??
+                          json['testName'] ??
+                          json['labtest']),
     );
   }
 }

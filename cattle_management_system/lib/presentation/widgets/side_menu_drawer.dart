@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/localized_ui.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/di/injection_container.dart';
@@ -191,7 +192,7 @@ class _SideMenuDrawerState extends State<SideMenuDrawer> {
           _buildDrawerItem(
             context,
             Icons.inventory_2_rounded,
-            'Feed Inventory',
+            context.ui.feedInventory,
             () {
               Navigator.pop(context);
               Navigator.push(

@@ -352,11 +352,14 @@ class _AddUserScreenState extends State<AddUserScreen> {
         name: _nameController.text.trim(),
         role: _selectedRole!,
         city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
-      );
-      if (mounted) {
-        AppFeedback.showSuccess(context, 'Staff member added successfully!');
-        Navigator.pop(context, true); // return true → trigger refresh
-      }
+        );
+        if (mounted) {
+          await AppFeedback.showSuccess(
+            context,
+            'Staff member added successfully!',
+          );
+          Navigator.pop(context, true); // return true → trigger refresh
+        }
     } on ServerException catch (e) {
       if (mounted) {
         AppFeedback.showError(context, e.message);

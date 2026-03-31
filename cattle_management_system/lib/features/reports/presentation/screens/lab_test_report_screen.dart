@@ -631,7 +631,23 @@ class _LabReportRecordCard extends StatelessWidget {
     final resultDate = _parseDate(record['resultDate']);
     final result = (record['result'] ?? record['status'] ?? '-').toString();
     final testName =
-        (record['labTestName'] ?? record['testName'] ?? '-').toString();
+        (record['labTestName'] ??
+                record['labtestName'] ??
+                record['testName'] ??
+                (record['labTest'] is Map
+                    ? record['labTest']['name']
+                    : null) ??
+                (record['labtest'] is Map
+                    ? record['labtest']['name']
+                    : null) ??
+                (record['labTestId'] is Map
+                    ? record['labTestId']['name']
+                    : null) ??
+                (record['labtestId'] is Map
+                    ? record['labtestId']['name']
+                    : null) ??
+                '-')
+            .toString();
     final remark =
         (record['remark'] ?? record['remarks'] ?? '').toString().trim();
 

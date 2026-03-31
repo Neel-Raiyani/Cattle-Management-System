@@ -797,7 +797,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                                       ),
                                     ),
                                     Text(
-                                      'Track daily delivery',
+                                      context.ui.trackDailyDelivery,
                                       style: GoogleFonts.inter(
                                         fontSize: 12,
                                         color: Colors.grey,
@@ -833,8 +833,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
                           child: _buildGridCard(
                             Icons.article,
                             Colors.blue,
-                            'Reports',
-                            'View Analytics',
+                            context.ui.reports,
+                            context.ui.viewAnalytics,
                           ),
                         ),
                       ),
@@ -852,8 +852,8 @@ class _GaushalaTabState extends State<GaushalaTab> {
                           child: _buildGridCard(
                             Icons.notifications_active,
                             Colors.red,
-                            'Alerts',
-                            'View Alerts',
+                            context.ui.alerts,
+                            context.ui.viewAlerts,
                           ),
                         ),
                       ),

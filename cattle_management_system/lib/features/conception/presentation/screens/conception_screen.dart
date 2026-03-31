@@ -47,8 +47,17 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<CattleBloc>().add(const LoadCattleList());
+    context.read<CattleBloc>().add(const LoadCattleList(forceRefresh: true));
     _restoreLocallyDeliveredIds();
+  }
+
+  Future<List<Cattle>> _loadActiveCattle() async {
+    final result = await context.read<CattleBloc>().repository.getAllCattle();
+    List<Cattle> cattleList = const <Cattle>[];
+    result.fold((_) {}, (items) {
+      cattleList = items.where((c) => c.isActive).toList();
+    });
+    return cattleList;
   }
 
   Future<void> _restoreLocallyDeliveredIds() async {
@@ -77,10 +86,7 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
 
     try {
       final data = await sl<ApiService>().getActiveJourneys();
-      final cattleState = context.read<CattleBloc>().state;
-      final cattleList = cattleState is CattleListLoaded
-          ? cattleState.cattleList.where((c) => c.isActive).toList()
-          : <Cattle>[];
+      final cattleList = await _loadActiveCattle();
       if (!mounted) return;
       setState(() {
         _records = data
@@ -122,6 +128,13 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
   }
 
   Future<void> _recordDryOff(ConceptionRecord record) async {
+    if (!_canRecordJourneyOutcome(record)) {
+      AppFeedback.showError(
+        context,
+        'Confirm pregnancy before recording dry off.',
+      );
+      return;
+    }
     if (record.isDryOff) return;
     final dryOffDate = await _showSingleDateDialog(
       title: 'Record Dry Off',
@@ -130,8 +143,9 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
     if (dryOffDate == null) return;
 
     try {
+      final journeyId = await _resolveJourneyId(record);
       await sl<ApiService>().markJourneyDryOff(
-        id: record.id,
+        id: journeyId,
         dryOffDate: dryOffDate,
       );
       if (!mounted) return;
@@ -144,14 +158,22 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
   }
 
   Future<void> _recordDelivery(ConceptionRecord record) async {
+    if (!_canRecordJourneyOutcome(record)) {
+      AppFeedback.showError(
+        context,
+        'Confirm pregnancy before recording delivery.',
+      );
+      return;
+    }
     if (record.isDelivered) return;
     FocusManager.instance.primaryFocus?.unfocus();
     final payload = await _showDeliveryDialog();
     if (payload == null) return;
 
     try {
+      final journeyId = await _resolveJourneyId(record);
       await sl<ApiService>().deliverJourney(
-        id: record.id,
+        id: journeyId,
         deliveryDate: payload.deliveryDate,
         calfStatus: payload.calfStatus,
         calfGender: payload.calfGender,
@@ -215,7 +237,13 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
 
   Future<void> _deleteRecord(String id) async {
     try {
-      await sl<ApiService>().deleteJourney(id: id);
+      final record = _records.cast<ConceptionRecord?>().firstWhere(
+            (item) => item?.id == id,
+            orElse: () => null,
+          );
+      final journeyId =
+          record == null ? id.trim() : await _resolveJourneyId(record);
+      await sl<ApiService>().deleteJourney(id: journeyId);
       if (!mounted) return;
       setState(() => _records.removeWhere((r) => r.id == id));
       context.read<CattleBloc>().add(const LoadCattleList(forceRefresh: true));
@@ -223,6 +251,61 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
       if (!mounted) return;
       AppFeedback.showError(context, 'Failed to delete record');
     }
+  }
+
+  bool _canRecordJourneyOutcome(ConceptionRecord record) {
+    return record.isPregnant ||
+        record.pregnancyStatus.trim().toLowerCase() == 'pregnant';
+  }
+
+  Future<String> _resolveJourneyId(ConceptionRecord record) async {
+    final fallbackId = record.id.trim();
+    if (fallbackId.isEmpty) return fallbackId;
+
+    try {
+      final items = await sl<ApiService>().getActiveJourneys();
+      final conceiveDateKey = record.conceiveDate.toIso8601String().split('T').first;
+      final recordTag = record.cowTagNumber.trim().toLowerCase();
+      final recordName = record.cowName.trim().toLowerCase();
+      final recordCowId = record.cowId?.trim() ?? '';
+
+      for (final item in items.whereType<Map>()) {
+        final raw = Map<String, dynamic>.from(item);
+        final rawId =
+            (raw['_id'] ?? raw['id'] ?? raw['journeyId'])?.toString().trim() ?? '';
+        if (rawId.isEmpty) continue;
+        if (rawId == fallbackId) return rawId;
+
+        final animal = raw['animal'] is Map
+            ? Map<String, dynamic>.from(raw['animal'] as Map)
+            : raw['animalId'] is Map
+                ? Map<String, dynamic>.from(raw['animalId'] as Map)
+                : <String, dynamic>{};
+        final rawCowId =
+            (raw['animalId'] is String ? raw['animalId'] : null)?.toString().trim() ??
+                (animal['_id'] ?? animal['id'])?.toString().trim() ??
+                '';
+        final rawTag =
+            (animal['tagNumber'] ?? raw['tagNumber'] ?? raw['tagno'])?.toString().trim().toLowerCase() ??
+                '';
+        final rawName =
+            (animal['name'] ?? raw['animalName'] ?? raw['name'])?.toString().trim().toLowerCase() ??
+                '';
+        final rawConceiveDate =
+            raw['conceiveDate']?.toString().split('T').first ?? '';
+
+        final sameCow = recordCowId.isNotEmpty && rawCowId == recordCowId;
+        final sameTag = recordTag.isNotEmpty && rawTag == recordTag;
+        final sameName = recordName.isNotEmpty && rawName == recordName;
+        final sameDate = rawConceiveDate == conceiveDateKey;
+
+        if (sameDate && (sameCow || sameTag || sameName)) {
+          return rawId;
+        }
+      }
+    } catch (_) {}
+
+    return fallbackId;
   }
 
   ConceptionRecord? _enrichRecord(
@@ -655,8 +738,26 @@ class _ConceptionScreenState extends State<ConceptionScreen> {
                             );
                             if (newR == true) _fetchRecords();
                           },
-                          onToggleDryOff: (v) => _recordDryOff(r),
-                          onToggleDelivered: (v) => _recordDelivery(r),
+                          onToggleDryOff: (v) {
+                            if (!r.isPregnant) {
+                              AppFeedback.showError(
+                                context,
+                                'Confirm pregnancy before recording dry off.',
+                              );
+                              return;
+                            }
+                            _recordDryOff(r);
+                          },
+                          onToggleDelivered: (v) {
+                            if (!r.isPregnant) {
+                              AppFeedback.showError(
+                                context,
+                                'Confirm pregnancy before recording delivery.',
+                              );
+                              return;
+                            }
+                            _recordDelivery(r);
+                          },
                           onDelete: () => _showDeleteDialog(r.id),
                         ),
                       ),
@@ -1089,6 +1190,7 @@ class _ConceptionCard extends StatelessWidget {
             label: 'Dry Off:',
             date: '${fmt.format(record.dryOffDate)} (Expected)',
             value: record.isDryOff,
+            enabled: record.isPregnant,
             onChanged: onToggleDryOff,
           ),
           const SizedBox(height: 10),
@@ -1101,6 +1203,7 @@ class _ConceptionCard extends StatelessWidget {
             label: 'Delivery:',
             date: '${fmt.format(record.deliveryDate)} (Expected)',
             value: record.isDelivered,
+            enabled: record.isPregnant,
             onChanged: onToggleDelivered,
           ),
 
@@ -1226,6 +1329,7 @@ class _ToggleRow extends StatelessWidget {
   final String label;
   final String date;
   final bool value;
+  final bool enabled;
   final ValueChanged<bool> onChanged;
 
   const _ToggleRow({
@@ -1235,6 +1339,7 @@ class _ToggleRow extends StatelessWidget {
     required this.label,
     required this.date,
     required this.value,
+    this.enabled = true,
     required this.onChanged,
   });
 
@@ -1269,7 +1374,7 @@ class _ToggleRow extends StatelessWidget {
         ),
         Switch.adaptive(
           value: value,
-          onChanged: value ? null : onChanged,
+          onChanged: (!enabled || value) ? null : onChanged,
           activeColor: const Color(0xFF99AA5A),
         ),
       ],

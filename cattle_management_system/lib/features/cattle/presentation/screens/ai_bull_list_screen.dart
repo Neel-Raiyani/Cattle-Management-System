@@ -7,9 +7,13 @@ import '../bloc/cattle_bloc.dart';
 import '../bloc/cattle_event.dart';
 import '../bloc/cattle_state.dart';
 import 'add_ai_bull_screen.dart';
-import 'edit_ai_bull_screen.dart'; // We will create this
+import 'edit_ai_bull_screen.dart';
+import '../../../cow_group/presentation/bloc/cow_group_bloc.dart';
+import '../../../cow_group/presentation/bloc/cow_group_event.dart';
+import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../../core/utils/app_feedback.dart';
 import '../../../../core/utils/cattle_image_provider.dart';
+import '../../../../core/localization/localized_ui.dart';
 
 class AiBullListScreen extends StatefulWidget {
   const AiBullListScreen({super.key});
@@ -21,12 +25,32 @@ class AiBullListScreen extends StatefulWidget {
 class _AiBullListScreenState extends State<AiBullListScreen> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  String? _selectedGroup;
 
   @override
   void initState() {
     super.initState();
-    context.read<CattleBloc>().add(
-      const LoadBullsList(forceRefresh: true, bullType: 'AI'),
+    context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'AI'));
+    context.read<CowGroupBloc>().add(LoadCowGroups());
+  }
+
+  Widget _buildNoDataFound(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset('assets/icons/no_data_found.png', width: 200),
+          const SizedBox(height: 16),
+          Text(
+            context.ui.noRecordsFound,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -83,9 +107,7 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
                   _isSearching = !_isSearching;
                   if (!_isSearching) {
                     _searchController.clear();
-                    context.read<CattleBloc>().add(
-                      const LoadBullsList(forceRefresh: true, bullType: 'AI'),
-                    );
+                    context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'AI'));
                   }
                 });
               },
@@ -108,63 +130,133 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
       ),
-      body: BlocBuilder<CattleBloc, CattleState>(
-        builder: (context, state) {
-          if (state is CattleLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is CattleListLoaded) {
-            // Filter for AI Bulls
-            final aiBulls = state.cattleList
-                .where(
-                  (c) =>
-                      c.isMaleGender &&
-                      c.isActive &&
-                      (c.normalizedBullType == 'AI' ||
-                          c.normalizedBullView == 'AI'),
-                )
-                .toList();
+      body: Column(
+        children: [
+          // Group Filter Dropdown
+          BlocBuilder<CowGroupBloc, CowGroupState>(
+            builder: (context, state) {
+              final List<String> groupNames = state is CowGroupLoaded
+                  ? state.groups.map((g) => g.name).toList()
+                  : <String>[];
+              final hasGroups = groupNames.isNotEmpty;
+              if (!hasGroups && _selectedGroup != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _selectedGroup = null;
+                    });
+                  }
+                });
+              }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F6F7),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    context.tr.totalBullCount(aiBulls.length),
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: hasGroups ? _selectedGroup : null,
+                      isExpanded: true,
+                      hint: Text(
+                        hasGroups ? 'Select Group' : 'No bull groups available',
+                        style: GoogleFonts.inter(fontSize: 14, color: Colors.grey),
+                      ),
+                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                      items: groupNames.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(
+                            value,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: _selectedGroup == value
+                                  ? const Color(0xff99AA5A)
+                                  : Colors.black87,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: hasGroups ? (newValue) {
+                        setState(() {
+                          _selectedGroup = newValue;
+                        });
+                      } : null,
                     ),
                   ),
                 ),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: aiBulls.length,
-                    itemBuilder: (context, index) {
-                      return _AiBullCard(cattle: aiBulls[index]);
-                    },
-                  ),
-                ),
-              ],
-            );
-          } else if (state is CattleEmpty) {
-            return Center(child: Text(state.message));
-          } else if (state is CattleError) {
-            // If error, maybe list is empty or actually error
-            return Center(
-              child: Text(
-                state.message.contains('No cattle')
-                    ? 'No AI Bulls found'
-                    : state.message,
-              ),
-            );
-          }
-          return const SizedBox.shrink();
-        },
+              );
+            },
+          ),
+
+          Expanded(
+            child: BlocBuilder<CattleBloc, CattleState>(
+              builder: (context, state) {
+                if (state is CattleLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else                   if (state is CattleListLoaded) {
+                  var aiBulls = state.cattleList
+                      .where(
+                        (c) => c.isMaleGender && c.isActive,
+                      )
+                      .toList();
+
+                  // Apply Group Filter
+                  if (_selectedGroup != null) {
+                    aiBulls = aiBulls.where((c) => c.cowGroup == _selectedGroup).toList();
+                  }
+
+                  if (aiBulls.isEmpty) {
+                    return _buildNoDataFound(context);
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Text(
+                          context.tr.totalBullCount(aiBulls.length),
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: aiBulls.length,
+                          itemBuilder: (context, index) {
+                            return _AiBullCard(cattle: aiBulls[index]);
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                } else if (state is CattleEmpty) {
+                  return _buildNoDataFound(context);
+                } else if (state is CattleError) {
+                  return Center(
+                    child: Text(
+                      state.message.contains('No cattle')
+                          ? 'No AI Bulls found'
+                          : state.message,
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 16.0),
@@ -180,9 +272,7 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
               );
               if (!context.mounted) return;
               if (added == true) {
-                context.read<CattleBloc>().add(
-                  const LoadBullsList(forceRefresh: true, bullType: 'AI'),
-                );
+                context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'AI'));
                 await AppFeedback.showSuccess(
                   context,
                   'AI bull added successfully!',
@@ -252,9 +342,6 @@ class _AiBullCard extends StatelessWidget {
                         )
                       : const DecorationImage(
                           image: AssetImage('assets/icons/father_cow.png'),
-                          // Using father_cow.png as placeholder for Bull,
-                          // though image uses a simpler cow silhouette.
-                          // Sticking to consistent asset for now.
                           fit: BoxFit.contain,
                         ),
                 ),
@@ -344,9 +431,7 @@ class _AiBullCard extends StatelessWidget {
                       ),
                     );
                     if (updated == true && context.mounted) {
-                      context.read<CattleBloc>().add(
-                        const LoadBullsList(forceRefresh: true, bullType: 'AI'),
-                      );
+                      context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'AI'));
                     }
                   },
                   child: Container(
