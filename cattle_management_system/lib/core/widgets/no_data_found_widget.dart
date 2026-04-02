@@ -7,18 +7,21 @@ class NoDataFoundWidget extends StatelessWidget {
 
   const NoDataFoundWidget({
     super.key,
-    this.imageWidth = 200,
-    this.imageHeight = 200,
+    this.imageWidth = 175,
+    this.imageHeight = 175,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Image.asset(
-        context.ui.noDataFoundImage,
-        width: imageWidth,
-        height: imageHeight,
-        fit: BoxFit.contain,
+      child: Padding(
+        padding:EdgeInsets.only(bottom: 80),
+        child: Image.asset(
+          context.ui.noDataFoundImage,
+          width: imageWidth,
+          height: imageHeight,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

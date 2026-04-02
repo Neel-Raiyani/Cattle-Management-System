@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../domain/entities/health_event.dart';
 import 'add_deworming_entry_screen.dart';
 import 'add_bulk_deworming_screen.dart';
-
+import '../../../../core/widgets/no_data_found_widget.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/utils/app_feedback.dart';
@@ -283,20 +283,8 @@ class _DewormingInformationScreenState
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/icons/no_data_found.png',
-                      height: 150,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.error, size: 50),
-                    ),
+                    NoDataFoundWidget(),
                     const SizedBox(height: 16),
-                    Text(
-                      'No Records Found',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
                   ],
                 ),
               ),
