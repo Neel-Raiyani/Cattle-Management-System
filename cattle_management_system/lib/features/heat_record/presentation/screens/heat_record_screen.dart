@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../cattle/presentation/bloc/cattle_event.dart';
 import '../../domain/entities/heat_record.dart';
 import 'add_heat_record_screen.dart';
 import 'edit_heat_record_screen.dart';
@@ -13,6 +14,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/localization/localized_assets.dart';
 import '../../../../core/localization/localized_ui.dart';
 import '../../../../core/utils/app_feedback.dart';
+import '../../../../core/widgets/no_data_found_widget.dart';
 
 // ---------------------------------------------------------------------------
 // Static mock data — replace with BLoC / API calls when backend is ready
@@ -377,39 +379,67 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0),
-        child: FloatingActionButton.extended(
+        padding: const EdgeInsets.only(bottom: 8.0),child: FloatingActionButton.extended(
           onPressed: () async {
+            final bloc = context.read<CattleBloc>();
+
+            // ✅ STEP 1: Ensure data is loaded
+            if (bloc.state is! CattleListLoaded) {
+              bloc.add(const LoadCattleList());
+
+              // 🔥 WAIT until data comes
+              await bloc.stream.firstWhere((state) => state is CattleListLoaded);
+            }
+
+            final state = bloc.state as CattleListLoaded;
+
+            // ✅ STEP 2: Apply filter
+            final filteredCattle = state.cattleList.where((c) {
+              final statusValid =
+                  c.status != 'SOLD' &&
+                      c.status != 'DEAD' &&
+                      c.status != 'DONATED';
+
+              final gender = (c.gender ?? '').toLowerCase();
+
+              final isCow =
+                  gender == 'female' ||
+                      gender == 'cow' ||
+                      gender.startsWith('f');
+
+              return statusValid && isCow;
+            }).toList();
+            // ✅ DEBUG (optional)
+            print("Filtered cattle count: ${filteredCattle.length}");
+
             final result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => AddHeatRecordScreen(
-                  cattle: context.read<CattleBloc>().state is CattleListLoaded
-                      ? (context.read<CattleBloc>().state as CattleListLoaded)
-                            .cattleList
-                      : <Cattle>[],
+                  cattle: filteredCattle,
                   knownCowNames: const [],
                 ),
               ),
             );
+
             if (result == true || result is HeatRecord) {
               _fetchRecords();
             }
           },
-          backgroundColor: const Color(0xFF99AA5A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: Text(
-            context.ui.addHeatRecord,
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              fontSize: 14,
-            ),
+        backgroundColor: const Color(0xFF99AA5A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text(
+          context.ui.addHeatRecord,
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            fontSize: 14,
           ),
         ),
+      ),
       ),
     );
   }
@@ -417,28 +447,9 @@ class _HeatRecordScreenState extends State<HeatRecordScreen> {
   // ── helpers ──────────────────────────────────────────────────────────────
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            context.noDataFoundAsset,
-            width: 180,
-            height: 180,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.ui.noDataFound,
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF8DA94D),
-            ),
-          ),
-        ],
-      ),
-    );
+    return const NoDataFoundWidget();
   }
+
 
   Widget _buildErrorState() {
     return Center(
@@ -651,7 +662,7 @@ class _HeatRecordCard extends StatelessWidget {
             iconBg: const Color(0xFFE8F5E9),
             iconColor: Colors.green,
             icon: Icons.eco_rounded,
-            label: '${context.ui.breedingStatus}:',
+            label: '${context.ui.breedingType}:',
             valueWidget: Text(
               record.isConceived ? context.ui.conceived : context.ui.notConceived,
               style: GoogleFonts.poppins(

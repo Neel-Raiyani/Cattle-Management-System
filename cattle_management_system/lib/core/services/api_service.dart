@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -452,9 +453,12 @@ class ApiService {
     String? calfGroup,
     String? calfAppearance,
     double? calfWeight,
+    String? deliveryPhoto,
+    String? calfPhoto,
   }) async {
-    return await _patch('/api/breeding/journey/$id/deliver', {
-      'deliveryDate': deliveryDate.toIso8601String(),
+    final gaushalaId = sl<SharedPreferences>().getString('gaushala_id');
+    final payload = {
+      'deliveryDate': DateFormat('yyyy-MM-dd').format(deliveryDate),
       'calfStatus': calfStatus,
       'calfGender': calfGender,
       if (calfName != null && calfName.isNotEmpty) 'calfName': calfName,
@@ -465,7 +469,22 @@ class ApiService {
       if (calfAppearance != null && calfAppearance.isNotEmpty)
         'calfAppearance': calfAppearance,
       if (calfWeight != null) 'calfWeight': calfWeight,
-    });
+      if (deliveryPhoto != null && deliveryPhoto.isNotEmpty)
+        'deliveryPhoto': deliveryPhoto,
+      if (calfPhoto != null && calfPhoto.isNotEmpty) 'calfPhoto': calfPhoto,
+    };
+
+    final response = await apiClient.patch(
+      '/api/breeding/journey/$id/deliver',
+      data: payload,
+      options: gaushalaId == null || gaushalaId.isEmpty
+          ? null
+          : Options(headers: {'gaushala-id': gaushalaId}),
+    );
+    _clearAnimalCaches();
+    return response.data is Map<String, dynamic>
+        ? response.data as Map<String, dynamic>
+        : {'data': response.data};
   }
 
   /// GET /api/breeding/reports/pregnancy
@@ -844,7 +863,40 @@ class ApiService {
       data,
       primaryKeys: const ['data', 'records', 'items', 'list'],
     );
-    return await _filterRecordsForVisibleAnimals(records);
+    final visibleRecords = await _filterRecordsForVisibleAnimals(records);
+    if (visibleRecords.isNotEmpty) {
+      return visibleRecords;
+    }
+
+    final fallbackRecords = await getDewormingRecords(
+      animalId: animalId,
+      from: from,
+      to: to,
+    );
+    return fallbackRecords.where((record) {
+      final recordMap = Map<String, dynamic>.from(record);
+      final recordAnimalId = (recordMap['animalId'] is Map
+              ? ((recordMap['animalId'] as Map)['id'] ??
+                  (recordMap['animalId'] as Map)['_id'])
+              : recordMap['animalId'])
+          ?.toString();
+      final doseDate = DateTime.tryParse(
+        (recordMap['doseDate'] ?? recordMap['date'] ?? '').toString(),
+      );
+
+      final animalMatches =
+          animalId == null || animalId.isEmpty || recordAnimalId == animalId;
+      final fromMatches = from == null ||
+          (doseDate != null &&
+              !doseDate.isBefore(DateTime(from.year, from.month, from.day)));
+      final toMatches = to == null ||
+          (doseDate != null &&
+              !doseDate.isAfter(
+                DateTime(to.year, to.month, to.day, 23, 59, 59, 999),
+              ));
+
+      return animalMatches && fromMatches && toMatches;
+    }).toList();
   }
 
   /// GET /api/health/reports/deworming/dropdown

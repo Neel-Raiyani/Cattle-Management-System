@@ -39,10 +39,13 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
 
   // Get female cows for heat records (only cows can be in heat)
   List<Cattle> get _femaleCattle => widget.cattle.where((c) {
-    final g = c.gender.toLowerCase();
+    final g = (c.gender ?? '').toLowerCase();
+
+    // If gender missing, still allow cow (fallback)
+    if (g.isEmpty) return true;
+
     return g == 'female' || g == 'cow' || g.startsWith('f');
   }).toList();
-
   @override
   void dispose() {
     _parityController.dispose();
@@ -185,7 +188,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
               const SizedBox(height: 20),
 
               // ── Breeding Status ────────────────────────────────────────
-              _sectionLabel(context.ui.breedingStatus),
+              _sectionLabel(context.ui.breedingType),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -308,7 +311,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
   // ── helpers ──────────────────────────────────────────────────────────────
 
   Widget _buildCowDropdown() {
-    final items = _femaleCattle.isNotEmpty ? _femaleCattle : <Cattle>[];
+    final items = widget.cattle; // remove filtering for now
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -318,7 +321,7 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<Cattle>(
-          value: _selectedCattle,
+          value: items.contains(_selectedCattle) ? _selectedCattle : null,
           isExpanded: true,
           hint: Text(
             context.ui.selectCowName,
@@ -326,24 +329,22 @@ class _AddHeatRecordScreenState extends State<AddHeatRecordScreen> {
           ),
           style: GoogleFonts.inter(fontSize: 13, color: Colors.black87),
           items: items
-              .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
+              .map((c) => DropdownMenuItem(
+            value: c,
+            child: Text(c.name),
+          ))
               .toList(),
           onChanged: (val) {
             setState(() {
               _selectedCattle = val;
               _cowNameError = null;
-              if (val != null) {
-                _parityController.text = (val.parity ?? 0).toString();
-              } else {
-                _parityController.text = '';
-              }
+              _parityController.text = (val?.parity ?? 0).toString();
             });
           },
         ),
       ),
     );
   }
-
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,

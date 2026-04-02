@@ -539,9 +539,9 @@ class _DewormingRecordCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
+                Expanded(
+                  child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 6,
@@ -550,26 +550,37 @@ class _DewormingRecordCard extends StatelessWidget {
                     color: const Color(0xFFF5F6F7),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
-                    children: [
-                      Text(
-                        DateFormat('dd MMM, yyyy').format(record.eventDate),
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            DateFormat('dd MMM, yyyy').format(record.eventDate),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.calendar_month_rounded, size: 14),
-                    ],
+                        const SizedBox(width: 6),
+                        const Icon(Icons.calendar_month_rounded, size: 14),
+                      ],
+                    ),
                   ),
                 ),
-                Text(
-                  record.doseType ?? 'Tablet (1 Qty.)',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: const Color(0xFF99AA5A),
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    record.doseType ?? 'Tablet (1 Qty.)',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: const Color(0xFF99AA5A),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -603,11 +614,15 @@ class _DewormingRecordCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            record.cowName,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                          Expanded(
+                            child: Text(
+                              record.cowName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -623,43 +638,54 @@ class _DewormingRecordCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFDF6D8),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFE8D48A),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.bookmark,
-                                  color: Color(0xFFB38D1D),
-                                  size: 10,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFDF6D8),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFE8D48A),
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Tag No. : ${record.cowTagNumber}',
-                                  style: GoogleFonts.inter(
-                                    color: const Color(0xFFB38D1D),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.bookmark,
+                                    color: Color(0xFFB38D1D),
+                                    size: 10,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      'Tag No. : ${record.cowTagNumber}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFFB38D1D),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'No. : ${record.cowSerialNumber}',
-                            style: GoogleFonts.inter(
-                              color: Colors.grey,
-                              fontSize: 10,
+                          Expanded(
+                            child: Text(
+                              'No. : ${record.cowSerialNumber}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                color: Colors.grey,
+                                fontSize: 10,
+                              ),
                             ),
                           ),
                         ],

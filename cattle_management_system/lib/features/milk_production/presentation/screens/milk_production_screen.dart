@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/localization/localized_ui.dart';
+import 'package:cattle_management_system/core/widgets/no_data_found_widget.dart';
 import '../../../cow_group/presentation/bloc/cow_group_bloc.dart';
 import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../cow_group/presentation/bloc/cow_group_event.dart';
@@ -34,7 +35,6 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
   void initState() {
     super.initState();
     context.read<CowGroupBloc>().add(LoadCowGroups());
-    // Normalize date to midnight to avoid hour/minute filtering issues
     _selectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
     _loadEntries();
   }
@@ -68,7 +68,6 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
     );
     if (picked != null) {
       setState(() {
-        // Normalize picked date
         _selectedDate = DateTime(picked.year, picked.month, picked.day);
       });
       _loadEntries();
@@ -82,16 +81,18 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: Container(
-          margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.primaryColor),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
-            onPressed: () => Navigator.pop(context),
-            padding: EdgeInsets.zero,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppTheme.primaryColor),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor, size: 20),
+              onPressed: () => Navigator.pop(context),
+              padding: EdgeInsets.zero,
+            ),
           ),
         ),
         title: _isSearching
@@ -114,7 +115,6 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
                   fontSize: 20,
                 ),
               ),
-        centerTitle: false,
         actions: [
           IconButton(
             onPressed: () {
@@ -142,9 +142,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          _loadEntries();
-        },
+        onRefresh: () async { _loadEntries(); },
         child: BlocBuilder<MilkProductionBloc, MilkProductionState>(
           builder: (context, state) {
             if (state is MilkProductionLoading) {
@@ -156,49 +154,33 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
               entries = state.entries;
             }
 
-            // Apply search filter locally
             if (_searchQuery.isNotEmpty) {
-              entries = entries
-                  .where((e) => e.cattleName.toLowerCase().contains(_searchQuery.toLowerCase()))
-                  .toList();
+              entries = entries.where((e) => e.cattleName.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
             }
 
-            // Apply Group filter
             if (_selectedGroup != context.ui.all) {
               final selectedGroup = _selectedGroup.trim().toLowerCase();
-              entries = entries
-                  .where(
-                    (e) => (e.cattleGroup ?? '').trim().toLowerCase() == selectedGroup,
-                  )
-                  .toList();
+              entries = entries.where((e) => (e.cattleGroup ?? '').trim().toLowerCase() == selectedGroup).toList();
             }
-
-            double totalMMilk = entries.fold(0, (sum, item) => sum + item.morningMilk);
-            double totalMFeed = entries.fold(0, (sum, item) => sum + item.morningFeed);
-            double totalEMilk = entries.fold(0, (sum, item) => sum + item.eveningMilk);
-            double totalEFeed = entries.fold(0, (sum, item) => sum + item.eveningFeed);
 
             if (entries.isEmpty) {
               return ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   _buildFilters(context),
-                  const SizedBox(height: 100),
-                  Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.inbox, size: 64, color: Colors.grey[300]),
-                        const SizedBox(height: 16),
-                        Text(
-                          context.ui.noDataFound,
-                          style: GoogleFonts.poppins(color: Colors.grey),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 50),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 100),
+                    child: NoDataFoundWidget(),
                   ),
                 ],
               );
             }
+
+            final tMMilk = entries.fold(0.0, (sum, e) => sum + e.morningMilk);
+            final tMFeed = entries.fold(0.0, (sum, e) => sum + e.morningFeed);
+            final tEMilk = entries.fold(0.0, (sum, e) => sum + e.eveningMilk);
+            final tEFeed = entries.fold(0.0, (sum, e) => sum + e.eveningFeed);
 
             return ListView(
               padding: const EdgeInsets.only(bottom: 80),
@@ -210,7 +192,7 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
                 _buildTableHeader(),
                 _buildSubHeader(),
                 ...entries.map((entry) => _buildEntryRow(entry)),
-                _buildFooter(totalMMilk, totalMFeed, totalEMilk, totalEFeed),
+                _buildFooter(tMMilk, tMFeed, tEMilk, tEFeed),
               ],
             );
           },
@@ -218,34 +200,20 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final result = await Navigator.push<dynamic>(
-            context,
-            MaterialPageRoute(builder: (context) => const AddMilkEntryScreen()),
-          );
+          final result = await Navigator.push<dynamic>(context, MaterialPageRoute(builder: (context) => const AddMilkEntryScreen()));
           if (!mounted) return;
-
           if (result is Map && result['submitted'] == true) {
             _loadEntries();
-            final message = result['message']?.toString();
-            if (message != null && message.isNotEmpty) {
-              await AppFeedback.showSuccess(context, message);
-            }
-            return;
+            final msg = result['message']?.toString();
+            if (msg != null && msg.isNotEmpty) await AppFeedback.showSuccess(context, msg);
+          } else {
+            _loadEntries();
           }
-
-          _loadEntries();
         },
         backgroundColor: AppTheme.primaryColor,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          context.ui.addMilkEntry,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
+        label: Text(context.ui.addMilkEntry, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white)),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -258,27 +226,18 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  context.ui.date,
-                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
+                Text(context.ui.date, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 InkWell(
                   onTap: () => _selectDate(context),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          DateFormat('dd MMM, yyyy').format(_selectedDate),
-                          style: GoogleFonts.inter(fontSize: 12),
-                        ),
+                        Text(DateFormat('dd MMM, yyyy').format(_selectedDate), style: GoogleFonts.inter(fontSize: 12)),
                         const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
                       ],
                     ),
@@ -292,37 +251,23 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  context.ui.cowGroup,
-                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
+                Text(context.ui.cowGroup, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 BlocBuilder<CowGroupBloc, CowGroupState>(
                   builder: (context, state) {
-                    List<String> groupNames = [context.ui.all];
-                    if (state is CowGroupLoaded) {
-                      groupNames = [context.ui.all, ...state.groups.map((g) => g.name)];
-                    }
+                    List<String> groups = [context.ui.all];
+                    if (state is CowGroupLoaded) groups = [context.ui.all, ...state.groups.map((g) => g.name)];
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
-                          value: groupNames.contains(_selectedGroup) ? _selectedGroup : context.ui.all,
+                          value: groups.contains(_selectedGroup) ? _selectedGroup : context.ui.all,
                           icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey),
                           isDense: true,
                           style: GoogleFonts.inter(fontSize: 12, color: Colors.black87),
-                          items: groupNames.map((String value) {
-                            return DropdownMenuItem<String>(value: value, child: Text(value));
-                          }).toList(),
-                          onChanged: (newValue) {
-                            setState(() {
-                              _selectedGroup = newValue!;
-                            });
-                          },
+                          items: groups.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                          onChanged: (v) => setState(() => _selectedGroup = v!),
                         ),
                       ),
                     );
@@ -336,202 +281,13 @@ class _MilkProductionScreenState extends State<MilkProductionScreen> {
     );
   }
 
-  Widget _buildTotalCount(int count) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          context.ui.totalCowCount(count),
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-      ),
-    );
-  }
+  Widget _buildTotalCount(int count) => Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: Text(context.ui.totalCowCount(count), style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)));
 
-  Widget _buildTableHeader() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade200),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(12),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              context.ui.cowName,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: const BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.wb_sunny, size: 12, color: Colors.white),
-                ),
-                Text(context.ui.morning, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: const BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.nightlight_round, size: 12, color: Colors.white),
-                ),
-                Text(context.ui.evening, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildTableHeader() => Container(margin: const EdgeInsets.symmetric(horizontal: 16), padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12))), child: Row(children: [Expanded(flex: 2, child: Text(context.ui.cowName, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12))), Expanded(flex: 3, child: Column(children: [Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle), child: const Icon(Icons.wb_sunny, size: 12, color: Colors.white)), Text(context.ui.morning, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold))])), Expanded(flex: 3, child: Column(children: [Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle), child: const Icon(Icons.nightlight_round, size: 12, color: Colors.white)), Text(context.ui.evening, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold))]))]));
 
-  Widget _buildSubHeader() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: Colors.grey.shade200),
-          right: BorderSide(color: Colors.grey.shade200),
-          bottom: BorderSide(color: Colors.grey.shade200),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Expanded(flex: 2, child: SizedBox()),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: const [
-                Icon(Icons.water_drop, size: 14, color: Colors.blue),
-                Icon(Icons.grass, size: 14, color: Colors.green),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: const [
-                Icon(Icons.water_drop, size: 14, color: Colors.blue),
-                Icon(Icons.grass, size: 14, color: Colors.green),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildSubHeader() => Container(margin: const EdgeInsets.symmetric(horizontal: 16), padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8), decoration: BoxDecoration(border: Border(left: BorderSide(color: Colors.grey.shade200), right: BorderSide(color: Colors.grey.shade200), bottom: BorderSide(color: Colors.grey.shade200))), child: Row(children: [const Expanded(flex: 2, child: SizedBox()), Expanded(flex: 3, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: const [Icon(Icons.water_drop, size: 14, color: Colors.blue), Icon(Icons.grass, size: 14, color: Colors.green)])), Expanded(flex: 3, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: const [Icon(Icons.water_drop, size: 14, color: Colors.blue), Icon(Icons.grass, size: 14, color: Colors.green)]))]));
 
-  Widget _buildEntryRow(MilkProductionEntry entry) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: Colors.grey.shade200),
-          right: BorderSide(color: Colors.grey.shade200),
-          bottom: BorderSide(color: Colors.grey.shade200),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              entry.cattleName,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 13),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text(entry.morningMilk.toStringAsFixed(0), style: GoogleFonts.inter(fontSize: 13)),
-                Text(entry.morningFeed.toStringAsFixed(1), style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text(entry.eveningMilk.toStringAsFixed(0), style: GoogleFonts.inter(fontSize: 13)),
-                Text(entry.eveningFeed.toStringAsFixed(1), style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildEntryRow(MilkProductionEntry entry) => Container(margin: const EdgeInsets.symmetric(horizontal: 16), padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), decoration: BoxDecoration(border: Border(left: BorderSide(color: Colors.grey.shade200), right: BorderSide(color: Colors.grey.shade200), bottom: BorderSide(color: Colors.grey.shade200))), child: Row(children: [Expanded(flex: 2, child: Text(entry.cattleName, style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 13))), Expanded(flex: 3, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [Text(entry.morningMilk.toStringAsFixed(0), style: GoogleFonts.inter(fontSize: 13)), Text(entry.morningFeed.toStringAsFixed(1), style: GoogleFonts.inter(fontSize: 13, color: Colors.grey))])), Expanded(flex: 3, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [Text(entry.eveningMilk.toStringAsFixed(0), style: GoogleFonts.inter(fontSize: 13)), Text(entry.eveningFeed.toStringAsFixed(1), style: GoogleFonts.inter(fontSize: 13, color: Colors.grey))]))]));
 
-  Widget _buildFooter(double totalMMilk, double totalMFeed, double totalEMilk, double totalEFeed) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
-        color: AppTheme.primaryColor,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(12),
-          bottomRight: Radius.circular(12),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              context.ui.total,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text(totalMMilk.toStringAsFixed(1), style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(totalMFeed.toStringAsFixed(1), style: GoogleFonts.inter(color: Colors.white70)),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text(totalEMilk.toStringAsFixed(1), style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(totalEFeed.toStringAsFixed(1), style: GoogleFonts.inter(color: Colors.white70)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildFooter(double tMM, double tMF, double tEM, double tEF) => Container(margin: const EdgeInsets.symmetric(horizontal: 16), padding: const EdgeInsets.all(12), decoration: const BoxDecoration(color: AppTheme.primaryColor, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12))), child: Row(children: [Expanded(flex: 2, child: Text(context.ui.total, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white))), Expanded(flex: 3, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [Text(tMM.toStringAsFixed(1), style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)), Text(tMF.toStringAsFixed(1), style: GoogleFonts.inter(color: Colors.white70))])), Expanded(flex: 3, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [Text(tEM.toStringAsFixed(1), style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)), Text(tEF.toStringAsFixed(1), style: GoogleFonts.inter(color: Colors.white70))]))]));
 }

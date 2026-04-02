@@ -571,7 +571,7 @@ class _GaushalaTabState extends State<GaushalaTab> {
                         ),
                         _buildStatusCircle(
                           formatCount(dryCount),
-                          'Dry',
+                          context.ui.dry,
                           Colors.brown,
                           onTap: () {
                             Navigator.push(

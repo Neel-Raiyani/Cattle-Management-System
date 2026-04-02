@@ -7,6 +7,8 @@ import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
+import '../../../../core/localization/localized_ui.dart';
+import 'package:cattle_management_system/core/widgets/no_data_found_widget.dart';
 import 'add_sell_record_screen.dart';
 
 class SellReportScreen extends StatefulWidget {
@@ -99,19 +101,22 @@ class _SellReportScreenState extends State<SellReportScreen> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          leading: GestureDetector(
-            onTap: () => Navigator.pop(context),
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
             child: Container(
-              margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+              ),
             ),
           ),
           title: Text(
-            'Sell',
+            context.ui.sell,
             style: GoogleFonts.poppins(
               color: Colors.black,
               fontWeight: FontWeight.bold,
@@ -121,7 +126,7 @@ class _SellReportScreenState extends State<SellReportScreen> {
         ),
         body: BlocBuilder<CattleBloc, CattleState>(
           builder: (context, state) {
-            if (state is CattleLoading) {
+            if (state is CattleLoading && state is! CattleListLoaded) {
               return const Center(child: CircularProgressIndicator());
             }
 
@@ -162,7 +167,7 @@ class _SellReportScreenState extends State<SellReportScreen> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'Total ${soldAnimals.length} sold animal${soldAnimals.length == 1 ? '' : 's'}',
+                          '${context.ui.total}: ${soldAnimals.length}',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -175,7 +180,7 @@ class _SellReportScreenState extends State<SellReportScreen> {
                 ),
                 Expanded(
                   child: soldAnimals.isEmpty
-                      ? _NoDataView(message: 'No sold animals found')
+                      ? const NoDataFoundWidget()
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: soldAnimals.length,
@@ -189,47 +194,21 @@ class _SellReportScreenState extends State<SellReportScreen> {
             );
           },
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: Padding(
           padding: const EdgeInsets.only(bottom: 20),
-          child: InkWell(
-            onTap: () async {
+          child: FloatingActionButton.extended(
+            onPressed: () async {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AddSellRecordScreen()),
               );
-              if (result == true && mounted) {
-                _loadData();
-              }
+              if (result == true) _loadData();
             },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF99AA5A),
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF99AA5A).withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add, color: Colors.white, size: 22),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Add Sell Record',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
+            backgroundColor: const Color(0xFF99AA5A),
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: Text(
+              'Add Sell Record',
+              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -278,41 +257,6 @@ class _DateFilterChip extends StatelessWidget {
   }
 }
 
-class _NoDataView extends StatelessWidget {
-  final String message;
-
-  const _NoDataView({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/icons/no_data_found.png',
-            width: 200,
-            errorBuilder: (_, __, ___) => const Icon(
-              Icons.search_off,
-              size: 100,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF99AA5A),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SellRecordCard extends StatelessWidget {
   final Cattle cattle;
 
@@ -344,13 +288,27 @@ class _SellRecordCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
-                ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: (cattle.imageUrl != null && cattle.imageUrl!.isNotEmpty)
+                    ? Image(
+                        image: imageProvider,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 50,
+                          height: 50,
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.pets, color: Colors.grey),
+                        ),
+                      )
+                    : Container(
+                        width: 50,
+                        height: 50,
+                        color: Colors.grey.shade100,
+                        child: const Icon(Icons.pets, color: Colors.grey),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(

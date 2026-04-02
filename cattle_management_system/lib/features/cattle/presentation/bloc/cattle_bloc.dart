@@ -65,8 +65,14 @@ class CattleBloc extends Bloc<CattleEvent, CattleState> {
     }
 
     final result = await repository.getAllCattle();
-    result.fold((failure) => emit(CattleError(failure.message)), (cattleList) {
-      _currentCattleList = List.from(cattleList);
+    result.fold((failure) => emit(CattleError(failure.message)), (newList) {
+      // Merge results into master list
+      final Map<String, Cattle> map = {for (var c in _currentCattleList) c.id: c};
+      for (var c in newList) {
+        map[c.id] = c;
+      }
+      _currentCattleList = map.values.toList();
+      
       final cowsList = _currentCattleList
           .where((c) => c.gender.toUpperCase().startsWith('F') && c.isActive)
           .toList();
@@ -82,9 +88,14 @@ class CattleBloc extends Bloc<CattleEvent, CattleState> {
     LoadBullsList event,
     Emitter<CattleState> emit,
   ) async {
-    final cachedBulls = _currentCattleList
-        .where((c) => c.gender.toUpperCase().startsWith('M'))
-        .toList();
+    final cachedBulls = _currentCattleList.where((c) {
+      if (event.bullType == 'AI') {
+        return c.isAiBull;
+      } else if (event.bullType == 'GAUSHALA') {
+        return !c.isAiBull && c.isMaleGender && c.isActive;
+      }
+      return c.isMaleGender && c.isActive;
+    }).toList();
 
     if (!event.forceRefresh && cachedBulls.isNotEmpty) {
       emit(CattleListLoaded(cachedBulls, isFromCache: true));
@@ -98,11 +109,23 @@ class CattleBloc extends Bloc<CattleEvent, CattleState> {
     }
 
     final result = await repository.getBulls(bullType: event.bullType);
-    result.fold((failure) => emit(CattleError(failure.message)), (cattleList) {
-      _currentCattleList = List.from(cattleList);
-      final bullsList = _currentCattleList
-          .where((c) => c.gender.toUpperCase().startsWith('M') && c.isActive)
-          .toList();
+    result.fold((failure) => emit(CattleError(failure.message)), (newList) {
+      // Merge results into master list
+      final Map<String, Cattle> map = {for (var c in _currentCattleList) c.id: c};
+      for (var c in newList) {
+        map[c.id] = c;
+      }
+      _currentCattleList = map.values.toList();
+
+      final bullsList = _currentCattleList.where((c) {
+        if (event.bullType == 'AI') {
+          return c.isAiBull;
+        } else if (event.bullType == 'GAUSHALA') {
+          return !c.isAiBull && c.isMaleGender && c.isActive;
+        }
+        return c.isMaleGender && c.isActive;
+      }).toList();
+
       if (bullsList.isEmpty) {
         emit(const CattleEmpty('No bulls found'));
       } else {
@@ -111,7 +134,7 @@ class CattleBloc extends Bloc<CattleEvent, CattleState> {
     });
   }
 
-Future<void> _onLoadCattleById(
+  Future<void> _onLoadCattleById(
     LoadCattleById event,
     Emitter<CattleState> emit,
   ) async {
@@ -138,10 +161,14 @@ Future<void> _onLoadCattleById(
         emit(CattleListLoaded(List.from(_currentCattleList), isFromCache: true));
       }
     }, (cattle) {
-      _currentCattleList.add(cattle);
+      if (cattle.id.isNotEmpty && cattle.name.trim().isNotEmpty) {
+        // Prevent duplicates
+        final exists = _currentCattleList.any((c) => c.id == cattle.id);
+        if (!exists) {
+          _currentCattleList.add(cattle);
+        }
+      }
       emit(CattleAdded(cattle));
-      // Emit updated list immediately
-      emit(CattleListLoaded(List.from(_currentCattleList)));
     });
   }
 
@@ -162,7 +189,6 @@ Future<void> _onLoadCattleById(
         _currentCattleList[index] = cattle;
       }
       emit(CattleUpdated(cattle));
-      emit(CattleListLoaded(List.from(_currentCattleList)));
     });
   }
 
@@ -179,14 +205,19 @@ Future<void> _onLoadCattleById(
 
     final result = await repository.deleteCattle(event.id);
     result.fold((failure) {
+      final msg = failure.message.toLowerCase();
+      // If the animal is already gone from the server, we don't bring it back
+      if (msg.contains('not found') || msg.contains('animal_not_found')) {
+        emit(CattleDeleted(event.id));
+        emit(CattleListLoaded(List.from(_currentCattleList)));
+        return;
+      }
+
       if (removedCattle != null) {
         _currentCattleList.insert(removedIndex, removedCattle);
         emit(CattleListLoaded(List.from(_currentCattleList), isFromCache: true));
       }
       emit(CattleActionError(failure.message));
-      if (_currentCattleList.isNotEmpty) {
-        emit(CattleListLoaded(List.from(_currentCattleList), isFromCache: true));
-      }
     }, (_) {
       emit(CattleDeleted(event.id));
       emit(CattleListLoaded(List.from(_currentCattleList)));

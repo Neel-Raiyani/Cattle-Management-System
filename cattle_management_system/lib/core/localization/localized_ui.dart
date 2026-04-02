@@ -142,6 +142,12 @@ class _LocalizedUi {
         hi: '\u092c\u094d\u092f\u093e\u0928\u0947 \u0935\u093e\u0932\u0940',
       );
 
+  String get dry => _pick(
+    en: 'Dry',
+    gu: 'સુકી',
+    hi: 'सूखी',
+  );
+
   String get todaysProduction => _pick(
         en: "Today's Production",
         gu: '\u0a86\u0a9c\u0aa8\u0ac1\u0a82 \u0a89\u0aa4\u0acd\u0aaa\u0abe\u0aa6\u0aa8',
@@ -436,22 +442,23 @@ class _LocalizedUi {
         hi: '\u092a\u0948\u0930\u093f\u091f\u0940 \u0928\u0902\u092c\u0930',
       );
 
-  String get breedingStatus => _pick(
-        en: 'Breeding Status',
-        gu: '\u0aaa\u0acd\u0ab0\u0a9c\u0aa8\u0aa8 \u0ab8\u0acd\u0aa5\u0abf\u0aa4\u0abf',
-        hi: '\u092a\u094d\u0930\u091c\u0928\u0928 \u0938\u094d\u0925\u093f\u0924\u093f',
-      );
+  String get breedingType => _pick(
+    en: 'Breeding Type',
+    gu: 'પ્રજનન પ્રકાર',
+    hi: 'प्रजनन प्रकार',
+  );
 
   String get conceived => _pick(
-        en: 'Conceived',
-        gu: '\u0a97\u0ab0\u0acd\u0aad\u0abe\u0aa7\u0abe\u0aa8 \u0aa5\u0aaf\u0ac1\u0a82',
-        hi: '\u0917\u0930\u094d\u092d\u0927\u093e\u0930\u0923 \u0939\u0941\u0906',
+    en: 'AI',
+    gu: 'AI',
+    hi: 'AI',
+
       );
 
   String get notConceived => _pick(
-        en: 'Not Conceived',
-        gu: '\u0a97\u0ab0\u0acd\u0aad\u0abe\u0aa7\u0abe\u0aa8 \u0aa5\u0aaf\u0ac1\u0a82 \u0aa8\u0aa5\u0ac0',
-        hi: '\u0917\u0930\u094d\u092d\u0927\u093e\u0930\u0923 \u0928\u0939\u0940\u0902 \u0939\u0941\u0906',
+    en: 'Natural',
+    gu: 'પ્રાકૃતિક',
+    hi: 'प्राकृतिक',
       );
 
   String get heatDate => _pick(
@@ -632,5 +639,22 @@ class _LocalizedUi {
         en: 'Add Vaccine',
         gu: '\u0ab0\u0ab8\u0ac0 \u0a89\u0aae\u0ac7\u0ab0\u0acb',
         hi: '\u091f\u0940\u0915\u093e \u091c\u094b\u095c\u0947\u0902',
+      );
+  String get noDataFoundImage => _pick(
+        en: 'assets/icons/no_data_found.png',
+        gu: 'assets/icons/no_data_gound_guj.png',
+        hi: 'assets/icons/no_data_gound_hin.png',
+      );
+
+  String get staff => _pick(
+        en: 'Staff',
+        gu: '\u0a95\u0ab0\u0acd\u0aae\u0a9a\u0abe\u0ab0\u0ac0\u0a93',
+        hi: '\u0915\u0930\u094d\u092e\u091a\u093e\u0930\u0940',
+      );
+
+  String get addStaff => _pick(
+        en: 'Add Staff',
+        gu: '\u0a95\u0ab0\u0acd\u0aae\u0a9a\u0abe\u0ab0\u0ac0 \u0a89\u0aae\u0ac7\u0ab0\u0acb',
+        hi: '\u0915\u0930\u094d\u092e\u091a\u093e\u0930\u0940 \u091c\u094b\u095c\u0947\u0902',
       );
 }

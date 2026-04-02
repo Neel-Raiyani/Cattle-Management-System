@@ -114,7 +114,9 @@ class ConceptionRecord {
         hasDeliveryMarkers;
 
     return ConceptionRecord(
-      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      // Mutation endpoints should target the canonical backend journey document id.
+      // Prefer `_id` / `id` first and only fall back to `journeyId` if needed.
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? json['journeyId']?.toString() ?? '',
       cowId: (animal['_id'] ?? animal['id'] ?? json['animalId'])?.toString(),
       cowName: (animal['name'] ?? animal['animalName'] ?? 'Unknown Cow').toString(),
       cowTagNumber: (animal['tagNumber'] ?? '-').toString(),

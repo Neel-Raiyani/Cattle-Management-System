@@ -520,11 +520,15 @@ class _LabTestingRecordCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            record.cowName,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                          Expanded(
+                            child: Text(
+                              record.cowName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -560,23 +564,31 @@ class _LabTestingRecordCard extends StatelessWidget {
                                   size: 10,
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
-                                  'Tag No. : ${record.cowTagNumber}',
-                                  style: GoogleFonts.inter(
-                                    color: const Color(0xFFB38D1D),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                                Flexible(
+                                  child: Text(
+                                    'Tag No. : ${record.cowTagNumber}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFFB38D1D),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'No. : ${record.cowSerialNumber}',
-                            style: GoogleFonts.inter(
-                              color: Colors.grey,
-                              fontSize: 10,
+                          Expanded(
+                            child: Text(
+                              'No. : ${record.cowSerialNumber}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                color: Colors.grey,
+                                fontSize: 10,
+                              ),
                             ),
                           ),
                         ],
@@ -594,15 +606,19 @@ class _LabTestingRecordCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      record.testName ?? '-',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                    Expanded(
+                      child: Text(
+                        record.testName ?? '-',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,

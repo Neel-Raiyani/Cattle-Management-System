@@ -5,6 +5,8 @@ import '../../domain/entities/health_event.dart';
 import 'add_vaccination_screen.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/di/injection_container.dart';
+import 'package:cattle_management_system/core/localization/localized_ui.dart';
+import '../../../../core/widgets/no_data_found_widget.dart';
 
 class VaccinationInformationScreen extends StatefulWidget {
   const VaccinationInformationScreen({super.key});
@@ -244,7 +246,7 @@ class _VaccinationInformationScreenState
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/icons/no_data_found.png',
+                      context.ui.noDataFoundImage,
                       height: 150,
                       errorBuilder: (_, __, ___) =>
                           const Icon(Icons.error, size: 50),
@@ -276,28 +278,8 @@ class _VaccinationInformationScreenState
               ),
             )
           else if (_records.isEmpty || _getFilteredRecords().isEmpty)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/icons/no_data_found.png',
-                      height: 150,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.error, size: 50),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No Records Found',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            const Expanded(
+              child: NoDataFoundWidget(),
             )
           else
             Expanded(

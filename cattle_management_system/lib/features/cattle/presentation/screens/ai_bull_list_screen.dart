@@ -13,7 +13,7 @@ import '../../../cow_group/presentation/bloc/cow_group_event.dart';
 import '../../../cow_group/presentation/bloc/cow_group_state.dart';
 import '../../../../core/utils/app_feedback.dart';
 import '../../../../core/utils/cattle_image_provider.dart';
-import '../../../../core/localization/localized_ui.dart';
+import '../../../../core/widgets/no_data_found_widget.dart';
 
 class AiBullListScreen extends StatefulWidget {
   const AiBullListScreen({super.key});
@@ -35,23 +35,7 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
   }
 
   Widget _buildNoDataFound(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset('assets/icons/no_data_found.png', width: 200),
-          const SizedBox(height: 16),
-          Text(
-            context.ui.noRecordsFound,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const NoDataFoundWidget();
   }
 
   @override
@@ -199,11 +183,7 @@ class _AiBullListScreenState extends State<AiBullListScreen> {
                 if (state is CattleLoading) {
                   return const Center(child: CircularProgressIndicator());
                 } else                   if (state is CattleListLoaded) {
-                  var aiBulls = state.cattleList
-                      .where(
-                        (c) => c.isMaleGender && c.isActive,
-                      )
-                      .toList();
+                  var aiBulls = state.cattleList.where((c) => c.isAiBull).toList();
 
                   // Apply Group Filter
                   if (_selectedGroup != null) {

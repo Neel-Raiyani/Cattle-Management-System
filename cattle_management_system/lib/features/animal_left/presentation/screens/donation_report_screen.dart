@@ -7,7 +7,9 @@ import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
+import '../../../../core/localization/localized_ui.dart';
 import '../../../../core/services/app_feedback_service.dart';
+import 'package:cattle_management_system/core/widgets/no_data_found_widget.dart';
 import 'add_donation_record_screen.dart';
 
 class DonationReportScreen extends StatefulWidget {
@@ -51,19 +53,22 @@ class _DonationReportScreenState extends State<DonationReportScreen> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          leading: GestureDetector(
-            onTap: () => Navigator.pop(context),
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
             child: Container(
-              margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+              ),
             ),
           ),
           title: Text(
-            'Donation',
+            context.ui.donation,
             style: GoogleFonts.poppins(
               color: Colors.black,
               fontWeight: FontWeight.bold,
@@ -73,7 +78,7 @@ class _DonationReportScreenState extends State<DonationReportScreen> {
         ),
         body: BlocBuilder<CattleBloc, CattleState>(
           builder: (context, state) {
-            if (state is CattleLoading) {
+            if (state is CattleLoading && state is! CattleListLoaded) {
               return const Center(child: CircularProgressIndicator());
             }
 
@@ -81,31 +86,7 @@ class _DonationReportScreenState extends State<DonationReportScreen> {
             final donatedAnimals = _filterDonatedAnimals(cattleList);
 
             if (donatedAnimals.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/icons/no_data_found.png',
-                      width: 200,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.search_off,
-                        size: 100,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No data found',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF99AA5A),
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              return const NoDataFoundWidget();
             }
 
             return Column(
@@ -115,7 +96,7 @@ class _DonationReportScreenState extends State<DonationReportScreen> {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Total ${donatedAnimals.length} donation record${donatedAnimals.length == 1 ? '' : 's'}',
+                      '${context.ui.total}: ${donatedAnimals.length}',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -200,6 +181,7 @@ class _DonationRecordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final donatedDate = DateFormat('dd MMM, yyyy').format(cattle.updatedAt);
+        
     final imageProvider = (cattle.imageUrl != null && cattle.imageUrl!.isNotEmpty)
         ? NetworkImage(cattle.imageUrl!)
         : const AssetImage('assets/icons/father_cow.png') as ImageProvider;

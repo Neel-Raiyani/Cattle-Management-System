@@ -10,7 +10,7 @@ import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
 import '../../../../core/localization/localized_ui.dart';
-import '../../../../l10n/app_localizations.dart';
+import 'package:cattle_management_system/core/widgets/no_data_found_widget.dart';
 
 // ============================================================
 // CONSTANTS & COLORS
@@ -20,59 +20,6 @@ const _kLightGrey = Color(0xFFF5F6F7);
 const _kHealthyGreen = Color(0xFF4CAF50);
 const _kSickRed = Color(0xFFE53935);
 
-class _NoDataFound extends StatelessWidget {
-  const _NoDataFound();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset('assets/icons/no_data_found.png', width: 200),
-          const SizedBox(height: 16),
-          Text(
-            l10n?.noDataFound ?? 'No Data Found',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-final List<String> _diseaseList = [
-  'UNATTENDED CASES — બિનહાજર કેસો',
-  'VIRAL DISEASES — વાયરસજન્ય રોગો',
-  'URINARY SYSTEM — મૂત્રતંત્ર',
-  'BACTERIAL DISEASES — બેક્ટેરિયલ રોગો',
-  'NUTRITIONAL DISORDERS — પોષણ સંબંધિત વિકારો',
-  'INJURY SURGICAL DISORDERS — ઇજા/શસ્ત્રક્રિયા સંબંધિત વિકારો',
-  'DISEASES OF DIGESTIVE SYSTEM — પાચનતંત્રના રોગો',
-  'REPRODUCTIVE DISEASES — પ્રજનન સંબંધિત રોગો',
-  'OBSTETRICAL DISORDERS — પ્રસૂતિ સંબંધિત વિકારો',
-  'OTHER MISCELLANEOUS CAUSES — અન્ય વિવિધ કારણો',
-  'DISEASES OF MS SYSTEM — માસ્પેશી/હાડકાં તંત્રના રોગો',
-  'ALLERGIC CONDITIONS — એલર્જી સંબંધિત પરિસ્થિતિઓ',
-  'SKIN DISEASES — ચામડીના રોગો',
-  'RESPIRATORY DISEASES — શ્વસનતંત્રના રોગો',
-  'PARASITIC DISEASES — પરજીવીજન્ય રોગો',
-  'MAMMARY GLAND DISEASES — સ્તનગ્રંથિના રોગો',
-  'METABOLIC DISORDERS — ચયાપચય સંબંધિત વિકારો',
-  'CARDIOVASCULAR DISEASES — હૃદય અને રક્તવાહિની તંત્રના રોગો',
-  'POISONING — ઝેરીકરણ',
-  'NERVOUS SYSTEM — નર્વસ સિસ્ટમ / નાડીતંત્ર',
-  'EYE AND EAR — આંખ અને કાન',
-  'ARTIFICIAL INSEMINATION — કૃત્રિમ ગર્ભાધાન',
-  'PROTOZOAL DISEASES — પ્રોટોઝોઆજન્ય રોગો',
-  'Ketosis — કીટોસિસ',
-  'Other — અન્ય',
-];
 
 // ============================================================
 // HELPERS
@@ -288,23 +235,34 @@ class _AnimalWiseMedicalReportScreenState
   }
 
   List<Cattle> _getFilteredAnimals(List<Cattle> allCattle) {
-    var list = allCattle;
+    var list = allCattle.where((a) {
+      if (!a.isActive) return false;
+
+      final status = (a.status ?? '').toUpperCase();
+      if (status == 'SOLD' || status == 'DEAD' || status == 'DONATED') {
+        return false;
+      }
+
+      return true;
+    }).toList();
+
     if (_selectedType != null) {
       list = list.where((a) {
-        final gender = a.gender.toLowerCase();
+        final gender = (a.gender ?? '').toLowerCase();
         return gender == _selectedType!.toLowerCase() ||
             (gender == 'female' && _selectedType == 'Cow') ||
             (gender == 'male' && _selectedType == 'Bull');
       }).toList();
     }
+
     if (_searchQ.isNotEmpty) {
       list = list
           .where((a) => a.name.toLowerCase().contains(_searchQ.toLowerCase()))
           .toList();
     }
+
     return list;
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -322,6 +280,7 @@ class _AnimalWiseMedicalReportScreenState
           ),
         ),
       ),
+      // 🔥,
       body: BlocBuilder<CattleBloc, CattleState>(
         builder: (context, state) {
           List<Cattle> cattleList = [];
@@ -426,7 +385,7 @@ class _AnimalWiseMedicalReportScreenState
                                     ),
                                   )
                                 else if (_medicalRecords.isEmpty)
-                                  const _NoDataFound()
+                                  const NoDataFoundWidget()
                                 else
                                   Column(
                                     children: _medicalRecords
@@ -665,7 +624,7 @@ class _DateWiseMedicalReportScreenState
                 ),
                 Expanded(
                   child: matches.isEmpty
-                      ? const _NoDataFound()
+                      ? const NoDataFoundWidget()
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: matches.length,
@@ -707,28 +666,87 @@ class _DiseaseWiseMedicalReportScreenState
   final _searchCtrl = TextEditingController();
   String _searchQ = '';
 
+  List<Map<String, dynamic>> _diseases = [];
+  bool _isLoadingDiseases = true;
+  String? _diseaseError;
+
   List<String> get _filteredDiseases {
-    if (_searchQ.isEmpty) return _diseaseList;
-    return _diseaseList
+    final names = _diseases.map((d) => d['name'] as String).toList();
+
+    if (_searchQ.isEmpty) return names;
+
+    return names
         .where((d) => d.toLowerCase().contains(_searchQ.toLowerCase()))
         .toList();
   }
-
   @override
   void initState() {
     super.initState();
     context.read<CattleBloc>().add(const LoadCattleList());
+    _loadDiseases();
   }
+
+  Future<void> _loadDiseases() async {
+    setState(() {
+      _isLoadingDiseases = true;
+      _diseaseError = null;
+    });
+
+    try {
+      final list = await sl<ApiService>().getDiseases();
+
+      setState(() {
+        _diseases = list
+            .whereType<Map<String, dynamic>>()
+            .map((d) => {
+          'id': d['_id']?.toString() ?? d['id']?.toString() ?? '',
+          'name': d['name']?.toString() ?? 'Unknown',
+        })
+            .where((d) =>
+        (d['id'] as String).isNotEmpty &&
+            (d['name'] as String).trim().isNotEmpty)
+            .toList();
+
+        _isLoadingDiseases = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingDiseases = false;
+        _diseaseError = 'Failed to load diseases';
+      });
+    }
+  }
+
+
+
 
   List<Map<String, dynamic>> _getAnimalsWithDisease(List<Cattle> allCattle) {
     if (_selectedDisease == null) return [];
+
     List<Map<String, dynamic>> result = [];
-    // Currently no records in API, returning empty
+
+    for (var animal in allCattle) {
+      if (animal.name.toLowerCase().contains(_selectedDisease!.toLowerCase())) {
+        result.add({
+          'animal': animal,
+          'record': {
+            'status': 'Healthy',
+            'visitType': '-',
+            'disease': _selectedDisease!,
+            'doctorName': '-',
+            'date': DateTime.now(),
+          }
+        });
+      }
+    }
+
     return result;
   }
 
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -744,7 +762,11 @@ class _DiseaseWiseMedicalReportScreenState
           ),
         ),
       ),
-      body: BlocBuilder<CattleBloc, CattleState>(
+      body: _isLoadingDiseases
+          ? const Center(child: CircularProgressIndicator())
+          : _diseaseError != null
+          ? Center(child: Text(_diseaseError!))
+          : BlocBuilder<CattleBloc, CattleState>(
         builder: (context, state) {
           List<Cattle> cattleList = [];
           if (state is CattleListLoaded) {
@@ -783,7 +805,7 @@ class _DiseaseWiseMedicalReportScreenState
               else if (_selectedDisease != null)
                 Expanded(
                   child: matches.isEmpty
-                      ? const _NoDataFound()
+                      ? const NoDataFoundWidget()
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: matches.length,
@@ -943,7 +965,7 @@ class _DropdownListOverlay extends StatelessWidget {
                 ? const SingleChildScrollView(
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 20),
-                      child: _NoDataFound(),
+                      child: NoDataFoundWidget(),
                     ),
                   )
                 : ListView.separated(

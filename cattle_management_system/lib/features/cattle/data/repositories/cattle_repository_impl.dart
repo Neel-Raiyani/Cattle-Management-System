@@ -35,29 +35,22 @@ class CattleRepositoryImpl implements CattleRepository {
         final remoteCattle = await remoteDataSource.getAllCattle();
         final mergedById = <String, Cattle>{};
         final cachedById = {
-          for (final cattle in cachedCattle) cattle.id: cattle,
+          for (final cattle in cachedCattle)
+            if (cattle.id.isNotEmpty) cattle.id: cattle,
         };
 
         for (final cattle in remoteCattle) {
+          if (cattle.id.isEmpty || cattle.name.trim().isEmpty) continue;
           final classified = cattle;
           final cached = cachedById[classified.id];
-          if (cached != null &&
-              ((classified.bullType == null ||
-                      classified.bullType!.trim().isEmpty) ||
-                  (classified.bullView == null ||
-                      classified.bullView!.trim().isEmpty))) {
-            mergedById[classified.id] = classified.copyWith(
-              bullType: (classified.bullType == null ||
-                      classified.bullType!.trim().isEmpty)
-                  ? cached.bullType
-                  : classified.bullType,
-              bullView: (classified.bullView == null ||
-                      classified.bullView!.trim().isEmpty)
-                  ? cached.bullView
-                  : classified.bullView,
-            );
+          
+          if (cached != null) {
+             mergedById[classified.id] = classified.copyWith(
+                bullType: (classified.bullType == null || classified.bullType!.isEmpty) ? cached.bullType : classified.bullType,
+                bullView: (classified.bullView == null || classified.bullView!.isEmpty) ? cached.bullView : classified.bullView,
+             );
           } else {
-            mergedById[classified.id] = classified;
+             mergedById[classified.id] = classified;
           }
         }
 
@@ -181,7 +174,27 @@ class CattleRepositoryImpl implements CattleRepository {
 
     if (await networkInfo.isConnected) {
       try {
-        final remoteBulls = await remoteDataSource.getBulls(bullType: bullType);
+        final remoteBullsRaw = await remoteDataSource.getBulls(bullType: bullType);
+        final remoteBulls = remoteBullsRaw.map((bull) {
+          // If we requested a specific type, ensure it's set on the object
+          // also ensure gender is set to MALE if coming from bulls API
+          String? forcedType = bull.bullType;
+          if (bullType != null && (forcedType == null || forcedType.isEmpty)) {
+            forcedType = bullType;
+          }
+          
+          String forcedGender = bull.gender;
+          if (forcedGender.isEmpty || forcedGender.toUpperCase() == 'FEMALE') {
+             // If from bulls API, it's likely a male
+             forcedGender = 'MALE';
+          }
+
+          return bull.copyWith(
+            bullType: forcedType,
+            gender: forcedGender,
+          );
+        }).toList();
+
         if (remoteBulls.isNotEmpty) {
           return Right(remoteBulls);
         }
@@ -300,8 +313,20 @@ class CattleRepositoryImpl implements CattleRepository {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.deleteCattle(id);
+        
+        // Immediate local cleanup
+        final current = await localDataSource.getLastCattleList();
+        final updated = current.where((c) => c.id != id).toList();
+        if (current.length != updated.length) {
+          await localDataSource.cacheCattleList(updated);
+        }
+        
         return const Right(null);
       } on ServerException catch (e) {
+        final msg = e.message.toLowerCase();
+        if (msg.contains('not found') || msg.contains('animal_not_found')) {
+           return const Right(null);
+        }
         return Left(ServerFailure(e.message));
       } catch (e) {
         return Left(ServerFailure(e.toString()));

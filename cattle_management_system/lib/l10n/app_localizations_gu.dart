@@ -229,7 +229,7 @@ class AppLocalizationsGu extends AppLocalizations {
   String get menuCowGroup => 'ગાય જૂથ';
 
   @override
-  String get menuAIBull => 'AI Bull';
+  String get menuAIBull => 'AI બળદ';
 
   @override
   String get menuAnimalLeft => 'ગૌશાળા છોડેલા પ્રાણીઓ';
@@ -349,4 +349,89 @@ class AppLocalizationsGu extends AppLocalizations {
 
   @override
   String get unitLPerDay => 'લિટર/દિવસ';
+
+  @override
+  String get loggingIn => 'લૉગ ઇન થઈ રહ્યું છે';
+
+  @override
+  String get addCowDetails => 'ગાય વિગત ઉમેરો';
+
+  @override
+  String get hintParity => 'ગાયનો વ્યાતર દાખલ કરો';
+
+  @override
+  String get lblHandicapped => 'અપંગ';
+
+  @override
+  String get lblProblem => 'સમસ્યા શું છે?';
+
+  @override
+  String get lblBirthDate => 'જન્મ તારીખ';
+
+  @override
+  String get lblAdultDate => 'પ્રૌઢ તારીખ';
+
+  @override
+  String get hintSelectDate => 'તારીખ પસંદ કરો';
+
+  @override
+  String get lblUdderClosed => 'જો ગાયનું કોઈ આઉ બંધ હોય, તો આઉ પર ક્લિક કરો';
+
+  @override
+  String get lblSourceOfAcquisition => 'પ્રાપ્તિ સ્ત્રોત';
+
+  @override
+  String get optionBirth => 'જન્મ';
+
+  @override
+  String get optionDonation => 'દાન';
+
+  @override
+  String get optionPurchase => 'ખરીદી';
+
+  @override
+  String get lblMotherName => 'માતાનું નામ';
+
+  @override
+  String get lblFatherName => 'પિતાનું નામ';
+
+  @override
+  String get hintSelectMother => 'માં પસંદ કરો';
+
+  @override
+  String get hintSelectFather => 'પિતા પસંદ કરો';
+
+  @override
+  String get lblCowType => 'ગાયનો પ્રકાર';
+
+  @override
+  String get lblCowGroup => 'ગાય જૂથ';
+
+  @override
+  String get lblCowName => 'ગાયનું નામ';
+
+  @override
+  String get lblAnimalNumber => 'પ્રાણી નંબર';
+
+  @override
+  String get lblDeletePhoto => 'ફોટો કાઢો';
+
+  @override
+  String get lblNoPhotoSelected => 'કોઈ ફોટો પસંદ નથી';
+
+  @override
+  String get lblNoCowsAvailable => 'કોઈ ગાય ઉપલબ્ધ નથી';
+
+  @override
+  String get lblNoBullsAvailable => 'કોઈ ષાઢ ઉપલબ્ધ નથી';
+
+  @override
+  String get lblNoCowGroupsAvailable => 'કોઈ ગાય જૂથ ઉપલબ્ધ નથી';
+
+  @override
+  String get btnApplyFilter => 'લાગુ કરો';
+
+  @override
+  String get msgApplyFilterHint =>
+      'રેકોર્ડ જોવા માટે તારીખ શ્રેણી પસંદ કરો અને \'લાગુ કરો\' દબાવો';
 }

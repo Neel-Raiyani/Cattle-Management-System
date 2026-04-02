@@ -6,6 +6,8 @@ import '../../../../features/cattle/domain/entities/cattle.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_bloc.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_event.dart';
 import '../../../../features/cattle/presentation/bloc/cattle_state.dart';
+import '../../../../core/localization/localized_ui.dart';
+import 'package:cattle_management_system/core/widgets/no_data_found_widget.dart';
 import 'add_death_record_screen.dart';
 
 class DeathReportScreen extends StatefulWidget {
@@ -30,7 +32,7 @@ class _DeathReportScreenState extends State<DeathReportScreen> {
   Widget build(BuildContext context) {
     return BlocListener<CattleBloc, CattleState>(
       listener: (context, state) {
-        if (state is CattleUpdated) {
+        if (state is CattleUpdated || state is CattleAdded || state is CattleDeleted) {
           _loadData();
         }
       },
@@ -39,89 +41,51 @@ class _DeathReportScreenState extends State<DeathReportScreen> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          leading: GestureDetector(
-            onTap: () => Navigator.pop(context),
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
             child: Container(
-              margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: const Icon(
-                Icons.arrow_back,
-                color: Colors.black,
-                size: 20,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
               ),
             ),
           ),
           title: Text(
-            'Death',
+            context.ui.death,
             style: GoogleFonts.poppins(
               color: Colors.black,
               fontWeight: FontWeight.bold,
               fontSize: 20,
             ),
           ),
-          actions: [
-            Container(
-              margin: const EdgeInsets.only(right: 16),
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Color(0xFF99AA5A),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.search, color: Colors.white, size: 20),
-            ),
-          ],
         ),
         body: BlocBuilder<CattleBloc, CattleState>(
           builder: (context, state) {
-            if (state is CattleLoading) {
+            if (state is CattleLoading && state is! CattleListLoaded) {
               return const Center(child: CircularProgressIndicator());
             }
 
             List<Cattle> deathRecords = [];
             if (state is CattleListLoaded) {
               deathRecords = state.cattleList
-                  .where(
-                    (c) => c.status.toUpperCase() == 'DEAD',
-                  )
+                  .where((c) => c.status.toUpperCase() == 'DEAD')
                   .toList();
+                  
+              deathRecords.sort((a, b) {
+                final aDate = a.deathDate ?? a.updatedAt;
+                final bDate = b.deathDate ?? b.updatedAt;
+                return bDate.compareTo(aDate);
+              });
             }
 
             if (deathRecords.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/icons/no_data_found.png',
-                      width: 200,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.search_off,
-                        size: 100,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No data found',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF99AA5A),
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              return const NoDataFoundWidget();
             }
-
-            deathRecords.sort((a, b) {
-              final aDate = a.deathDate ?? a.updatedAt;
-              final bDate = b.deathDate ?? b.updatedAt;
-              return bDate.compareTo(aDate);
-            });
 
             return Column(
               children: [
@@ -130,7 +94,7 @@ class _DeathReportScreenState extends State<DeathReportScreen> {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Total ${deathRecords.length} death record${deathRecords.length == 1 ? '' : 's'}',
+                      '${context.ui.total}: ${deathRecords.length}',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -143,57 +107,28 @@ class _DeathReportScreenState extends State<DeathReportScreen> {
                     padding: const EdgeInsets.all(16),
                     itemCount: deathRecords.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (ctx, i) {
-                      final r = deathRecords[i];
-                      return _DeathRecordCard(cattle: r);
-                    },
+                    itemBuilder: (ctx, i) => _DeathRecordCard(cattle: deathRecords[i]),
                   ),
                 ),
               ],
             );
           },
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: Padding(
           padding: const EdgeInsets.only(bottom: 20),
-          child: InkWell(
-            onTap: () async {
+          child: FloatingActionButton.extended(
+            onPressed: () async {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AddDeathRecordScreen()),
               );
-              if (result == true) {
-                _loadData();
-              }
+              if (result == true) _loadData();
             },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF99AA5A),
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF99AA5A).withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add, color: Colors.white, size: 22),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Add Death Record',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
+            backgroundColor: const Color(0xFF99AA5A),
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: Text(
+              'Add Death Record',
+              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -229,7 +164,7 @@ class _DeathRecordCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: cattle.imageUrl != null && cattle.imageUrl!.isNotEmpty
+                child: (cattle.imageUrl != null && cattle.imageUrl!.isNotEmpty)
                     ? Image.network(
                         cattle.imageUrl!,
                         width: 50,
@@ -242,11 +177,11 @@ class _DeathRecordCard extends StatelessWidget {
                           child: const Icon(Icons.pets, color: Colors.grey),
                         ),
                       )
-                    : Image.asset(
-                        'assets/icons/no_data_found.png',
+                    : Container(
                         width: 50,
                         height: 50,
-                        fit: BoxFit.cover,
+                        color: Colors.grey.shade100,
+                        child: const Icon(Icons.pets, color: Colors.grey),
                       ),
               ),
               const SizedBox(width: 12),
@@ -256,18 +191,12 @@ class _DeathRecordCard extends StatelessWidget {
                   children: [
                     Text(
                       cattle.name,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Reason: ${cattle.deathReason ?? '-'}',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),
@@ -287,7 +216,7 @@ class _DeathRecordCard extends StatelessWidget {
               Text(
                 cattle.deathDate != null
                     ? DateFormat('dd MMM, yyyy').format(cattle.deathDate!)
-                    : '-',
+                    : DateFormat('dd MMM, yyyy').format(cattle.updatedAt),
                 style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
               ),
             ],

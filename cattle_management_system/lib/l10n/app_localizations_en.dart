@@ -349,4 +349,89 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unitLPerDay => 'L/day';
+
+  @override
+  String get loggingIn => 'Logging In';
+
+  @override
+  String get addCowDetails => 'Add Cow Details';
+
+  @override
+  String get hintParity => 'Enter cow parity';
+
+  @override
+  String get lblHandicapped => 'Handicapped';
+
+  @override
+  String get lblProblem => 'What is the problem?';
+
+  @override
+  String get lblBirthDate => 'Birth Date';
+
+  @override
+  String get lblAdultDate => 'Adult Date';
+
+  @override
+  String get hintSelectDate => 'Select date';
+
+  @override
+  String get lblUdderClosed => 'If cow any udder is closed, click on udder';
+
+  @override
+  String get lblSourceOfAcquisition => 'Source of Acquisition';
+
+  @override
+  String get optionBirth => 'Birth';
+
+  @override
+  String get optionDonation => 'Donation';
+
+  @override
+  String get optionPurchase => 'Purchase';
+
+  @override
+  String get lblMotherName => 'Mother Name';
+
+  @override
+  String get lblFatherName => 'Father Name';
+
+  @override
+  String get hintSelectMother => 'Select mother';
+
+  @override
+  String get hintSelectFather => 'Select father';
+
+  @override
+  String get lblCowType => 'Cow Type';
+
+  @override
+  String get lblCowGroup => 'Cow Group';
+
+  @override
+  String get lblCowName => 'Cow Name';
+
+  @override
+  String get lblAnimalNumber => 'Animal Number';
+
+  @override
+  String get lblDeletePhoto => 'Delete Photo';
+
+  @override
+  String get lblNoPhotoSelected => 'No Photo Selected';
+
+  @override
+  String get lblNoCowsAvailable => 'No cows available';
+
+  @override
+  String get lblNoBullsAvailable => 'No bulls available';
+
+  @override
+  String get lblNoCowGroupsAvailable => 'No cow groups available';
+
+  @override
+  String get btnApplyFilter => 'Apply';
+
+  @override
+  String get msgApplyFilterHint =>
+      'Select a date range and tap Apply to view records';
 }

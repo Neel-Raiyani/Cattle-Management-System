@@ -20,11 +20,12 @@ class AppFeedbackService {
     FutureOr<void> Function()? onPrimary,
     bool barrierDismissible = true,
   }) async {
-    final context = NavigationService.navigatorKey.currentContext;
-    if (context == null) return;
+    final navigator = NavigationService.navigatorKey.currentState;
+    final context = NavigationService.navigatorKey.currentContext ?? navigator?.context;
+    if (context == null || navigator == null || !navigator.mounted) return;
 
     final resolvedKey = dedupeKey ?? '${type.name}:$message';
-    if (_isShowing && _activeKey == resolvedKey) return;
+    if (_isShowing || _activeKey == resolvedKey) return;
 
     _isShowing = true;
     _activeKey = resolvedKey;
@@ -53,7 +54,9 @@ class AppFeedbackService {
                   type: type,
                   primaryLabel: primaryLabel,
                   onPrimary: () async {
-                    Navigator.of(context, rootNavigator: true).pop();
+                    if (Navigator.of(context, rootNavigator: true).canPop()) {
+                      Navigator.of(context, rootNavigator: true).pop();
+                    }
                     if (onPrimary != null) {
                       await onPrimary();
                     }

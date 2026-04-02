@@ -759,6 +759,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'L/day'**
   String get unitLPerDay;
+
+  /// No description provided for @loggingIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging In'**
+  String get loggingIn;
+
+  /// No description provided for @addCowDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Cow Details'**
+  String get addCowDetails;
+
+  /// No description provided for @hintParity.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter cow parity'**
+  String get hintParity;
+
+  /// No description provided for @lblHandicapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Handicapped'**
+  String get lblHandicapped;
+
+  /// No description provided for @lblProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'What is the problem?'**
+  String get lblProblem;
+
+  /// No description provided for @lblBirthDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Birth Date'**
+  String get lblBirthDate;
+
+  /// No description provided for @lblAdultDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Adult Date'**
+  String get lblAdultDate;
+
+  /// No description provided for @hintSelectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date'**
+  String get hintSelectDate;
+
+  /// No description provided for @lblUdderClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'If cow any udder is closed, click on udder'**
+  String get lblUdderClosed;
+
+  /// No description provided for @lblSourceOfAcquisition.
+  ///
+  /// In en, this message translates to:
+  /// **'Source of Acquisition'**
+  String get lblSourceOfAcquisition;
+
+  /// No description provided for @optionBirth.
+  ///
+  /// In en, this message translates to:
+  /// **'Birth'**
+  String get optionBirth;
+
+  /// No description provided for @optionDonation.
+  ///
+  /// In en, this message translates to:
+  /// **'Donation'**
+  String get optionDonation;
+
+  /// No description provided for @optionPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase'**
+  String get optionPurchase;
+
+  /// No description provided for @lblMotherName.
+  ///
+  /// In en, this message translates to:
+  /// **'Mother Name'**
+  String get lblMotherName;
+
+  /// No description provided for @lblFatherName.
+  ///
+  /// In en, this message translates to:
+  /// **'Father Name'**
+  String get lblFatherName;
+
+  /// No description provided for @hintSelectMother.
+  ///
+  /// In en, this message translates to:
+  /// **'Select mother'**
+  String get hintSelectMother;
+
+  /// No description provided for @hintSelectFather.
+  ///
+  /// In en, this message translates to:
+  /// **'Select father'**
+  String get hintSelectFather;
+
+  /// No description provided for @lblCowType.
+  ///
+  /// In en, this message translates to:
+  /// **'Cow Type'**
+  String get lblCowType;
+
+  /// No description provided for @lblCowGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Cow Group'**
+  String get lblCowGroup;
+
+  /// No description provided for @lblCowName.
+  ///
+  /// In en, this message translates to:
+  /// **'Cow Name'**
+  String get lblCowName;
+
+  /// No description provided for @lblAnimalNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Animal Number'**
+  String get lblAnimalNumber;
+
+  /// No description provided for @lblDeletePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Photo'**
+  String get lblDeletePhoto;
+
+  /// No description provided for @lblNoPhotoSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No Photo Selected'**
+  String get lblNoPhotoSelected;
+
+  /// No description provided for @lblNoCowsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No cows available'**
+  String get lblNoCowsAvailable;
+
+  /// No description provided for @lblNoBullsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No bulls available'**
+  String get lblNoBullsAvailable;
+
+  /// No description provided for @lblNoCowGroupsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No cow groups available'**
+  String get lblNoCowGroupsAvailable;
+
+  /// No description provided for @btnApplyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get btnApplyFilter;
+
+  /// No description provided for @msgApplyFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a date range and tap Apply to view records'**
+  String get msgApplyFilterHint;
 }
 
 class _AppLocalizationsDelegate

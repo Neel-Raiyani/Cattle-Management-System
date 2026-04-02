@@ -349,4 +349,89 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get unitLPerDay => 'ली/दिन';
+
+  @override
+  String get loggingIn => 'लॉगिन हो रहा है';
+
+  @override
+  String get addCowDetails => 'गाय विवरण जोड़ें';
+
+  @override
+  String get hintParity => 'गाय की समता दर्ज करें';
+
+  @override
+  String get lblHandicapped => 'विकलांग';
+
+  @override
+  String get lblProblem => 'समस्या क्या है?';
+
+  @override
+  String get lblBirthDate => 'जन्म तिथि';
+
+  @override
+  String get lblAdultDate => 'वयस्क तिथि';
+
+  @override
+  String get hintSelectDate => 'तिथि चुनें';
+
+  @override
+  String get lblUdderClosed => 'यदि गाय का कोई थन बंद है, तो थन पर क्लिक करें';
+
+  @override
+  String get lblSourceOfAcquisition => 'अधिग्रहण का स्रोत';
+
+  @override
+  String get optionBirth => 'जन्म';
+
+  @override
+  String get optionDonation => 'दान';
+
+  @override
+  String get optionPurchase => 'खरीद';
+
+  @override
+  String get lblMotherName => 'माँ का नाम';
+
+  @override
+  String get lblFatherName => 'पिता का नाम';
+
+  @override
+  String get hintSelectMother => 'माँ चुनें';
+
+  @override
+  String get hintSelectFather => 'पिता चुनें';
+
+  @override
+  String get lblCowType => 'गाय का प्रकार';
+
+  @override
+  String get lblCowGroup => 'गाय समूह';
+
+  @override
+  String get lblCowName => 'गाय का नाम';
+
+  @override
+  String get lblAnimalNumber => 'पशु संख्या';
+
+  @override
+  String get lblDeletePhoto => 'फोटो हटाएं';
+
+  @override
+  String get lblNoPhotoSelected => 'कोई फोटो नहीं चुना';
+
+  @override
+  String get lblNoCowsAvailable => 'कोई गाय उपलब्ध नहीं';
+
+  @override
+  String get lblNoBullsAvailable => 'कोई सांड उपलब्ध नहीं';
+
+  @override
+  String get lblNoCowGroupsAvailable => 'कोई गाय समूह उपलब्ध नहीं';
+
+  @override
+  String get btnApplyFilter => 'लागू करें';
+
+  @override
+  String get msgApplyFilterHint =>
+      'रिकॉर्ड देखने के लिए तिथि सीमा चुनें और \'लागू करें\' दबाएं';
 }

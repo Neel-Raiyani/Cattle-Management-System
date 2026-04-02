@@ -120,7 +120,7 @@ class CustomIconButton extends StatelessWidget {
     this.onPressed,
     this.backgroundColor,
     this.iconColor,
-    this.size = 40,
+    this.size = 48,
     this.tooltip,
   });
   

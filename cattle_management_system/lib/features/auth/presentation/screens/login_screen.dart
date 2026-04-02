@@ -22,7 +22,27 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _mobileController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
   bool _obscurePassword = true;
+
+  void _handleLogin() {
+    if (_formKey.currentState!.validate()) {
+      context.read<AuthBloc>().add(
+        LoginEvent(
+          mobile: _mobileController.text,
+          password: _passwordController.text,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _mobileController.dispose();
+    _passwordController.dispose();
+    _passwordFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +116,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? 'Invalid mobile'
                       : null,
                   keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) {
+                    FocusScope.of(context).requestFocus(_passwordFocusNode);
+                  },
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!.mobileHint,
                     prefixIcon: const Icon(
@@ -125,9 +149,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _passwordController,
+                  focusNode: _passwordFocusNode,
                   validator: (value) =>
                       value == null || value.isEmpty ? 'Required' : null,
                   obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _handleLogin(),
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!.passwordHint,
                     prefixIcon: const Icon(
@@ -202,18 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: isLoading
-                            ? null
-                            : () {
-                                if (_formKey.currentState!.validate()) {
-                                  context.read<AuthBloc>().add(
-                                    LoginEvent(
-                                      mobile: _mobileController.text,
-                                      password: _passwordController.text,
-                                    ),
-                                  );
-                                }
-                              },
+                        onPressed: isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
@@ -226,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         child: isLoading
-                            ? Row(
+                             ? Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   const SizedBox(
@@ -239,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
-                                    "Logging In",
+                                    AppLocalizations.of(context)!.loggingIn,
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,

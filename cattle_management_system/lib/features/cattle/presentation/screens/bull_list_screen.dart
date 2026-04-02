@@ -12,6 +12,8 @@ import 'bull_details_screen.dart';
 import 'edit_bull_details_screen.dart';
 import '../../../../core/utils/app_feedback.dart';
 import '../../../../core/utils/cattle_image_provider.dart';
+import '../../../../core/localization/localized_ui.dart';
+import '../../../../core/widgets/no_data_found_widget.dart';
 
 class BullListScreen extends StatefulWidget {
   const BullListScreen({super.key});
@@ -87,9 +89,7 @@ class _BullListScreenState extends State<BullListScreen> {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             color: _selectedFilter == entry.key
-                                ? const Color(
-                                    0xff99AA5A,
-                                  ) // Active color approximation
+                                ? const Color(0xff99AA5A)
                                 : Colors.black87,
                           ),
                         ),
@@ -116,12 +116,14 @@ class _BullListScreenState extends State<BullListScreen> {
                   if (state is CattleLoading) {
                     return const Center(child: CircularProgressIndicator());
                   } else if (state is CattleListLoaded) {
-                    // Filter Logic for Bulls
                     final filteredList = _filterBulls(state.cattleList);
+
+                    if (filteredList.isEmpty) {
+                      return _buildNoDataFound(context);
+                    }
 
                     return Column(
                       children: [
-                        // Total Count
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16.0,
@@ -139,11 +141,9 @@ class _BullListScreenState extends State<BullListScreen> {
                             ),
                           ),
                         ),
-
-                        // List
                         Expanded(
                           child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             itemCount: filteredList.length,
                             itemBuilder: (context, index) {
                               return _BullCard(cattle: filteredList[index]);
@@ -153,7 +153,7 @@ class _BullListScreenState extends State<BullListScreen> {
                       ],
                     );
                   } else if (state is CattleEmpty) {
-                    return Center(child: Text(state.message));
+                    return _buildNoDataFound(context);
                   } else if (state is CattleError) {
                     return Center(child: Text(state.message));
                   }
@@ -205,7 +205,6 @@ class _BullListScreenState extends State<BullListScreen> {
           ),
         ),
       ),
-
       title: _isSearching
           ? TextField(
               controller: _searchController,
@@ -231,7 +230,6 @@ class _BullListScreenState extends State<BullListScreen> {
               ),
               style: GoogleFonts.poppins(color: Colors.black),
               onChanged: (value) {
-                // Implement Local Search or trigger Bloc Event
                 context.read<CattleBloc>().add(SearchCattle(value));
               },
             )
@@ -253,7 +251,7 @@ class _BullListScreenState extends State<BullListScreen> {
             children: [
               if (!_isSearching) ...[
                 _buildActionIcon(
-                  Icons.description, // Approximation for Excel/File icon
+                  Icons.description,
                   const Color(0xff99AA5A),
                   () => _showFileMenu(context),
                 ),
@@ -291,16 +289,9 @@ class _BullListScreenState extends State<BullListScreen> {
   }
 
   void _showFileMenu(BuildContext context) {
-    // Show PopupMenuButton styled menu as per screenshot
-    // Replicating the dropdown menu style
     showMenu<String>(
       context: context,
-      position: RelativeRect.fromLTRB(
-        100,
-        80,
-        20,
-        0,
-      ), // Adjust position roughly to top right
+      position: const RelativeRect.fromLTRB(100, 80, 20, 0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Colors.white,
       items: [
@@ -308,8 +299,8 @@ class _BullListScreenState extends State<BullListScreen> {
           value: 'Open',
           child: Row(
             children: [
-              Icon(Icons.description, size: 18, color: Color(0xff99AA5A)),
-              SizedBox(width: 8),
+              const Icon(Icons.description, size: 18, color: Color(0xff99AA5A)),
+              const SizedBox(width: 8),
               Text(context.tr.open, style: GoogleFonts.poppins(fontSize: 14)),
             ],
           ),
@@ -318,8 +309,8 @@ class _BullListScreenState extends State<BullListScreen> {
           value: 'Share',
           child: Row(
             children: [
-              Icon(Icons.share, size: 18, color: Colors.black),
-              SizedBox(width: 8),
+              const Icon(Icons.share, size: 18, color: Colors.black),
+              const SizedBox(width: 8),
               Text(context.tr.share, style: GoogleFonts.poppins(fontSize: 14)),
             ],
           ),
@@ -333,58 +324,37 @@ class _BullListScreenState extends State<BullListScreen> {
       return c.isMaleGender && !_isTerminalStatus(c.status) && !c.isAiBull;
     }).toList();
 
-    if (_selectedFilter == 'all_bull') {
-      // Show all males except those specifically excluded (if any)
-      return males;
-    }
-
-    if (_selectedFilter == 'retired_bull') {
-      return males.where((c) => c.effectiveIsRetired).toList();
-    }
-
-    if (_selectedFilter == 'bull_calf') {
-      return males.where((c) => c.isBullCalf).toList();
-    }
-
-    if (_selectedFilter == 'bull') {
-      return males.where((c) => c.isActive && !c.isBullCalf).toList();
-    }
-
+    if (_selectedFilter == 'all_bull') return males;
+    if (_selectedFilter == 'retired_bull') return males.where((c) => c.effectiveIsRetired).toList();
+    if (_selectedFilter == 'bull_calf') return males.where((c) => c.isBullCalf).toList();
+    if (_selectedFilter == 'bull') return males.where((c) => c.isActive && !c.isBullCalf).toList();
     return males;
+  }
+
+  Widget _buildNoDataFound(BuildContext context) {
+    return const NoDataFoundWidget();
   }
 }
 
 class _BullCard extends StatelessWidget {
   final Cattle cattle;
-
   const _BullCard({required this.cattle});
 
   @override
   Widget build(BuildContext context) {
     final networkImage = cattleNetworkImageProvider(cattle.imageUrl);
-    Color statusColor = const Color(0xFF5E35B1); // Deep Purple (Bull Calf)
-    Color statusBg = const Color(0xFFEDE7F6); // Light Purple
-    Color statusBorder = const Color(0xFF5E35B1);
-
-    // Filter Logic for pill colors
-    // Bull Calf: Purple (from screenshot)
-    // Retired Bull: Maybe Grey/Red?
-    // Bull: Maybe Orange/Green?
-    // Using screenshot colors:
-    // Bull Calf (Image 2) has Blue text, White Bg, Blue border.
+    Color statusColor;
+    Color statusBg = Colors.white;
+    Color statusBorder;
 
     if (cattle.isBullCalf) {
-      statusColor = Color(0xFF3F51B5);
-      statusBg = Colors.white;
-      statusBorder = Color(0xFF3F51B5);
+      statusColor = const Color(0xFF3F51B5);
+      statusBorder = const Color(0xFF3F51B5);
     } else if (cattle.effectiveIsRetired) {
       statusColor = Colors.grey;
-      statusBg = Colors.white;
       statusBorder = Colors.grey;
     } else {
-      // Standard Bull
       statusColor = Colors.orange;
-      statusBg = Colors.white;
       statusBorder = Colors.orange;
     }
 
@@ -392,9 +362,7 @@ class _BullCard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => BullDetailsScreen(cattle: cattle),
-          ),
+          MaterialPageRoute(builder: (context) => BullDetailsScreen(cattle: cattle)),
         );
       },
       child: Container(
@@ -417,7 +385,6 @@ class _BullCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image
                 Stack(
                   alignment: Alignment.bottomCenter,
                   children: [
@@ -428,25 +395,17 @@ class _BullCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         image: networkImage != null
-                            ? DecorationImage(
-                                image: networkImage,
-                                fit: BoxFit.cover,
-                              )
+                            ? DecorationImage(image: networkImage, fit: BoxFit.cover)
                             : const DecorationImage(
-                                image: AssetImage(
-                                  'assets/icons/father_cow.png',
-                                ),
-                                fit: BoxFit.contain, // or cover
+                                image: AssetImage('assets/icons/father_cow.png'),
+                                fit: BoxFit.contain,
                               ),
                       ),
                     ),
                     Positioned(
                       bottom: 0,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         decoration: BoxDecoration(
                           color: statusBg,
                           borderRadius: BorderRadius.circular(20),
@@ -455,9 +414,7 @@ class _BullCard extends StatelessWidget {
                         child: Text(
                           cattle.isBullCalf
                               ? 'Bull Calf'
-                              : (cattle.effectiveIsRetired
-                                  ? 'Retired Bull'
-                                  : 'Bull'),
+                              : (cattle.effectiveIsRetired ? 'Retired Bull' : 'Bull'),
                           style: GoogleFonts.poppins(
                             fontSize: 10,
                             color: statusColor,
@@ -469,8 +426,6 @@ class _BullCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(width: 16),
-
-                // Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,33 +445,22 @@ class _BullCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'No. : ${cattle.serialNumber ?? "1001"}',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
+                            'No. : ${cattle.serialNumber ?? "-"}',
+                            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // Tag Pill
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF9C4), // Yellowish
+                          color: const Color(0xFFFFF9C4),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.sell,
-                              size: 14,
-                              color: Colors.brown[800],
-                            ),
+                            Icon(Icons.sell, size: 14, color: Colors.brown[800]),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
@@ -540,27 +484,14 @@ class _BullCard extends StatelessWidget {
             const SizedBox(height: 16),
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
             const SizedBox(height: 16),
-
-            // Dates
             Row(
               children: [
-                _buildDateInfo(
-                  'Birthday',
-                  DateFormat('dd MMM, yyyy').format(cattle.dateOfBirth),
-                  Icons.cake,
-                ),
+                _buildDateInfo('Birthday', DateFormat('dd MMM, yyyy').format(cattle.dateOfBirth), Icons.cake),
                 const SizedBox(width: 24),
-                _buildDateInfo(
-                  'Age',
-                  cattle.displayAge,
-                  Icons.pets,
-                ), // Pets icon as placeholder for bull icon
+                _buildDateInfo('Age', cattle.displayAge, Icons.pets),
               ],
             ),
-
             const SizedBox(height: 16),
-
-            // Buttons
             Row(
               children: [
                 Expanded(
@@ -568,10 +499,7 @@ class _BullCard extends StatelessWidget {
                     onTap: () async {
                       final updated = await Navigator.push<bool>(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              EditBullDetailsScreen(cattle: cattle),
-                        ),
+                        MaterialPageRoute(builder: (c) => EditBullDetailsScreen(cattle: cattle)),
                       );
                       if (updated == true && context.mounted) {
                         context.read<CattleBloc>().add(const LoadBullsList(forceRefresh: true, bullType: 'GAUSHALA'));
@@ -579,17 +507,8 @@ class _BullCard extends StatelessWidget {
                     },
                     child: Container(
                       height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F8E9), // Light Green
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.edit_outlined,
-                          color: const Color(0xFFA4C639), // Green
-                          size: 20,
-                        ),
-                      ),
+                      decoration: BoxDecoration(color: const Color(0xFFF1F8E9), borderRadius: BorderRadius.circular(22)),
+                      child: const Center(child: Icon(Icons.edit_outlined, color: Color(0xFFA4C639), size: 20)),
                     ),
                   ),
                 ),
@@ -600,61 +519,29 @@ class _BullCard extends StatelessWidget {
                       final blocContext = context;
                       showDialog(
                         context: context,
-                        builder: (BuildContext dialogContext) {
-                          return AlertDialog(
-                            title: Text(
-                              "Delete Bull",
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                              ),
+                        builder: (ctx) => AlertDialog(
+                          title: Text("Delete Bull", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                          content: Text("Are you sure you want to delete ${cattle.name}?", style: GoogleFonts.inter()),
+                          actions: [
+                            TextButton(child: Text("Cancel", style: GoogleFonts.inter(color: Colors.grey)), onPressed: () => Navigator.pop(ctx)),
+                            TextButton(
+                              child: Text("Delete", style: GoogleFonts.inter(color: Colors.red)),
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                Future.microtask(() {
+                                  if (!blocContext.mounted) return;
+                                  blocContext.read<CattleBloc>().add(DeleteCattle(cattle.id));
+                                });
+                              },
                             ),
-                            content: Text(
-                              "Are you sure you want to delete ${cattle.name}?",
-                              style: GoogleFonts.inter(),
-                            ),
-                            actions: [
-                              TextButton(
-                                child: Text(
-                                  "Cancel",
-                                  style: GoogleFonts.inter(color: Colors.grey),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(dialogContext).pop();
-                                },
-                              ),
-                              TextButton(
-                                child: Text(
-                                  "Delete",
-                                  style: GoogleFonts.inter(color: Colors.red),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(dialogContext).pop();
-                                  Future.microtask(() {
-                                    if (!blocContext.mounted) return;
-                                    blocContext.read<CattleBloc>().add(
-                                      DeleteCattle(cattle.id),
-                                    );
-                                  });
-                                },
-                              ),
-                            ],
-                          );
-                        },
+                          ],
+                        ),
                       );
                     },
                     child: Container(
                       height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFEBEE), // Light Red
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                      ),
+                      decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(22)),
+                      child: const Center(child: Icon(Icons.delete_outline, color: Colors.red, size: 20)),
                     ),
                   ),
                 ),
@@ -676,18 +563,8 @@ class _BullCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(fontSize: 10, color: Colors.grey),
-              ),
-              Text(
-                value,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
+              Text(label, style: GoogleFonts.inter(fontSize: 10, color: Colors.grey)),
+              Text(value, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black)),
             ],
           ),
         ],
